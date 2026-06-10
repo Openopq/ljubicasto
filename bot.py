@@ -24,7 +24,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 # ======================= CONFIG =======================
 BOT_TOKEN   = os.environ.get("BOT_TOKEN", "")
 MINIAPP_URL = "https://openopq.github.io/ljubicasto/"
-ALLOWED_IDS = []
+ALLOWED_IDS = [7653945813]
 NOTIFY_HOUR = 8
 NOTIFY_MIN  = 0
 TZ          = "Europe/Moscow"
