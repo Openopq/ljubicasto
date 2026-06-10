@@ -5,6 +5,7 @@ Ljubičasto — бэкенд календаря репетитора.
 Деплоится на Bothost из GitHub. Перед деплоем заполни блок CONFIG ниже.
 """
 
+import asyncio
 import os
 import json
 import sqlite3
@@ -17,25 +18,18 @@ from aiohttp import web
 from aiogram import Bot, Dispatcher
 from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
 from aiogram.filters import CommandStart
-from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application
 from aiogram.utils.web_app import safe_parse_webapp_init_data
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 # ======================= CONFIG =======================
-BOT_TOKEN = os.environ.get("BOT_TOKEN", "")                       # от @BotFather
-# Публичный адрес твоего приложения на Bothost (узнаешь в панели после первого деплоя).
-# Пример: "https://ljubicasto-xxxx.bothost.ru"  — без слэша в конце.
-PUBLIC_URL = os.environ.get("WEBHOOK_URL") or os.environ.get("PUBLIC_URL", "")
-# Ссылка на сам Mini App (GitHub Pages).
+BOT_TOKEN   = os.environ.get("BOT_TOKEN", "")
 MINIAPP_URL = "https://openopq.github.io/ljubicasto/"
-# Кого пускаем (Telegram id). Узнать id: @userinfobot. Пусто = пускаем всех (для отладки).
-ALLOWED_IDS = [7653945813]                                        # напр. [11111111, 22222222]
-NOTIFY_HOUR = 8                                         # во сколько утром слать расписание
+ALLOWED_IDS = []
+NOTIFY_HOUR = 8
 NOTIFY_MIN  = 0
 TZ          = "Europe/Moscow"
-DB_PATH     = "ljubicasto.db"
-PORT        = int(os.environ.get("PORT", 8080))
-WEBHOOK_PATH = "/webhook"
+DB_PATH     = os.environ.get("DATA_DIR", "/app/data") + "/ljubicasto.db"
+PORT        = int(os.environ.get("PORT", 3000))
 # ======================================================
 
 logging.basicConfig(level=logging.INFO)
@@ -177,25 +171,34 @@ async def morning():
             logging.warning("notify fail %s: %s", chat_id, e)
 
 # ---------------------- startup ----------------------
-async def on_startup(app):
+async def run_bot():
     init_db()
-    await bot.set_webhook(PUBLIC_URL + WEBHOOK_PATH, drop_pending_updates=True)
     sched = AsyncIOScheduler(timezone=tz)
     sched.add_job(morning, "cron", hour=NOTIFY_HOUR, minute=NOTIFY_MIN)
     sched.start()
-    logging.info("started, webhook -> %s", PUBLIC_URL + WEBHOOK_PATH)
+    await bot.delete_webhook(drop_pending_updates=True)
+    logging.info("Bot started (polling)")
+    await dp.start_polling(bot)
 
-def main():
+async def run_api():
     app = web.Application(middlewares=[cors])
     app.router.add_get("/", health)
     app.router.add_get("/api/day", api_day)
     app.router.add_post("/api/day", api_save_day)
     app.router.add_get("/api/keys", api_keys)
     app.router.add_route("OPTIONS", "/api/{tail:.*}", lambda r: web.Response())
-    SimpleRequestHandler(dispatcher=dp, bot=bot).register(app, path=WEBHOOK_PATH)
-    setup_application(app, dp, bot=bot)
-    app.on_startup.append(on_startup)
-    web.run_app(app, host="0.0.0.0", port=PORT)
+    runner = web.AppRunner(app)
+    await runner.setup()
+    site = web.TCPSite(runner, "0.0.0.0", PORT)
+    await site.start()
+    logging.info("API started on port %s", PORT)
+
+async def main_async():
+    init_db()
+    await asyncio.gather(run_api(), run_bot())
+
+def main():
+    asyncio.run(main_async())
 
 if __name__ == "__main__":
     main()
