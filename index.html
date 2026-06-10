@@ -1,1 +1,927 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Љубичица</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F4F0FB;
+    --surface:#FFFFFF;
+    --surface-2:#FBF9FF;
+    --line:#EAE3F7;
+    --violet:#7C5CDB;
+    --violet-soft:#A78BEA;
+    --violet-tint:#EFE9FC;
+    --violet-deep:#4F379E;
+    --green:#34B27B;
+    --green-tint:#E2F6ED;
+    --green-line:#BfE9D4;
+    --ink:#2B2444;
+    --muted:#9089A8;
+    --muted-2:#B7B1C9;
+    --danger:#E5687E;
+    --radius:18px;
+    --radius-sm:12px;
+    --shadow:0 8px 28px rgba(79,55,158,.10);
+    --shadow-soft:0 2px 10px rgba(79,55,158,.06);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:'Manrope',-apple-system,system-ui,sans-serif;
+    background:var(--bg);
+    color:var(--ink);
+    overflow-x:hidden;
+    -webkit-font-smoothing:antialiased;
+  }
+  .app{max-width:520px;margin:0 auto;min-height:100vh;position:relative;padding-bottom:40px}
+
+  /* ---------- top bar ---------- */
+  .topbar{
+    position:sticky;top:0;z-index:40;
+    background:linear-gradient(180deg,var(--bg) 70%,rgba(244,240,251,0));
+    padding:18px 20px 10px;
+  }
+  .brand{display:flex;align-items:center;gap:10px}
+  .brand .dot{
+    width:36px;height:36px;border-radius:11px;background:var(--surface);
+    box-shadow:var(--shadow-soft);display:grid;place-items:center;flex:none;
+  }
+  .brand .dot svg{width:27px;height:27px;display:block}
+  .brand h1{font-size:20px;font-weight:800;letter-spacing:-.02em;margin:0}
+  .brand h1 span{color:var(--violet)}
+  .brand .sub{font-size:12px;color:var(--muted);font-weight:600;margin-top:1px}
+
+  /* ---------- month head ---------- */
+  .month-head{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:6px 20px 14px;
+  }
+  .month-title{font-size:22px;font-weight:800;letter-spacing:-.02em;text-transform:capitalize}
+  .month-title b{font-weight:800}
+  .month-title .yr{color:var(--muted-2);font-weight:700;margin-left:6px;font-size:18px}
+  .nav-btns{display:flex;gap:8px}
+  .iconbtn{
+    width:38px;height:38px;border:none;border-radius:11px;background:var(--surface);
+    box-shadow:var(--shadow-soft);color:var(--violet);font-size:18px;font-weight:700;
+    display:grid;place-items:center;cursor:pointer;transition:transform .12s,background .12s;
+  }
+  .iconbtn:active{transform:scale(.92);background:var(--violet-tint)}
+
+  /* ---------- calendar ---------- */
+  .cal{padding:0 16px}
+  .weekrow{display:grid;grid-template-columns:repeat(7,1fr);margin-bottom:6px}
+  .weekrow span{text-align:center;font-size:11px;font-weight:700;color:var(--muted-2);letter-spacing:.04em}
+  .weekrow span.we{color:var(--violet-soft)}
+  .grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+  .cell{
+    position:relative;aspect-ratio:1/1.05;border-radius:14px;background:var(--surface);
+    box-shadow:var(--shadow-soft);display:flex;align-items:flex-start;justify-content:flex-start;
+    padding:8px 0 0 9px;cursor:pointer;border:1.5px solid transparent;
+    transition:transform .1s,border-color .12s,background .12s;
+  }
+  .cell:active{transform:scale(.95)}
+  .cell.empty{background:transparent;box-shadow:none;cursor:default}
+  .cell .num{font-size:14px;font-weight:700;color:var(--ink)}
+  .cell.out .num{color:var(--muted-2);font-weight:600}
+  .cell.today{border-color:var(--violet)}
+  .cell.today .num{color:var(--violet)}
+  .cell .badge{
+    position:absolute;right:6px;bottom:6px;min-width:18px;height:18px;padding:0 5px;
+    border-radius:9px;background:var(--violet);color:#fff;font-size:11px;font-weight:800;
+    display:grid;place-items:center;box-shadow:0 2px 6px rgba(124,92,219,.4);
+  }
+  .cell .badge.allpaid{background:var(--green);box-shadow:0 2px 6px rgba(52,178,123,.4)}
+  .cell .pips{position:absolute;right:7px;bottom:8px;display:flex;gap:3px}
+
+  /* select-day mode */
+  .picking .cell:not(.empty):not(.out){animation:pulse 1.6s ease-in-out infinite}
+  .picking .cell.sel{background:var(--violet);border-color:var(--violet)}
+  .picking .cell.sel .num{color:#fff}
+  @keyframes pulse{0%,100%{box-shadow:var(--shadow-soft)}50%{box-shadow:0 0 0 2px var(--violet-soft)}}
+  @media (prefers-reduced-motion:reduce){.picking .cell{animation:none}}
+
+  /* ---------- sheets / screens ---------- */
+  .screen{
+    position:fixed;inset:0;z-index:60;background:var(--bg);
+    transform:translateX(100%);visibility:hidden;
+    transition:transform .26s cubic-bezier(.4,0,.2,1),visibility 0s linear .26s;
+    overflow-y:auto;max-width:520px;margin:0 auto;
+  }
+  .screen.on{transform:translateX(0);visibility:visible;
+    transition:transform .26s cubic-bezier(.4,0,.2,1),visibility 0s}
+  .scr-head{
+    position:sticky;top:0;background:var(--bg);z-index:5;
+    display:flex;align-items:center;gap:12px;padding:18px 18px 12px;
+  }
+  .scr-head .back{
+    width:38px;height:38px;border:none;border-radius:11px;background:var(--surface);
+    box-shadow:var(--shadow-soft);color:var(--ink);font-size:20px;cursor:pointer;flex:none;
+    display:grid;place-items:center;transition:transform .12s;
+  }
+  .scr-head .back:active{transform:scale(.9)}
+  .scr-head .ttl{font-size:18px;font-weight:800;letter-spacing:-.01em;text-transform:capitalize}
+  .scr-head .ttl small{display:block;font-size:12px;color:var(--muted);font-weight:700;text-transform:none}
+  .scr-head .pencil{
+    margin-left:auto;width:38px;height:38px;border:none;border-radius:11px;background:var(--violet-tint);
+    color:var(--violet);font-size:17px;cursor:pointer;display:grid;place-items:center;transition:transform .12s;
+  }
+  .scr-head .pencil:active{transform:scale(.9)}
+
+  /* ---------- day hour list ---------- */
+  .hours{padding:4px 16px 20px}
+  .hour{
+    display:flex;gap:12px;align-items:stretch;min-height:54px;
+  }
+  .hour .lab{width:46px;flex:none;text-align:right;padding-top:6px;font-size:13px;font-weight:700;color:var(--muted-2)}
+  .hour .slot{
+    flex:1;border-top:1px solid var(--line);padding:6px 0;display:flex;flex-direction:column;gap:6px;
+  }
+  .hour:last-child .slot{border-bottom:1px solid var(--line)}
+  .addhint{
+    height:40px;border:1.5px dashed var(--line);border-radius:12px;display:flex;align-items:center;
+    padding:0 14px;color:var(--muted-2);font-size:13px;font-weight:600;cursor:pointer;
+    transition:border-color .12s,color .12s;
+  }
+  .addhint:active{border-color:var(--violet-soft);color:var(--violet)}
+  .lesson{
+    border-radius:13px;background:var(--violet-tint);border:1.5px solid transparent;
+    padding:10px 13px;cursor:pointer;transition:transform .1s;position:relative;overflow:hidden;
+  }
+  .lesson:active{transform:scale(.98)}
+  .lesson::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--violet)}
+  .lesson.paid{background:var(--green-tint);border-color:var(--green-line)}
+  .lesson.paid::before{background:var(--green)}
+  .lesson .ln-name{font-weight:800;font-size:14px;display:flex;align-items:center;gap:7px}
+  .lesson .ln-meta{font-size:12px;color:var(--muted);font-weight:600;margin-top:2px}
+  .lesson .paidtag{font-size:10px;font-weight:800;color:var(--green);background:#fff;
+    padding:2px 7px;border-radius:7px;border:1px solid var(--green-line)}
+  .lesson .rep{font-size:10px;color:var(--violet);background:#fff;padding:2px 7px;border-radius:7px;font-weight:800}
+
+  /* ---------- form ---------- */
+  .form{padding:6px 18px 30px}
+  .field{margin-bottom:14px}
+  .field label{display:block;font-size:12px;font-weight:700;color:var(--muted);margin:0 0 6px 4px}
+  .field input,.field textarea,.field select{
+    width:100%;border:1.5px solid var(--line);background:var(--surface);border-radius:13px;
+    padding:13px 15px;font-size:15px;font-family:inherit;color:var(--ink);font-weight:600;
+    transition:border-color .14s;outline:none;
+  }
+  .field input:focus,.field textarea:focus,.field select:focus{border-color:var(--violet-soft)}
+  .field input::placeholder,.field textarea::placeholder{color:var(--muted-2);font-weight:500}
+  .field.about textarea{min-height:96px;resize:vertical;line-height:1.45}
+  .field.about label{color:var(--violet);font-weight:800}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+
+  .toggle-line{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:14px 16px;background:var(--surface);border-radius:13px;border:1.5px solid var(--line);
+    margin-bottom:14px;cursor:pointer;
+  }
+  .toggle-line .t-txt{font-weight:700;font-size:14px}
+  .toggle-line .t-sub{font-size:11px;color:var(--muted);font-weight:600;margin-top:2px}
+  .sw{width:46px;height:27px;border-radius:14px;background:var(--line);position:relative;flex:none;transition:background .18s}
+  .sw::after{content:"";position:absolute;top:3px;left:3px;width:21px;height:21px;border-radius:50%;background:#fff;
+    box-shadow:0 1px 4px rgba(0,0,0,.2);transition:left .18s}
+  .sw.on{background:var(--violet)}
+  .sw.on::after{left:22px}
+  .sw.green.on{background:var(--green)}
+
+  .rep-box{
+    background:var(--surface-2);border:1.5px solid var(--line);border-radius:13px;
+    padding:14px;margin-bottom:14px;display:none;
+  }
+  .rep-box.on{display:block;animation:slidein .22s ease}
+  @keyframes slidein{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+  .daysbtn{
+    width:100%;border:1.5px solid var(--violet-soft);background:var(--violet-tint);color:var(--violet-deep);
+    border-radius:12px;padding:12px;font-weight:700;font-size:14px;cursor:pointer;font-family:inherit;
+    display:flex;align-items:center;justify-content:center;gap:8px;
+  }
+  .daysbtn:active{transform:scale(.98)}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+  .chip{background:var(--violet);color:#fff;font-size:12px;font-weight:700;padding:5px 10px;border-radius:9px}
+
+  /* day-time rows */
+  .day-row{display:flex;align-items:center;justify-content:space-between;gap:10px;
+    padding:10px 12px;background:var(--surface);border-radius:13px;margin-bottom:8px;
+    border:1.5px solid var(--line);}
+  .dr-left .dr-date{font-size:14px;font-weight:800;color:var(--ink)}
+  .dr-left .dr-wd{font-size:11px;color:var(--muted);font-weight:600;margin-top:1px}
+  .dr-right{display:flex;align-items:center;gap:8px;flex:none}
+  .dr-time{width:72px;border:1.5px solid var(--line);background:var(--surface-2);border-radius:10px;
+    padding:8px 10px;font-size:14px;font-weight:700;font-family:inherit;color:var(--ink);
+    text-align:center;outline:none;transition:border-color .14s;}
+  .dr-time:focus{border-color:var(--violet-soft)}
+  .dr-time:disabled{color:var(--muted-2);background:var(--bg)}
+  .dr-same{width:32px;height:32px;border:1.5px solid var(--line);border-radius:9px;background:var(--surface);
+    color:var(--muted);font-size:14px;cursor:pointer;display:grid;place-items:center;
+    transition:background .12s,border-color .12s,color .12s;flex:none;}
+  .dr-same.on{background:var(--violet-tint);border-color:var(--violet-soft);color:var(--violet)}
+
+  .savebar{padding:4px 18px 26px}
+  .save{
+    width:100%;border:none;border-radius:15px;padding:16px;font-size:16px;font-weight:800;color:#fff;font-family:inherit;
+    background:linear-gradient(135deg,var(--violet),var(--violet-soft));cursor:pointer;
+    box-shadow:0 8px 22px rgba(124,92,219,.4);display:flex;align-items:center;justify-content:center;gap:9px;
+    transition:transform .12s;
+  }
+  .save:active{transform:scale(.98)}
+  .save.del{background:none;box-shadow:none;color:var(--danger);font-weight:700;font-size:14px;margin-top:10px}
+
+  /* ---------- view modal ---------- */
+  .view-card{padding:6px 18px 20px}
+  .vc-name{font-size:24px;font-weight:800;letter-spacing:-.02em;display:flex;align-items:center;gap:10px}
+  .vc-time{font-size:14px;color:var(--violet);font-weight:700;margin-top:2px}
+  .vc-block{background:var(--surface);border-radius:14px;box-shadow:var(--shadow-soft);padding:4px 16px;margin-top:16px}
+  .vc-item{display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid var(--line)}
+  .vc-item:last-child{border-bottom:none}
+  .vc-item .ic{width:30px;height:30px;border-radius:9px;background:var(--violet-tint);color:var(--violet);
+    display:grid;place-items:center;font-size:14px;flex:none}
+  .vc-item .k{font-size:11px;color:var(--muted);font-weight:700}
+  .vc-item .v{font-size:15px;font-weight:700;margin-top:1px}
+  .vc-item .v a{color:var(--violet);text-decoration:none}
+  .vc-about{background:var(--violet-tint);border-radius:14px;padding:14px 16px;margin-top:16px;
+    font-size:14px;line-height:1.5;font-weight:600;color:var(--violet-deep)}
+  .vc-about .lab{font-size:11px;font-weight:800;color:var(--violet);margin-bottom:6px}
+  .paid-toggle{
+    display:flex;align-items:center;justify-content:space-between;margin-top:16px;
+    padding:15px 18px;border-radius:14px;background:var(--surface);box-shadow:var(--shadow-soft);
+    cursor:pointer;border:1.5px solid var(--line);transition:border-color .15s,background .15s;
+  }
+  .paid-toggle.ispaid{background:var(--green-tint);border-color:var(--green-line)}
+  .paid-toggle .pt-txt{font-weight:800;font-size:15px}
+  .paid-toggle.ispaid .pt-txt{color:var(--green)}
+
+  /* days picker overlay */
+  .dim{position:fixed;inset:0;background:rgba(43,36,68,.4);z-index:80;opacity:0;pointer-events:none;transition:opacity .2s}
+  .dim.on{opacity:1;pointer-events:auto}
+  .picker{
+    position:fixed;left:50%;bottom:0;transform:translate(-50%,100%);z-index:81;width:100%;max-width:520px;
+    background:var(--bg);border-radius:22px 22px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom));
+    transition:transform .26s cubic-bezier(.4,0,.2,1);box-shadow:0 -10px 40px rgba(43,36,68,.2);
+  }
+  .picker.on{transform:translate(-50%,0)}
+  .picker h3{margin:0 4px 4px;font-size:17px;font-weight:800}
+  .picker .psub{margin:0 4px 14px;font-size:12px;color:var(--muted);font-weight:600}
+  .picker .pmonth{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;padding:0 2px}
+  .picker .pmonth .pm-t{font-weight:800;font-size:15px;text-transform:capitalize}
+  .picker .ok{
+    width:100%;margin-top:14px;border:none;border-radius:14px;padding:15px;font-weight:800;font-size:15px;color:#fff;
+    background:linear-gradient(135deg,var(--violet),var(--violet-soft));cursor:pointer;font-family:inherit;
+  }
+  .picker .ok:active{transform:scale(.98)}
+
+  /* toast */
+  .toast{
+    position:fixed;left:50%;bottom:96px;transform:translate(-50%,20px);z-index:200;
+    background:var(--ink);color:#fff;padding:12px 20px;border-radius:13px;font-weight:700;font-size:14px;
+    opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;box-shadow:0 8px 24px rgba(0,0,0,.25);
+  }
+  .toast.on{opacity:1;transform:translate(-50%,0)}
+
+  .empty-note{text-align:center;color:var(--muted-2);font-size:13px;font-weight:600;padding:30px 20px}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <div class="topbar">
+    <div class="brand">
+      <div class="dot">
+        <svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <!-- stem -->
+          <path d="M16 19 Q15 24 15.5 29" stroke="#5A9E6F" stroke-width="1.6" stroke-linecap="round" fill="none"/>
+          <!-- leaf -->
+          <path d="M15.5 24 Q11 22 10 18 Q14 18.5 15.5 24z" fill="#6FB173"/>
+          <!-- 5 petals of violet -->
+          <!-- top petal -->
+          <ellipse cx="16" cy="10.2" rx="3.2" ry="4.5" fill="#7C5CDB" opacity=".92"/>
+          <!-- bottom-left petal -->
+          <ellipse cx="11.5" cy="16.5" rx="3.2" ry="4.5" transform="rotate(-60 11.5 16.5)" fill="#A78BEA" opacity=".92"/>
+          <!-- bottom-right petal -->
+          <ellipse cx="20.5" cy="16.5" rx="3.2" ry="4.5" transform="rotate(60 20.5 16.5)" fill="#A78BEA" opacity=".92"/>
+          <!-- left petal -->
+          <ellipse cx="10.2" cy="12.5" rx="3.2" ry="4.5" transform="rotate(-30 10.2 12.5)" fill="#8B6FE8" opacity=".88"/>
+          <!-- right petal -->
+          <ellipse cx="21.8" cy="12.5" rx="3.2" ry="4.5" transform="rotate(30 21.8 12.5)" fill="#8B6FE8" opacity=".88"/>
+          <!-- center -->
+          <circle cx="16" cy="15" r="2.8" fill="#FFF176"/>
+          <circle cx="16" cy="15" r="1.4" fill="#F9A825"/>
+          <!-- veins on top petal -->
+          <path d="M16 11 Q15.2 13 16 14.8" stroke="#5C3FA3" stroke-width=".5" fill="none" opacity=".5"/>
+          <path d="M16 11 Q16.8 13 16 14.8" stroke="#5C3FA3" stroke-width=".5" fill="none" opacity=".5"/>
+        </svg>
+      </div>
+      <div>
+        <h1>Љуби<span>чица</span></h1>
+        <div class="sub" id="brandsub">расписание занятий Миляны</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="month-head">
+    <div class="month-title"><b id="mName">—</b><span class="yr" id="mYear"></span></div>
+    <div class="nav-btns">
+      <button class="iconbtn" id="prevM">‹</button>
+      <button class="iconbtn" id="nextM">›</button>
+    </div>
+  </div>
+
+  <div class="cal">
+    <div class="weekrow">
+      <span>Пн</span><span>Вт</span><span>Ср</span><span>Чт</span><span>Пт</span><span class="we">Сб</span><span class="we">Вс</span>
+    </div>
+    <div class="grid" id="grid"></div>
+  </div>
+</div>
+
+
+<!-- DAY SCREEN -->
+<div class="screen" id="dayScreen">
+  <div class="scr-head">
+    <button class="back" id="dayBack">‹</button>
+    <div class="ttl" id="dayTitle">—<small id="dayDate"></small></div>
+  </div>
+  <div class="hours" id="hours"></div>
+</div>
+
+<!-- FORM SCREEN -->
+<div class="screen" id="formScreen">
+  <div class="scr-head">
+    <button class="back" id="formBack">‹</button>
+    <div class="ttl" id="formTitle">Новое занятие<small id="formWhen"></small></div>
+  </div>
+  <div class="form">
+    <div class="field"><label>Имя ученика</label><input id="f_name" placeholder="Например, Кристина"></div>
+    <div class="row2">
+      <div class="field"><label>Телефон</label><input id="f_phone" placeholder="+7…" inputmode="tel"></div>
+      <div class="field"><label>Telegram</label><input id="f_tg" placeholder="@username"></div>
+    </div>
+    <div class="row2">
+      <div class="field"><label>Стоимость, ₽</label><input id="f_price" placeholder="1600" inputmode="numeric"></div>
+      <div class="field"><label>Уровень языка</label>
+        <select id="f_level">
+          <option value="">—</option>
+          <option>Шимпанзе</option><option selected>С нуля</option><option>A1</option><option>A2</option>
+          <option>B1</option><option>B2</option><option>C1</option><option>Разговорный</option>
+        </select>
+      </div>
+    </div>
+    <div class="field about"><label>Об ученике</label>
+      <textarea id="f_about" placeholder="Цель, пожелания, на чём остановились в прошлый раз…"></textarea>
+    </div>
+
+    <div class="toggle-line" id="repToggle">
+      <div>
+        <div class="t-txt">Повторяющийся урок</div>
+        <div class="t-sub">создать сразу несколько занятий</div>
+      </div>
+      <div class="sw" id="repSw"></div>
+    </div>
+
+    <div class="rep-box" id="repBox">
+      <button class="daysbtn" id="openDays">📅 Выбрать дни</button>
+      <div id="dayTimeList"></div>
+    </div>
+
+    <div class="toggle-line" id="transferToggle">
+      <div>
+        <div class="t-txt">Перенести занятие</div>
+        <div class="t-sub">переместить на другой день</div>
+      </div>
+      <div class="sw" id="transferSw"></div>
+    </div>
+
+    <div class="rep-box" id="transferBox">
+      <button class="daysbtn" id="openTransferDay">📅 Выбрать день</button>
+      <div id="transferDayRow"></div>
+    </div>
+  </div>
+  <div class="savebar">
+    <button class="save" id="saveBtn">✓ Сохранить занятие</button>
+    <button class="save del" id="delBtn" style="display:none">Удалить занятие</button>
+  </div>
+</div>
+
+<!-- VIEW SCREEN -->
+<div class="screen" id="viewScreen">
+  <div class="scr-head">
+    <button class="back" id="viewBack">‹</button>
+    <div class="ttl">Занятие</div>
+    <button class="pencil" id="editBtn">✎</button>
+  </div>
+  <div class="view-card">
+    <div class="vc-name" id="v_name">—</div>
+    <div class="vc-time" id="v_time"></div>
+
+    <div class="vc-block" id="v_block"></div>
+
+    <div class="vc-about" id="v_aboutWrap" style="display:none">
+      <div class="lab">ОБ УЧЕНИКЕ</div>
+      <div id="v_about"></div>
+    </div>
+
+    <div class="paid-toggle" id="paidToggle">
+      <div class="pt-txt" id="paidTxt">Отметить оплату</div>
+      <div class="sw green" id="paidSw"></div>
+    </div>
+
+    <button class="save del" id="viewDelBtn" style="margin-top:8px;width:100%;padding:14px;border:none;border-radius:14px;background:none;color:var(--danger);font-weight:700;font-size:14px;cursor:pointer;font-family:inherit">Удалить занятие</button>
+  </div>
+</div>
+
+<!-- DAYS PICKER -->
+<div class="dim" id="dim"></div>
+<div class="picker" id="picker">
+  <h3>Выбери дни</h3>
+  <p class="psub">отметь нужные дни, можно листать месяцы</p>
+  <div class="pmonth">
+    <button class="iconbtn" id="pPrev">‹</button>
+    <div class="pm-t" id="pMonth">—</div>
+    <button class="iconbtn" id="pNext">›</button>
+  </div>
+  <div class="weekrow" style="padding:0 2px">
+    <span>Пн</span><span>Вт</span><span>Ср</span><span>Чт</span><span>Пт</span><span class="we">Сб</span><span class="we">Вс</span>
+  </div>
+  <div class="grid" id="pGrid" style="padding:0 2px"></div>
+  <button class="ok" id="daysOk">Готово</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============ Telegram & access ============ */
+const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
+if(tg){ try{ tg.ready(); tg.expand(); tg.setHeaderColor && tg.setHeaderColor('#F4F0FB'); tg.setBackgroundColor && tg.setBackgroundColor('#F4F0FB'); }catch(e){} }
+
+// Кого пускаем (Telegram user id). Замени на реальные id — твой и Миляны.
+// Узнать id: написать @userinfobot. Пустой список = пускаем всех (для отладки).
+const ALLOWED = [/* 123456789, 987654321 */];
+function accessOk(){
+  if(!ALLOWED.length) return true;
+  const u = tg && tg.initDataUnsafe && tg.initDataUnsafe.user;
+  return u && ALLOWED.includes(u.id);
+}
+
+/* ============ storage layer ============ */
+/* Общие данные хранятся на бэкенде (Bothost). Когда API_BASE пуст —
+   приложение работает на localStorage (для теста в браузере без сервера). */
+const API_BASE = "https://bot-1781050360-4346-ruserb.bothost.ru";
+const INIT = (tg && tg.initData) ? tg.initData : "";
+
+function keyToDate(key){ const p=key.split('_'); return `${p[1]}-${p[2]}-${p[3]}`; }
+async function api(path, opts){
+  const r = await fetch(API_BASE+path, Object.assign({}, opts, {
+    headers: Object.assign({'Content-Type':'application/json','X-Init-Data':INIT}, (opts&&opts.headers)||{})
+  }));
+  if(!r.ok) throw new Error('api '+r.status);
+  return r.json();
+}
+const Store = {
+  async get(key){
+    if(API_BASE){ try{ return (await api('/api/day?d='+keyToDate(key))).lessons||[]; }catch(e){ toast('Нет связи с сервером'); return []; } }
+    return safeArr(localStorage.getItem(key));
+  },
+  async set(key,arr){
+    if(API_BASE){ try{ await api('/api/day',{method:'POST',body:JSON.stringify({d:keyToDate(key),lessons:arr})}); return true; }catch(e){ toast('Не удалось сохранить'); return false; } }
+    localStorage.setItem(key,JSON.stringify(arr)); return true;
+  },
+  async keys(){
+    if(API_BASE){ try{ return (await api('/api/keys')).keys||[]; }catch(e){ return []; } }
+    return Object.keys(localStorage).filter(k=>k.startsWith('d_'));
+  }
+};
+function safeArr(s){ try{ const a=JSON.parse(s); return Array.isArray(a)?a:[]; }catch(e){ return []; } }
+
+/* ============ date utils ============ */
+const MONTHS=['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+const MONTHS_GEN=['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
+const WD=['Воскресенье','Понедельник','Вторник','Среда','Четверг','Пятница','Суббота'];
+const pad=n=>String(n).padStart(2,'0');
+const keyOf=(y,m,d)=>`d_${y}_${pad(m+1)}_${pad(d)}`;
+const todayObj=new Date(); const today={y:todayObj.getFullYear(),m:todayObj.getMonth(),d:todayObj.getDate()};
+
+/* ============ state ============ */
+let view={y:today.y,m:today.m};
+let cur={y:0,m:0,d:0};
+let editing=null;
+let monthCache={};
+let pickView={y:today.y,m:today.m};
+let selectedDays=new Set();
+
+/* ============ render month ============ */
+async function loadMonthCache(y,m){
+  monthCache={};
+  const ks=await Store.keys();
+  const prefix=`d_${y}_${pad(m+1)}_`;
+  for(const k of ks){ if(k.startsWith(prefix)){ monthCache[k]=await Store.get(k); } }
+}
+async function renderMonth(){
+  document.getElementById('mName').textContent=MONTHS[view.m];
+  document.getElementById('mYear').textContent=view.y;
+  await loadMonthCache(view.y,view.m);
+  const grid=document.getElementById('grid'); grid.innerHTML='';
+  const first=new Date(view.y,view.m,1);
+  let lead=(first.getDay()+6)%7; // Пн=0
+  const dim=new Date(view.y,view.m+1,0).getDate();
+  for(let i=0;i<lead;i++){const c=document.createElement('div');c.className='cell empty';grid.appendChild(c);}
+  for(let d=1;d<=dim;d++){
+    const c=document.createElement('div'); c.className='cell';
+    const isToday=(view.y===today.y&&view.m===today.m&&d===today.d);
+    if(isToday)c.classList.add('today');
+    const k=keyOf(view.y,view.m,d);
+    const arr=monthCache[k]||[];
+    c.innerHTML=`<span class="num">${d}</span>`;
+    if(arr.length){
+      const allPaid=arr.every(x=>x.paid);
+      const b=document.createElement('div');
+      b.className='badge'+(allPaid?' allpaid':'');
+      b.textContent=arr.length; c.appendChild(b);
+    }
+    c.addEventListener('click',()=>openDay(view.y,view.m,d));
+    grid.appendChild(c);
+  }
+  document.getElementById('app').classList.remove('picking');
+}
+
+/* ============ navigation main month ============ */
+document.getElementById('prevM').onclick=()=>{view.m--;if(view.m<0){view.m=11;view.y--;}renderMonth();haptic('light');};
+document.getElementById('nextM').onclick=()=>{view.m++;if(view.m>11){view.m=0;view.y++;}renderMonth();haptic('light');};
+
+/* ============ DAY screen ============ */
+const dayScreen=document.getElementById('dayScreen');
+async function openDay(y,m,d){
+  cur={y,m,d};
+  const dt=new Date(y,m,d);
+  document.getElementById('dayTitle').firstChild.textContent=WD[dt.getDay()];
+  document.getElementById('dayDate').textContent=`${d} ${MONTHS_GEN[m]} ${y}`;
+  await renderHours();
+  dayScreen.classList.add('on');
+}
+async function renderHours(){
+  const arr=await Store.get(keyOf(cur.y,cur.m,cur.d));
+  const box=document.getElementById('hours'); box.innerHTML='';
+  for(let h=8;h<=22;h++){
+    const row=document.createElement('div'); row.className='hour';
+    const lessons=arr.filter(x=>parseInt(x.time)===h);
+    let slot=`<div class="lab">${pad(h)}:00</div><div class="slot">`;
+    if(lessons.length){
+      lessons.forEach(L=>{ slot+=lessonChip(L); });
+    }else{
+      slot+=`<div class="addhint" data-h="${h}">+ добавить занятие</div>`;
+    }
+    slot+='</div>';
+    row.innerHTML=slot; box.appendChild(row);
+  }
+  box.querySelectorAll('.addhint').forEach(el=>el.onclick=()=>openForm(parseInt(el.dataset.h),null));
+  box.querySelectorAll('.lesson').forEach(el=>el.onclick=()=>openView(el.dataset.id));
+}
+function lessonChip(L){
+  const meta=[L.time, L.price?L.price+' ₽':'', L.level||''].filter(Boolean).join(' · ');
+  return `<div class="lesson ${L.paid?'paid':''}" data-id="${L.id}">
+    <div class="ln-name">${esc(L.name||'Без имени')}
+      ${L.paid?'<span class="paidtag">оплачено</span>':''}
+      ${L.groupId?'<span class="rep">серия</span>':''}
+    </div>
+    <div class="ln-meta">${esc(meta)}</div>
+  </div>`;
+}
+document.getElementById('dayBack').onclick=()=>{ dayScreen.classList.remove('on'); renderMonth(); };
+
+/* ============ FORM ============ */
+const formScreen=document.getElementById('formScreen');
+let formHour=null;
+let pickerMode='rep'; // 'rep' | 'transfer'
+let transferDay=null; // key string or null
+let dayTimes=new Map(); // key -> {time, same}
+
+function openForm(hour,id){
+  editing=id; formHour=hour;
+  document.getElementById('formTitle').firstChild.textContent = id?'Редактирование':'Новое занятие';
+  document.getElementById('formWhen').textContent=`${cur.d} ${MONTHS_GEN[cur.m]}, ${pad(hour)}:00`;
+  ['f_name','f_phone','f_tg','f_price','f_about'].forEach(i=>document.getElementById(i).value='');
+  document.getElementById('f_level').value='С нуля';
+  setSw('repSw',false); document.getElementById('repBox').classList.remove('on');
+  setSw('transferSw',false); document.getElementById('transferBox').classList.remove('on');
+  selectedDays.clear(); dayTimes.clear(); transferDay=null;
+  document.getElementById('dayTimeList').innerHTML='';
+  document.getElementById('transferDayRow').innerHTML='';
+  document.getElementById('delBtn').style.display = id?'block':'none';
+  if(id){
+    Store.get(keyOf(cur.y,cur.m,cur.d)).then(arr=>{
+      const L=arr.find(x=>x.id===id); if(!L)return;
+      document.getElementById('f_name').value=L.name||'';
+      document.getElementById('f_phone').value=L.phone||'';
+      document.getElementById('f_tg').value=L.tg||'';
+      document.getElementById('f_price').value=L.price||'';
+      document.getElementById('f_level').value=L.level||'С нуля';
+      document.getElementById('f_about').value=L.about||'';
+    });
+  }
+  formScreen.classList.add('on');
+}
+document.getElementById('formBack').onclick=()=>formScreen.classList.remove('on');
+
+// toggles
+document.getElementById('repToggle').onclick=()=>{
+  const on=!document.getElementById('repSw').classList.contains('on');
+  setSw('repSw',on); document.getElementById('repBox').classList.toggle('on',on); haptic('light');
+};
+document.getElementById('transferToggle').onclick=()=>{
+  const on=!document.getElementById('transferSw').classList.contains('on');
+  setSw('transferSw',on); document.getElementById('transferBox').classList.toggle('on',on); haptic('light');
+};
+function setSw(id,on){document.getElementById(id).classList.toggle('on',on);}
+
+// helper: auto-colon
+function autoColon(inp){
+  inp.addEventListener('input',function(){
+    let v=this.value.replace(/\D/g,'');
+    if(v.length>=3) v=v.slice(0,2)+':'+v.slice(2,4);
+    this.value=v;
+  });
+}
+
+// render day-time list (repeating)
+function renderDayTimeList(){
+  const box=document.getElementById('dayTimeList'); box.innerHTML='';
+  const arr=[...selectedDays].sort();
+  arr.forEach(k=>{
+    const [_,y,m,d]=k.split('_');
+    const dt=new Date(parseInt(y),parseInt(m)-1,parseInt(d));
+    const st=dayTimes.get(k)||{time:`${pad(formHour)}:00`,same:true};
+    if(!dayTimes.has(k)) dayTimes.set(k,st);
+    const row=document.createElement('div'); row.className='day-row'; row.dataset.key=k;
+    row.innerHTML=`
+      <div class="dr-left">
+        <div class="dr-date">${parseInt(d)} ${MONTHS_GEN[parseInt(m)-1]}</div>
+        <div class="dr-wd">${WD[dt.getDay()]}</div>
+      </div>
+      <div class="dr-right">
+        <input class="dr-time" placeholder="08:00" maxlength="5" inputmode="numeric"
+          value="${st.same?`${pad(formHour)}:00`:st.time}" ${st.same?'disabled':''}>
+        <button class="dr-same${st.same?' on':''}" title="То же время, что и у этого занятия">≈</button>
+      </div>`;
+    const inp=row.querySelector('.dr-time');
+    const btn=row.querySelector('.dr-same');
+    autoColon(inp);
+    inp.addEventListener('change',()=>{ dayTimes.set(k,{time:inp.value,same:false}); });
+    btn.addEventListener('click',()=>{
+      const cur2=dayTimes.get(k)||{same:false};
+      const newSame=!cur2.same;
+      dayTimes.set(k,{time:`${pad(formHour)}:00`,same:newSame});
+      inp.value=`${pad(formHour)}:00`; inp.disabled=newSame;
+      btn.classList.toggle('on',newSame); haptic('light');
+    });
+    box.appendChild(row);
+  });
+  // удаление из списка
+  arr.forEach(k=>{
+    const row=box.querySelector(`[data-key="${k}"]`);
+    if(!row) return;
+    row.querySelector('.dr-date').addEventListener('dblclick',()=>{
+      selectedDays.delete(k); dayTimes.delete(k); renderDayTimeList(); haptic('light');
+    });
+  });
+}
+
+// render transfer day row
+function renderTransferDayRow(){
+  const box=document.getElementById('transferDayRow'); box.innerHTML='';
+  if(!transferDay) return;
+  const [_,y,m,d]=transferDay.split('_');
+  const dt=new Date(parseInt(y),parseInt(m)-1,parseInt(d));
+  const tData=dayTimes.get('transfer')||{time:`${pad(formHour)}:00`,same:true};
+  if(!dayTimes.has('transfer')) dayTimes.set('transfer',tData);
+  box.innerHTML=`
+    <div class="day-row">
+      <div class="dr-left">
+        <div class="dr-date">${parseInt(d)} ${MONTHS_GEN[parseInt(m)-1]}</div>
+        <div class="dr-wd">${WD[dt.getDay()]}</div>
+      </div>
+      <div class="dr-right">
+        <input class="dr-time" id="tr-time" placeholder="08:00" maxlength="5" inputmode="numeric"
+          value="${tData.same?`${pad(formHour)}:00`:tData.time}" ${tData.same?'disabled':''}>
+        <button class="dr-same${tData.same?' on':''}" id="tr-same" title="То же время, что и у этого занятия">≈</button>
+      </div>
+    </div>`;
+  const inp=box.querySelector('#tr-time');
+  const btn=box.querySelector('#tr-same');
+  autoColon(inp);
+  inp.addEventListener('change',()=>{ dayTimes.set('transfer',{time:inp.value,same:false}); });
+  btn.addEventListener('click',()=>{
+    const cur2=dayTimes.get('transfer')||{same:false};
+    const newSame=!cur2.same;
+    dayTimes.set('transfer',{time:`${pad(formHour)}:00`,same:newSame});
+    inp.value=`${pad(formHour)}:00`; inp.disabled=newSame;
+    btn.classList.toggle('on',newSame); haptic('light');
+  });
+}
+
+// ---- picker ----
+const dim=document.getElementById('dim'), picker=document.getElementById('picker');
+document.getElementById('openDays').onclick=()=>{
+  pickerMode='rep'; pickView={y:cur.y,m:cur.m}; renderPicker(); dim.classList.add('on'); picker.classList.add('on');
+};
+document.getElementById('openTransferDay').onclick=()=>{
+  pickerMode='transfer'; pickView={y:cur.y,m:cur.m}; renderPicker(); dim.classList.add('on'); picker.classList.add('on');
+};
+function closePicker(){ dim.classList.remove('on'); picker.classList.remove('on'); }
+dim.onclick=closePicker;
+document.getElementById('daysOk').onclick=()=>{
+  closePicker();
+  if(pickerMode==='rep') renderDayTimeList();
+  else renderTransferDayRow();
+};
+document.getElementById('pPrev').onclick=()=>{pickView.m--;if(pickView.m<0){pickView.m=11;pickView.y--;}renderPicker();};
+document.getElementById('pNext').onclick=()=>{pickView.m++;if(pickView.m>11){pickView.m=0;pickView.y++;}renderPicker();};
+
+async function renderPicker(){
+  document.getElementById('pMonth').textContent=`${MONTHS[pickView.m]} ${pickView.y}`;
+  const pfx=`d_${pickView.y}_${pad(pickView.m+1)}_`;
+  const allKeys=await Store.keys();
+  const pickerCache={};
+  for(const k of allKeys){ if(k.startsWith(pfx)) pickerCache[k]=await Store.get(k); }
+  const g=document.getElementById('pGrid'); g.innerHTML='';
+  const first=new Date(pickView.y,pickView.m,1); let lead=(first.getDay()+6)%7;
+  const dim2=new Date(pickView.y,pickView.m+1,0).getDate();
+  for(let i=0;i<lead;i++){const c=document.createElement('div');c.className='cell empty';g.appendChild(c);}
+  for(let d=1;d<=dim2;d++){
+    const isPast=(pickView.y<today.y)||(pickView.y===today.y&&pickView.m<today.m)||(pickView.y===today.y&&pickView.m===today.m&&d<today.d);
+    const c=document.createElement('div');
+    c.className='cell'+(isPast?' out':'');
+    const k=keyOf(pickView.y,pickView.m,d);
+    c.innerHTML=`<span class="num">${d}</span>`;
+    if(!isPast){
+      const ex=pickerCache[k]||[];
+      if(ex.length){ const b=document.createElement('div'); b.className='badge'; b.textContent=ex.length; c.appendChild(b); }
+      if(pickerMode==='rep'){
+        if(selectedDays.has(k)) c.classList.add('sel');
+        c.onclick=()=>{
+          if(selectedDays.has(k)){selectedDays.delete(k);dayTimes.delete(k);c.classList.remove('sel');}
+          else{selectedDays.add(k);c.classList.add('sel');}
+          haptic('light');
+        };
+      }else{
+        if(transferDay===k) c.classList.add('sel');
+        c.onclick=()=>{
+          g.querySelectorAll('.cell.sel').forEach(el=>el.classList.remove('sel'));
+          if(transferDay===k){ transferDay=null; }
+          else{ transferDay=k; c.classList.add('sel'); }
+          haptic('light');
+        };
+      }
+    }else{
+      c.style.cursor='default';
+    }
+    g.appendChild(c);
+  }
+  picker.classList.add('picking');
+}
+
+// ---- save ----
+document.getElementById('saveBtn').onclick=async()=>{
+  const base={
+    name:val('f_name'), phone:val('f_phone'), tg:val('f_tg'),
+    price:val('f_price'), level:val('f_level'), about:val('f_about'),
+    time:`${pad(formHour)}:00`, paid:false
+  };
+  if(!base.name){ toast('Впишите имя ученика'); return; }
+  const isRep=document.getElementById('repSw').classList.contains('on');
+  const isTransfer=document.getElementById('transferSw').classList.contains('on');
+
+  if(editing){
+    if(isTransfer && transferDay){
+      const oldK=keyOf(cur.y,cur.m,cur.d); let arr=await Store.get(oldK);
+      const L=arr.find(x=>x.id===editing); if(!L){ toast('Занятие не найдено'); return; }
+      arr=arr.filter(x=>x.id!==editing); await Store.set(oldK,arr);
+      const td=dayTimes.get('transfer')||{time:`${pad(formHour)}:00`,same:true};
+      const newTime=td.same?`${pad(formHour)}:00`:td.time;
+      const newArr=await Store.get(transferDay);
+      newArr.push({...L,...base,id:uid(),time:newTime,paid:L.paid||false});
+      await Store.set(transferDay,newArr);
+      toast('Перенесено');
+    }else{
+      const k=keyOf(cur.y,cur.m,cur.d); const arr=await Store.get(k);
+      const i=arr.findIndex(x=>x.id===editing);
+      if(i>=0){ arr[i]={...arr[i],...base}; await Store.set(k,arr); }
+      // если повтор включён — добавляем копии на выбранные дни
+      if(isRep && selectedDays.size){
+        const gid='g'+Date.now();
+        for(const k2 of selectedDays){
+          const dt2=dayTimes.get(k2); const t2=dt2&&!dt2.same?dt2.time:`${pad(formHour)}:00`;
+          const arr2=await Store.get(k2);
+          arr2.push({...base,id:uid(),time:t2,groupId:gid,paid:false});
+          await Store.set(k2,arr2);
+        }
+        toast(`Сохранено + ещё ${selectedDays.size} занятий`);
+      }else{
+        toast('Сохранено');
+      }
+    }
+  }else{
+    if(isRep && selectedDays.size){
+      const gid='g'+Date.now();
+      const allKeys=new Set([keyOf(cur.y,cur.m,cur.d),...selectedDays]);
+      for(const k of allKeys){
+        const dt=dayTimes.get(k); const t=dt&&!dt.same?dt.time:`${pad(formHour)}:00`;
+        const arr=await Store.get(k);
+        arr.push({...base,id:uid(),time:t,groupId:gid});
+        await Store.set(k,arr);
+      }
+      toast(`Создано занятий: ${allKeys.size}`);
+    }else{
+      const k=keyOf(cur.y,cur.m,cur.d); const arr=await Store.get(k);
+      arr.push({...base,id:uid()}); await Store.set(k,arr);
+      toast('Занятие добавлено');
+    }
+  }
+  formScreen.classList.remove('on');
+  await renderHours(); await renderMonth(); haptic('success');
+};
+document.getElementById('delBtn').onclick=async()=>{
+  if(!editing)return;
+  const k=keyOf(cur.y,cur.m,cur.d); let arr=await Store.get(k);
+  arr=arr.filter(x=>x.id!==editing); await Store.set(k,arr);
+  formScreen.classList.remove('on'); await renderHours(); toast('Удалено'); haptic('warning');
+};
+
+/* ============ VIEW ============ */
+const viewScreen=document.getElementById('viewScreen');
+let viewId=null;
+async function openView(id){
+  viewId=id;
+  const arr=await Store.get(keyOf(cur.y,cur.m,cur.d));
+  const L=arr.find(x=>x.id===id); if(!L)return;
+  document.getElementById('v_name').textContent=L.name||'Без имени';
+  document.getElementById('v_time').textContent=`${cur.d} ${MONTHS_GEN[cur.m]} · ${L.time}`+(L.groupId?' · серия':'');
+  const block=document.getElementById('v_block'); block.innerHTML='';
+  const items=[
+    L.phone?{ic:'☎',k:'Телефон',v:`<a href="tel:${esc(L.phone)}">${esc(L.phone)}</a>`}:null,
+    L.tg?{ic:'✈',k:'Telegram',v:`<a href="https://t.me/${esc((L.tg||'').replace('@',''))}">${esc(L.tg)}</a>`}:null,
+    L.price?{ic:'₽',k:'Стоимость',v:esc(L.price)+' ₽'}:null,
+    L.level?{ic:'◐',k:'Уровень',v:esc(L.level)}:null,
+  ].filter(Boolean);
+  if(!items.length){ block.style.display='none'; } else { block.style.display='block';
+    items.forEach(it=>{ block.innerHTML+=`<div class="vc-item"><div class="ic">${it.ic}</div><div><div class="k">${it.k}</div><div class="v">${it.v}</div></div></div>`; });
+  }
+  const aw=document.getElementById('v_aboutWrap');
+  if(L.about){ aw.style.display='block'; document.getElementById('v_about').textContent=L.about; } else aw.style.display='none';
+  const pt=document.getElementById('paidToggle');
+  pt.classList.toggle('ispaid',!!L.paid);
+  setSw('paidSw',!!L.paid);
+  document.getElementById('paidTxt').textContent=L.paid?'Оплачено':'Отметить оплату';
+  viewScreen.classList.add('on');
+}
+document.getElementById('viewBack').onclick=()=>{ viewScreen.classList.remove('on'); renderHours(); };
+document.getElementById('paidToggle').onclick=async()=>{
+  const k=keyOf(cur.y,cur.m,cur.d); const arr=await Store.get(k);
+  const i=arr.findIndex(x=>x.id===viewId); if(i<0)return;
+  arr[i].paid=!arr[i].paid; await Store.set(k,arr);
+  const pt=document.getElementById('paidToggle');
+  pt.classList.toggle('ispaid',arr[i].paid); setSw('paidSw',arr[i].paid);
+  document.getElementById('paidTxt').textContent=arr[i].paid?'Оплачено':'Отметить оплату';
+  haptic('light');
+};
+document.getElementById('editBtn').onclick=async()=>{
+  const arr=await Store.get(keyOf(cur.y,cur.m,cur.d));
+  const L=arr.find(x=>x.id===viewId); if(!L)return;
+  viewScreen.classList.remove('on');
+  openForm(parseInt(L.time),viewId);
+};
+document.getElementById('viewDelBtn').onclick=async()=>{
+  const k=keyOf(cur.y,cur.m,cur.d); let arr=await Store.get(k);
+  arr=arr.filter(x=>x.id!==viewId); await Store.set(k,arr);
+  viewScreen.classList.remove('on'); await renderHours(); await renderMonth(); toast('Удалено'); haptic('warning');
+};
+
+/* ============ helpers ============ */
+function val(id){return document.getElementById(id).value.trim();}
+function uid(){return 'l'+Date.now()+Math.floor(Math.random()*1000);}
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function haptic(t){ try{ if(tg&&tg.HapticFeedback){ if(t==='success'||t==='warning'||t==='error')tg.HapticFeedback.notificationOccurred(t); else tg.HapticFeedback.impactOccurred('light'); } }catch(e){} }
+let toastT;
+function toast(m){ const el=document.getElementById('toast'); el.textContent=m; el.classList.add('on'); clearTimeout(toastT); toastT=setTimeout(()=>el.classList.remove('on'),1800); }
+
+/* ============ boot ============ */
+if(!accessOk()){
+  document.body.innerHTML='<div class="empty-note" style="padding-top:80px">Нет доступа к расписанию.<br>Этот календарь только для преподавателя.</div>';
+}else{
+  renderMonth().then(()=>{
+    // переход сразу в день, если открыли по ссылке из уведомления (?d=YYYY-MM-DD)
+    const qd = new URLSearchParams(location.search).get('d');
+    if(qd && /^\d{4}-\d{2}-\d{2}$/.test(qd)){
+      const [y,m,d]=qd.split('-').map(Number);
+      view={y,m:m-1}; renderMonth(); openDay(y,m-1,d);
+    }
+  });
+}
+</script>
+</body>
+</html>
 
