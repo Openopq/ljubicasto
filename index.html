@@ -539,9 +539,11 @@ let selectedDays=new Set();
 /* ============ render month ============ */
 async function loadMonthCache(y,m){
   monthCache={};
-  const ks=await Store.keys();
-  const prefix=`d_${y}_${pad(m+1)}_`;
-  for(const k of ks){ if(k.startsWith(prefix)){ monthCache[k]=await Store.get(k); } }
+  try{
+    const ks=await Store.keys();
+    const prefix=`d_${y}_${pad(m+1)}_`;
+    for(const k of ks){ if(k.startsWith(prefix)){ monthCache[k]=await Store.get(k); } }
+  }catch(e){ console.error('loadMonthCache error',e); }
 }
 async function renderMonth(){
   document.getElementById('mName').textContent=MONTHS[view.m];
@@ -586,6 +588,7 @@ async function openDay(y,m,d){
   dayScreen.classList.add('on');
 }
 async function renderHours(){
+  try{
   const arr=await Store.get(keyOf(cur.y,cur.m,cur.d));
   const box=document.getElementById('hours'); box.innerHTML='';
   for(let h=8;h<=22;h++){
@@ -602,6 +605,7 @@ async function renderHours(){
   }
   box.querySelectorAll('.addhint').forEach(el=>el.onclick=()=>openForm(parseInt(el.dataset.h),null));
   box.querySelectorAll('.lesson').forEach(el=>el.onclick=()=>openView(el.dataset.id));
+  }catch(e){ console.error('renderHours error',e); }
 }
 function lessonChip(L){
   const meta=[L.time, L.price?L.price+' ₽':'', L.level||''].filter(Boolean).join(' · ');
@@ -946,4 +950,3 @@ if(!accessOk()){
 </script>
 </body>
 </html>
-
