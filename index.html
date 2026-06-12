@@ -461,7 +461,7 @@ if(tg){ try{ tg.ready(); tg.expand(); tg.setHeaderColor && tg.setHeaderColor('#F
 
 // Кого пускаем (Telegram user id). Замени на реальные id — твой и Миляны.
 // Узнать id: написать @userinfobot. Пустой список = пускаем всех (для отладки).
-const ALLOWED = [/* 123456789, 987654321 */];
+const ALLOWED = [7653945813, 6571313515];
 function accessOk(){
   if(!ALLOWED.length) return true;
   const u = tg && tg.initDataUnsafe && tg.initDataUnsafe.user;
@@ -914,7 +914,7 @@ function toast(m){ const el=document.getElementById('toast'); el.textContent=m; 
 
 /* ============ boot ============ */
 if(!accessOk()){
-  document.body.innerHTML='<div class="empty-note" style="padding-top:80px">Нет доступа к расписанию.<br>Этот календарь только для преподавателя.</div>';
+  document.body.innerHTML='<div class="empty-note" style="padding-top:80px">Нет доступа.</div>';
 }else{
   renderMonth().then(()=>{
     // переход сразу в день, если открыли по ссылке из уведомления (?d=YYYY-MM-DD)
