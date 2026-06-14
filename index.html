@@ -327,6 +327,7 @@
   <div class="month-head">
     <div class="month-title"><b id="mName">—</b><span class="yr" id="mYear"></span></div>
     <div class="nav-btns">
+      <button class="iconbtn" id="refreshBtn" title="Обновить">↻</button>
       <button class="iconbtn" id="prevM">‹</button>
       <button class="iconbtn" id="nextM">›</button>
     </div>
@@ -482,19 +483,61 @@ async function apiFetch(path, opts){
   return r.json();
 }
 
+/* ============ cache layer ============ */
+let dataCache = {};        // key (d_YYYY_MM_DD) -> lessons array, for everything ever loaded
+let allKeysCache = null;   // array of all date-keys that have data, or null = not loaded yet
+let loadedMonths = new Set(); // 'YYYY_M' strings fully loaded into dataCache
+
+async function fetchAllKeys(force){
+  if(allKeysCache===null || force){
+    try{ allKeysCache=(await apiFetch('/api/keys')).keys||[]; }
+    catch(e){ allKeysCache=allKeysCache||[]; }
+  }
+  return allKeysCache;
+}
+async function ensureMonthLoaded(y,m,force){
+  const mk=`${y}_${m}`;
+  if(loadedMonths.has(mk) && !force) return;
+  const ks=await fetchAllKeys(force);
+  const prefix=`d_${y}_${pad(m+1)}_`;
+  for(const k of ks){
+    if(k.startsWith(prefix) && (force || !(k in dataCache))){
+      try{ dataCache[k]=(await apiFetch('/api/day?d='+keyToDate(k))).lessons||[]; }
+      catch(e){ dataCache[k]=dataCache[k]||[]; }
+    }
+  }
+  loadedMonths.add(mk);
+}
+function preloadAdjacent(y,m){
+  let py=y,pm=m-1; if(pm<0){pm=11;py--;}
+  let ny=y,nm=m+1; if(nm>11){nm=0;ny++;}
+  ensureMonthLoaded(py,pm);
+  ensureMonthLoaded(ny,nm);
+}
+async function refreshAll(){
+  dataCache={}; allKeysCache=null; loadedMonths.clear();
+}
+
 const Store = {
   async get(key){
-    try{ return (await apiFetch('/api/day?d='+keyToDate(key))).lessons||[]; }
+    if(key in dataCache) return dataCache[key];
+    try{ const arr=(await apiFetch('/api/day?d='+keyToDate(key))).lessons||[]; dataCache[key]=arr; return arr; }
     catch(e){ console.error('get error',e); return []; }
   },
   async set(key, arr){
-    try{ await apiFetch('/api/day',{method:'POST',body:JSON.stringify({d:keyToDate(key),lessons:arr})}); return true; }
+    try{
+      await apiFetch('/api/day',{method:'POST',body:JSON.stringify({d:keyToDate(key),lessons:arr})});
+      dataCache[key]=arr;
+      if(allKeysCache){
+        const has=allKeysCache.includes(key);
+        if(arr.length && !has) allKeysCache.push(key);
+        if(!arr.length && has) allKeysCache=allKeysCache.filter(k=>k!==key);
+      }
+      return true;
+    }
     catch(e){ console.error('set error',e); toast('Не удалось сохранить'); return false; }
   },
-  async keys(){
-    try{ return (await apiFetch('/api/keys')).keys||[]; }
-    catch(e){ return []; }
-  }
+  async keys(){ return fetchAllKeys(); }
 };
 function safeArr(s){ try{ const a=JSON.parse(s); return Array.isArray(a)?a:[]; }catch(e){ return []; } }
 
@@ -510,23 +553,14 @@ const todayObj=new Date(); const today={y:todayObj.getFullYear(),m:todayObj.getM
 let view={y:today.y,m:today.m};
 let cur={y:0,m:0,d:0};
 let editing=null;
-let monthCache={};
 let pickView={y:today.y,m:today.m};
 let selectedDays=new Set();
 
 /* ============ render month ============ */
-async function loadMonthCache(y,m){
-  monthCache={};
-  try{
-    const ks=await Store.keys();
-    const prefix=`d_${y}_${pad(m+1)}_`;
-    for(const k of ks){ if(k.startsWith(prefix)){ monthCache[k]=await Store.get(k); } }
-  }catch(e){ console.error('loadMonthCache error',e); }
-}
 async function renderMonth(){
   document.getElementById('mName').textContent=MONTHS[view.m];
   document.getElementById('mYear').textContent=view.y;
-  await loadMonthCache(view.y,view.m);
+  await ensureMonthLoaded(view.y,view.m);
   const grid=document.getElementById('grid'); grid.innerHTML='';
   const first=new Date(view.y,view.m,1);
   let lead=(first.getDay()+6)%7; // Пн=0
@@ -537,7 +571,7 @@ async function renderMonth(){
     const isToday=(view.y===today.y&&view.m===today.m&&d===today.d);
     if(isToday)c.classList.add('today');
     const k=keyOf(view.y,view.m,d);
-    const arr=monthCache[k]||[];
+    const arr=dataCache[k]||[];
     c.innerHTML=`<span class="num">${d}</span>`;
     if(arr.length){
       const allPaid=arr.every(x=>x.paid);
@@ -549,7 +583,14 @@ async function renderMonth(){
     grid.appendChild(c);
   }
   document.getElementById('app').classList.remove('picking');
+  preloadAdjacent(view.y,view.m);
 }
+
+document.getElementById('refreshBtn').onclick=async()=>{
+  await refreshAll();
+  await renderMonth();
+  toast('Обновлено'); haptic('light');
+};
 
 /* ============ navigation main month ============ */
 document.getElementById('prevM').onclick=()=>{view.m--;if(view.m<0){view.m=11;view.y--;}renderMonth();haptic('light');};
@@ -747,10 +788,7 @@ document.getElementById('pNext').onclick=()=>{pickView.m++;if(pickView.m>11){pic
 
 async function renderPicker(){
   document.getElementById('pMonth').textContent=`${MONTHS[pickView.m]} ${pickView.y}`;
-  const pfx=`d_${pickView.y}_${pad(pickView.m+1)}_`;
-  const allKeys=await Store.keys();
-  const pickerCache={};
-  for(const k of allKeys){ if(k.startsWith(pfx)) pickerCache[k]=await Store.get(k); }
+  await ensureMonthLoaded(pickView.y,pickView.m);
   const g=document.getElementById('pGrid'); g.innerHTML='';
   const first=new Date(pickView.y,pickView.m,1); let lead=(first.getDay()+6)%7;
   const dim2=new Date(pickView.y,pickView.m+1,0).getDate();
@@ -762,7 +800,7 @@ async function renderPicker(){
     const k=keyOf(pickView.y,pickView.m,d);
     c.innerHTML=`<span class="num">${d}</span>`;
     if(!isPast){
-      const ex=pickerCache[k]||[];
+      const ex=dataCache[k]||[];
       if(ex.length){ const b=document.createElement('div'); b.className='badge'; b.textContent=ex.length; c.appendChild(b); }
       if(pickerMode==='rep'){
         if(selectedDays.has(k)) c.classList.add('sel');
