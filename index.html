@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Љубичица</title>
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script type="text/javascript" src="https://gc.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=xWdBMZTVB0nSCNLjJOP_knGrC4hYaiyeLS8mhw8hHnWOZH5X98jgZt0mtCEgWpwVsZPLTKDdmXPKww-2KHKl17PoJKKstFUTB-Rqr9Wqfw03wK2BpMKq4I6sLtGX6sjkzFfByk8iyFEcFD11Ur3nKCSZ7bI1kZeCy-pdXs6jS0-FNrYT3HlceBU-hLhACEh--WnrFGPH3F2SLprFE1fVgAb3vsqgRtluBmhr-hoLiIBfWVdybw8kGIXf01FN4VrRSw2d2509IlWFD7aZkwrRHNW5Q0uQwsW9PkG5ZRDq_fYI2MEdqUTkwwTGs0lmGir_virKtkzWlI2MNBocHU0E0iEEmmDBjEAJGc5lbFbNoWgXbYg_lsmznQRRuGNKhM-1fECmIgFlxR3Aiimcv0cmfc7Z7TGuGJKDXjnxvlr-yO8pSALZj-qIw7ANJkHTQ-ezDkfE2H783cTqKTnC8vcutWPmxkGYg0vtHNR67Zk8f5YYgU51fw1NV6NV_Cp-tAdYKA1YI0IudXhyM1pQvXW718dqSOf_m2xUBeW4bAI1V1DL-J0VrOXfQo_mM1Wn4yYMJd85fxne1ZdfsvGF6XqGzG3Te66kpb3eD4Mt_FSHNn_aGLQ-CKmvmBZP3dipAVYChjXnzPzGjLY7CG1FXmzNxQ" charset="UTF-8"></script><script src="https://telegram.org/js/telegram-web-app.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -356,6 +356,7 @@
     width:48px;height:48px;border-radius:50%;flex:none;display:grid;place-items:center;cursor:pointer;
     color:#fff;font-weight:800;font-size:19px;box-shadow:var(--shadow-soft);position:relative;
   }
+  .avatar-pick,.avatar,.swatches,#colorDim,#colorPicker{display:none !important}
   .avatar-pick::after{content:"▾";position:absolute;right:-2px;bottom:-2px;width:16px;height:16px;
     background:var(--surface);border-radius:50%;color:var(--muted);font-size:9px;display:grid;place-items:center;
     box-shadow:0 1px 3px rgba(0,0,0,.2)}
@@ -369,11 +370,13 @@
 
   /* trial pill in assign + trial tag in view */
   .trial-pill{
-    border:1.5px solid var(--line);border-radius:10px;background:var(--surface);color:var(--muted);
-    font-size:12px;font-weight:800;padding:8px 12px;cursor:pointer;white-space:nowrap;
-    transition:all .12s;font-family:inherit;
+    border:1.5px solid var(--line);border-radius:9px;background:var(--surface);color:var(--muted);
+    font-size:11px;font-weight:800;padding:6px 8px;cursor:pointer;white-space:nowrap;
+    transition:all .12s;font-family:inherit;flex:none;
   }
   .trial-pill.on{background:#FFF3D6;border-color:#F2D178;color:#B7791F}
+  .trial-row{margin-top:8px}
+  .trial-row .trial-pill{width:auto}
   .vc-trial{
     margin-top:16px;padding:15px 18px;border-radius:14px;background:#FFF3D6;border:1.5px solid #F2D178;
     color:#B7791F;font-weight:800;font-size:15px;display:flex;align-items:center;gap:9px;
@@ -431,6 +434,13 @@
   .stat-box .sb-num{font-size:24px;font-weight:800;letter-spacing:-.02em;color:var(--violet-deep)}
   .stat-box .sb-lab{font-size:12px;font-weight:700;color:var(--muted);margin-top:3px}
   .stat-box.wide{grid-column:1/3}
+  .stu-stat-row{display:flex;align-items:center;gap:10px}
+  .stu-stat-row.archived .v{color:var(--muted-2)}
+  .restore-btn{
+    border:1.5px solid var(--violet-soft);background:var(--violet-tint);color:var(--violet-deep);
+    font-size:12px;font-weight:800;padding:6px 11px;border-radius:9px;cursor:pointer;font-family:inherit;flex:none;
+  }
+  .restore-btn:active{transform:scale(.95)}
   .stats-panel{display:grid;grid-template-rows:0fr;transition:grid-template-rows .28s ease;overflow:hidden}
   .stats-panel.open{grid-template-rows:1fr}
   .stats-panel-inner{overflow:hidden;min-height:0;padding:2px 16px 14px}
@@ -732,6 +742,8 @@ const INIT = (tg && tg.initData) ? tg.initData : "";
 
 function keyToDate(key){ const p=key.split('_'); return `${p[1]}-${p[2]}-${p[3]}`; }
 
+
+
 async function apiFetch(path, opts){
   const r = await fetch(API_BASE+path, Object.assign({}, opts, {
     headers: Object.assign({'Content-Type':'application/json','X-Init-Data':INIT}, (opts&&opts.headers)||{})
@@ -799,9 +811,9 @@ const Store = {
 function safeArr(s){ try{ const a=JSON.parse(s); return Array.isArray(a)?a:[]; }catch(e){ return []; } }
 
 /* ============ students store ============ */
-const PALETTE=['#E5687E','#EC9A4D','#E8C84B','#D4A82C','#5C93E8','#6B7BD6','#7C5CDB',
-  '#A86BD8','#9B6BC4','#D866B0','#C77DB0','#E06A7A','#C98A5A','#D98C6A','#B5733E',
-  '#8A6FE0','#CE5C8A','#E89A3C','#B98AD4','#7A6BC9'];
+const PALETTE=[];
+function usedColors(){ return new Set(); }
+function pickFreeColor(){ return ''; }
 let studentsCache=null;
 async function loadStudents(force){
   if(studentsCache===null || force){
@@ -823,11 +835,17 @@ async function saveStudent(s){
 async function deleteStudentApi(id){
   try{
     await apiFetch('/api/students/delete',{method:'POST',body:JSON.stringify({id})});
-    if(studentsCache) studentsCache=studentsCache.filter(x=>x.id!==id);
+    if(studentsCache){ const s=studentsCache.find(x=>x.id===id); if(s) s.archived=1; }
     return true;
   }catch(e){ console.error('deleteStudent',e); toast('Не удалось удалить'); return false; }
 }
 function studentById(id){ return (studentsCache||[]).find(x=>x.id===id)||null; }
+let historyMode=false;
+async function loadHistoryMode(){
+  try{ historyMode=(await apiFetch('/api/history')).history===true; }
+  catch(e){ historyMode=false; }
+  return historyMode;
+}
 function initials(name){
   const p=(name||'').trim().split(/\s+/);
   if(!p[0]) return '?';
@@ -867,36 +885,20 @@ async function renderMonth(){
     const arr=dataCache[k]||[];
     c.innerHTML=`<span class="num">${d}</span>`;
     if(arr.length){
-      const isPastLesson=(L)=>{
-        const hh=parseInt((L.time||'0').split(':')[0])||0, mm=parseInt((L.time||'0').split(':')[1])||0;
-        const end=new Date(view.y,view.m,d,hh,mm); end.setMinutes(end.getMinutes()+65);
-        return end<=new Date();
+      const isClosed=(L)=>{
+        if(L.paid) return true;
+        if(L.trial){ // состоявшийся пробный = закрыт
+          const hh=parseInt((L.time||'0').split(':')[0])||0, mm=parseInt((L.time||'0').split(':')[1])||0;
+          const end=new Date(view.y,view.m,d,hh,mm); end.setMinutes(end.getMinutes()+65);
+          return end<=new Date();
+        }
+        return false;
       };
-      const pile=document.createElement('div'); pile.className='pile';
-      if(arr.length>=5){
-        // 5+ занятий — один фиолетовый кружок с общим числом
-        const dot=document.createElement('div'); dot.className='pd';
-        dot.style.background='var(--violet)';
-        dot.textContent=arr.length;
-        pile.appendChild(dot);
-      }else{
-        const byTime=(a,b)=>(a.time||'').localeCompare(b.time||'');
-        const active=arr.filter(x=>!isPastLesson(x)).sort(byTime);   // ближайший первым
-        const past=arr.filter(x=>isPastLesson(x)).sort(byTime);      // прошедшие в конец
-        const ordered=[...active,...past];
-        // передний (с цифрой актуальных) рисуем последним, чтоб был сверху-справа
-        const extras=ordered.slice(1).reverse();
-        extras.forEach(L=>{
-          const dot=document.createElement('div'); dot.className='pd'+(isPastLesson(L)?' past':'');
-          dot.style.background=lessonColor(L);
-          pile.appendChild(dot);
-        });
-        const front=document.createElement('div'); front.className='pd'+(isPastLesson(ordered[0])?' past':'');
-        front.style.background=lessonColor(ordered[0]);
-        if(active.length) front.textContent=active.length; // цифра только актуальных
-        pile.appendChild(front);
-      }
-      c.appendChild(pile);
+      const allClosed=arr.every(isClosed);
+      const b=document.createElement('div');
+      b.className='badge'+(allClosed?' allpaid':'');
+      b.textContent=arr.length;
+      c.appendChild(b);
     }
     c.addEventListener('click',()=>openDay(view.y,view.m,d));
     grid.appendChild(c);
@@ -907,20 +909,15 @@ async function renderMonth(){
   refreshUnpaid();
 }
 
-function lessonColor(L){
-  if(L.studentId){ const s=studentById(L.studentId); if(s&&s.color) return s.color; }
-  if(L.color) return L.color;
-  return 'var(--violet)';
-}
+function lessonColor(L){ return 'var(--violet)'; }
 
 /* ============ students list ============ */
 async function renderStudents(){
   await loadStudents();
   const box=document.getElementById('stuList'); box.innerHTML='';
-  (studentsCache||[]).forEach(s=>{
+  (studentsCache||[]).filter(s=>!s.archived).forEach(s=>{
     const card=document.createElement('div'); card.className='stu-card';
     card.innerHTML=`
-      <div class="avatar" style="background:${s.color||'var(--violet)'}">${esc(initials(s.name))}</div>
       <div>
         <div class="sc-name">${esc(s.name||'Без имени')}</div>
         <div class="sc-sub">${esc([s.level,s.price?s.price+' ₽':''].filter(Boolean).join(' · ')||'нажми, чтобы открыть')}</div>
@@ -956,13 +953,10 @@ async function renderHours(){
   const box=document.getElementById('hours'); box.innerHTML='';
   for(let h=8;h<=22;h++){
     const row=document.createElement('div'); row.className='hour';
-    const lessons=arr.filter(x=>parseInt(x.time)===h);
+    const lessons=arr.filter(x=>parseInt(x.time)===h).sort((a,b)=>(a.time||'').localeCompare(b.time||''));
     let slot=`<div class="lab">${pad(h)}:00</div><div class="slot">`;
-    if(lessons.length){
-      lessons.forEach(L=>{ slot+=lessonChip(L); });
-    }else{
-      slot+=`<div class="addhint" data-h="${h}">+ добавить занятие</div>`;
-    }
+    lessons.forEach(L=>{ slot+=lessonChip(L); });
+    slot+=`<div class="addhint" data-h="${h}">+ добавить занятие</div>`;
     slot+='</div>';
     row.innerHTML=slot; box.appendChild(row);
   }
@@ -972,16 +966,22 @@ async function renderHours(){
 }
 function lessonChip(L){
   const price = L.trial ? 'Пробный' : (L.price?L.price+' ₽':'');
-  const meta=[L.time, price, L.level||''].filter(Boolean).join(' · ');
-  const col=lessonColor(L);
-  const accent = col==='var(--violet)' ? '' : `style="--accent:${col}"`;
-  return `<div class="lesson ${L.paid?'paid':''} ${L.trial?'trial':''}" data-id="${L.id}" ${accent}>
+  // длительность: у привязанных — из профиля, пробный — 30 мин, иначе 60
+  const s = L.studentId?studentById(L.studentId):null;
+  let dur = L.trial ? 30 : parseInt((s&&s.duration)|| (L.duration) || 60) || 60;
+  const timeRange = L.time ? `${L.time}–${addMinutes(L.time,dur)}` : '';
+  const meta=[timeRange, price, L.level||''].filter(Boolean).join(' · ');
+  return `<div class="lesson ${L.paid?'paid':''} ${L.trial?'trial':''}" data-id="${L.id}">
     <div class="ln-name">${esc(L.name||'Без имени')}
       ${L.trial?'<span class="paidtag" style="color:#B7791F;border-color:#F2D178;background:#FFF3D6">пробный</span>':(L.paid?'<span class="paidtag">оплачено</span>':'')}
-      ${L.groupId?'<span class="rep">серия</span>':''}
     </div>
     <div class="ln-meta">${esc(meta)}</div>
   </div>`;
+}
+function addMinutes(hm,mins){
+  const [h,m]=hm.split(':').map(Number);
+  const t=new Date(2000,0,1,h,m); t.setMinutes(t.getMinutes()+mins);
+  return `${pad(t.getHours())}:${pad(t.getMinutes())}`;
 }
 document.getElementById('dayBack').onclick=()=>{ dayScreen.classList.remove('on'); renderMonth(); };
 
@@ -1007,11 +1007,7 @@ function fAddContact(value){
 function fUpdateAddBtn(){
   document.getElementById('f_addContact').style.display = document.getElementById('f_contactsBox').children.length>=5?'none':'inline-flex';
 }
-function fApplyAvatar(){
-  const av=document.getElementById('f_avatarPick');
-  av.style.background=formColorL||'var(--violet)';
-  av.textContent=initials(document.getElementById('f_name').value)||'A';
-}
+function fApplyAvatar(){ /* цвета убраны */ }
 
 async function openForm(hour,id){
   editing=id; formHour=hour;
@@ -1042,7 +1038,7 @@ async function openForm(hour,id){
       (s.contacts||'').split('|').filter(Boolean).forEach(ct=>cs.push({ic:ct.startsWith('@')?'✈':'◆',k:'Контакт',v:esc(ct)}));
       if(s.price) cs.push({ic:'₽',k:'Стоимость',v:esc(s.price)+' ₽'});
       if(s.level) cs.push({ic:'◐',k:'Уровень',v:esc(s.level)});
-      linkedBox.innerHTML=`<div class="vc-item"><div class="ic" style="background:${s.color};color:#fff">${esc(initials(s.name))}</div>`+
+      linkedBox.innerHTML=`<div class="vc-item"><div class="ic">👤</div>`+
         `<div><div class="k">Ученик</div><div class="v">${esc(s.name)}</div></div></div>`+
         cs.map(it=>`<div class="vc-item"><div class="ic">${it.ic}</div><div><div class="k">${it.k}</div><div class="v">${it.v}</div></div></div>`).join('')+
         `<div style="padding:10px 0 4px"><button class="daysbtn" id="f_openProf">Открыть профиль</button></div>`;
@@ -1080,21 +1076,8 @@ document.getElementById('formBack').onclick=()=>formScreen.classList.remove('on'
 document.getElementById('f_name').addEventListener('input',fApplyAvatar);
 document.getElementById('f_addContact').onclick=()=>fAddContact('');
 
-// lesson-form colour picker (reuse colorPicker sheet)
-document.getElementById('f_avatarPick').onclick=()=>{
-  if(formLinkedStudent) return; // linked: colour follows profile
-  colorPickerTarget='lesson';
-  const sw=document.getElementById('swatches'); sw.innerHTML='';
-  const used=usedColors(null);
-  PALETTE.forEach(col=>{
-    const el=document.createElement('div');
-    el.className='swatch'+(col===formColorL?' sel':'')+(used.has(col)&&col!==formColorL?' taken':'');
-    el.style.background=col;
-    el.onclick=()=>{ formColorL=col; fApplyAvatar(); closeColor(); };
-    sw.appendChild(el);
-  });
-  colorDim.classList.add('on'); colorPicker.classList.add('on');
-};
+// цвета убраны — выбор цвета отключён
+document.getElementById('f_avatarPick').onclick=()=>{};
 
 // toggles
 document.getElementById('transferToggle').onclick=()=>{
@@ -1173,18 +1156,19 @@ async function renderPicker(){
   for(let i=0;i<lead;i++){const c=document.createElement('div');c.className='cell empty';g.appendChild(c);}
   for(let d=1;d<=dim2;d++){
     const isPast=(pickView.y<today.y)||(pickView.y===today.y&&pickView.m<today.m)||(pickView.y===today.y&&pickView.m===today.m&&d<today.d);
+    // в режиме истории прошлое доступно для назначения
+    const allowPast = (pickerMode==='assign' && historyMode);
+    const blocked = isPast && !allowPast;
     const c=document.createElement('div');
     c.className='cell'+(isPast?' out':'');
     const k=keyOf(pickView.y,pickView.m,d);
     c.innerHTML=`<span class="num">${d}</span>`;
-    if(!isPast){
-      const ex=dataCache[k]||[];
-      if(ex.length){
-        const sorted=[...ex].sort((a,b)=>(a.time||'').localeCompare(b.time||''));
-        const b=document.createElement('div'); b.className='badge'; b.textContent=ex.length;
-        b.style.background=lessonColor(sorted[0]);
-        c.appendChild(b);
-      }
+    const ex=dataCache[k]||[];
+    if(ex.length && !blocked){
+      const b=document.createElement('div'); b.className='badge'; b.textContent=ex.length;
+      c.appendChild(b);
+    }
+    if(!blocked){
       if(pickerMode==='assign'){
         if(assignDays.has(k)) c.classList.add('sel');
         c.onclick=()=>{
@@ -1344,20 +1328,6 @@ let editingStudent=null;
 let formColor=null;
 let formDuration='60';
 
-function usedColors(exceptId){
-  return new Set((studentsCache||[]).filter(s=>s.id!==exceptId&&s.color).map(s=>s.color));
-}
-function pickFreeColor(){
-  const used=usedColors(null);
-  const free=PALETTE.filter(c=>!used.has(c));
-  if(free.length) return free[Math.floor(Math.random()*free.length)];
-  return PALETTE[Math.floor(Math.random()*PALETTE.length)];
-}
-function applyAvatar(){
-  const av=document.getElementById('avatarPick');
-  av.style.background=formColor||'var(--violet)';
-  av.textContent=initials(document.getElementById('s_name').value)||'A';
-}
 function addContactField(value){
   const box=document.getElementById('contactsBox');
   if(box.children.length>=5) return;
@@ -1428,7 +1398,9 @@ document.getElementById('stuSaveBtn').onclick=async()=>{
 /* ---- color picker ---- */
 const colorDim=document.getElementById('colorDim'), colorPicker=document.getElementById('colorPicker');
 let colorPickerTarget='student';
-document.getElementById('avatarPick').onclick=()=>{
+function applyAvatar(){ /* цвета убраны */ }
+document.getElementById('avatarPick').onclick=()=>{};
+function _disabledStudentColorPicker(){
   colorPickerTarget='student';
   const sw=document.getElementById('swatches'); sw.innerHTML='';
   const used=usedColors(editingStudent);
@@ -1449,9 +1421,8 @@ const stuProfScreen=document.getElementById('stuProfScreen');
 let profId=null;
 async function openProfile(id){
   await loadStudents();
+  await loadHistoryMode();
   profId=id; const s=studentById(id); if(!s)return;
-  document.getElementById('p_avatar').style.background=s.color||'var(--violet)';
-  document.getElementById('p_avatar').textContent=initials(s.name);
   document.getElementById('p_nameTxt').textContent=s.name||'Без имени';
   document.getElementById('p_sub').textContent=[s.level, s.duration?s.duration+' мин':''].filter(Boolean).join(' · ');
   const block=document.getElementById('p_block'); block.innerHTML='';
@@ -1530,13 +1501,13 @@ async function renderAssignList(){
   const box=document.getElementById('assignDayList'); box.innerHTML='';
   const arr=[...assignDays].sort();
   const s=studentById(profId);
-  const trialAvailable = s && !s.trialUsed;
+  const trialAvailable = s && (!s.trialUsed || historyMode);
   const pastTimes = await studentTimes();
   arr.forEach((k,idx)=>{
     const [_,y,m,d]=k.split('_');
     const dt=new Date(parseInt(y),parseInt(m)-1,parseInt(d));
     if(!assignTimes.has(k)) assignTimes.set(k,'12:00');
-    const showTrial = trialAvailable && idx===0;
+    const showTrial = trialAvailable && (historyMode || idx===0);
     const row=document.createElement('div'); row.className='assign-block'; row.dataset.key=k;
     row.innerHTML=`
       <div class="day-row" style="margin-bottom:0">
@@ -1547,15 +1518,22 @@ async function renderAssignList(){
         <div class="dr-right">
           <input class="dr-time" placeholder="08:00" maxlength="5" inputmode="numeric" value="${esc(assignTimes.get(k))}">
           ${pastTimes.length?`<button class="dr-same time-mem" title="Прошлые времена">🕑</button>`:''}
-          ${showTrial?`<button class="trial-pill${assignTrial.has(k)?' on':''}">Пробный</button>`:''}
         </div>
       </div>
+      ${showTrial?`<div class="trial-row"><button class="trial-pill${assignTrial.has(k)?' on':''}">🌱 Пробный урок</button></div>`:''}
       <button class="note-btn${assignNoteOpen.has(k)?' on':''}">✒ Детали урока</button>
       <div class="note-box" style="display:${assignNoteOpen.has(k)?'block':'none'}">
         <textarea placeholder="Что по этому уроку…" autocomplete="off">${esc(assignNotes.get(k)||'')}</textarea>
       </div>`;
     const inp=row.querySelector('.dr-time'); autoColon(inp);
-    inp.addEventListener('change',()=>assignTimes.set(k,inp.value));
+    inp.addEventListener('change',()=>{
+      assignTimes.set(k,inp.value);
+      // подсказка, если на этот день уже есть занятие в это же время
+      const existing=dataCache[k]||[];
+      if(existing.some(L=>L.time===inp.value)){
+        toast('⚠ В это время уже есть занятие');
+      }
+    });
     const tp=row.querySelector('.trial-pill');
     if(tp) tp.onclick=()=>{ if(assignTrial.has(k))assignTrial.delete(k); else assignTrial.add(k); tp.classList.toggle('on'); haptic('light'); };
     const tm=row.querySelector('.time-mem');
@@ -1578,11 +1556,12 @@ async function renderAssignList(){
 }
 
 function showTimeMem(k,times,inp){
-  if(!times.length){ toast('Нет прошлых времён'); return; }
-  // simple inline dropdown under the input
   let menu=document.getElementById('timeMemMenu');
-  if(menu) menu.remove();
+  // повторный клик по той же кнопке — закрыть
+  if(menu){ const sameInput = menu._forInput===inp; menu.remove(); if(sameInput) return; }
+  if(!times.length){ toast('Нет прошлых времён'); return; }
   menu=document.createElement('div'); menu.id='timeMemMenu'; menu.className='time-chips';
+  menu._forInput=inp;
   menu.style.cssText='position:fixed;z-index:120;background:var(--surface);box-shadow:var(--shadow);border-radius:12px;padding:10px;max-width:240px';
   times.forEach(t=>{
     const ch=document.createElement('div'); ch.className='time-chip'; ch.textContent=t;
@@ -1592,7 +1571,10 @@ function showTimeMem(k,times,inp){
   document.body.appendChild(menu);
   const r=inp.getBoundingClientRect();
   menu.style.top=(r.bottom+6)+'px'; menu.style.left=Math.max(10,r.left-80)+'px';
-  setTimeout(()=>document.addEventListener('click',function h(e){ if(!menu.contains(e.target)){menu.remove();document.removeEventListener('click',h);} }),0);
+  setTimeout(()=>document.addEventListener('click',function h(e){
+    const btn=e.target.closest && e.target.closest('.time-mem');
+    if(!menu.contains(e.target) && !btn){menu.remove();document.removeEventListener('click',h);}
+  }),0);
 }
 
 async function saveAssigned(){
@@ -1649,7 +1631,16 @@ async function refreshUnpaid(){
   else cnt.style.display='none';
 }
 async function openUnpaid(){
-  await loadStudents();
+    // сбрасываем панель статистики без анимации
+  const statsPanelReset=document.getElementById('statsPanel');
+  if(statsPanelReset){
+    statsPanelReset.style.transition='none';
+    statsPanelReset.classList.remove('open');
+    statsPanelReset.offsetHeight;
+    statsPanelReset.style.transition='';
+  }
+
+await loadStudents();
   const list=await computeUnpaid();
   let scr=document.getElementById('unpaidScreen');
   if(!scr){
@@ -1693,6 +1684,13 @@ async function openUnpaid(){
   });
   // даём браузеру кадр, чтобы начальное состояние применилось до анимации (иначе первый раз вылетает рывком)
   requestAnimationFrame(()=>requestAnimationFrame(()=>scr.classList.add('on')));
+  // если панель статистики была оставлена открытой с прошлого раза — пересчитываем,
+  // чтобы цифры не оставались устаревшими после добавления/удаления учеников
+  const statsPanel=document.getElementById('statsPanel');
+  if(statsPanel && statsPanel.classList.contains('open')){
+    const st=await gatherStats();
+    renderStatBoxes(st);
+  }
 }
 
 /* ============ CONFIRM DIALOG ============ */
@@ -1735,7 +1733,7 @@ async function gatherStats(){
       const hh=parseInt((L.time||'0').split(':')[0])||0, mm=parseInt((L.time||'0').split(':')[1])||0;
       const end=new Date(parseInt(y),parseInt(m)-1,parseInt(d),hh,mm); end.setMinutes(end.getMinutes()+65);
       const rec={L,y:+y,m:+m,d:+d};
-      if(end<=now) doneList.push(rec); else { plannedList.push(rec); if(L.studentId) activeStudents.add(L.studentId); }
+      if(end<=now) doneList.push(rec); else { plannedList.push(rec); const stu=L.studentId?studentById(L.studentId):null; if(stu && !stu.archived) activeStudents.add(L.studentId); }
       if(L.paid && L.price && /\d/.test(L.price)) paidSums.push({n:parseInt(L.price.replace(/\D/g,''))||0, rec});
     });
   }
@@ -1747,8 +1745,6 @@ async function gatherStats(){
 }
 
 function nameOf(L){ const s=L.studentId?studentById(L.studentId):null; return s?s.name:(L.name||'Занятие'); }
-function colorOf(L){ const s=L.studentId?studentById(L.studentId):null; return s?s.color:lessonColor(L); }
-
 function renderStatBoxes(st){
   const boxes=document.getElementById('statsBoxes');
   boxes.innerHTML='';
@@ -1766,20 +1762,33 @@ function renderStatBoxes(st){
 }
 
 function rowHtml(L,extra){
-  return `<div class="vc-item"><div class="ic" style="background:${colorOf(L)};color:#fff">${esc(initials(nameOf(L)))}</div>`+
-    `<div><div class="v">${esc(nameOf(L))}</div><div class="k">${extra||''}</div></div></div>`;
+  return `<div class="vc-item"><div style="flex:1"><div class="v">${esc(nameOf(L))}</div><div class="k">${extra||''}</div></div></div>`;
 }
 function openStatDetail(id,st){
   const t=document.getElementById('statSheetTitle'), b=document.getElementById('statSheetBody');
   if(id==='students'){
     t.textContent='Ученики';
-    b.innerHTML=st.students.map(s=>{
-      const done=st.doneList.filter(x=>x.L.studentId===s.id).length;
-      const pl=st.plannedList.filter(x=>x.L.studentId===s.id).length;
-      const act=st.activeStudents.has(s.id)?' · активный':'';
-      return `<div class="vc-item"><div class="ic" style="background:${s.color};color:#fff">${esc(initials(s.name))}</div>`+
-        `<div><div class="v">${esc(s.name)}</div><div class="k">проведено ${done} · запланировано ${pl}${act}</div></div></div>`;
-    }).join('')||'<div class="empty-note">Нет учеников.</div>';
+    const active=st.students.filter(s=>!s.archived);
+    const archived=st.students.filter(s=>s.archived);
+    const rowS=(s,arch)=>`<div class="vc-item stu-stat-row${arch?' archived':''}" data-sid="${s.id}">`+
+      `<div style="flex:1"><div class="v">${esc(s.name)}</div></div>`+
+      (arch?`<button class="restore-btn" data-restore="${s.id}">Восстановить</button>`:'')+
+      `</div>`;
+    const html=active.map(s=>rowS(s,false)).join('')+archived.map(s=>rowS(s,true)).join('');
+    b.innerHTML=html||'<div class="empty-note">Нет учеников.</div>';
+    b.querySelectorAll('[data-restore]').forEach(btn=>{
+      btn.onclick=async(e)=>{
+        e.stopPropagation();
+        const sid=btn.dataset.restore; const s=studentById(sid); if(!s)return;
+        s.archived=0;
+        const ok=await saveStudent(s);
+        console.log('[restore]', sid, 'saved:', ok, 'archived now:', s.archived, 'cache entry:', studentById(sid));
+        haptic('success'); toast('Ученик восстановлен');
+        await renderStudents();
+        console.log('[restore] список Ученики после renderStudents:', (studentsCache||[]).filter(x=>!x.archived).map(x=>x.name));
+        const fresh=await gatherStats(); openStatDetail('students',fresh); renderStatBoxes(fresh);
+      };
+    });
   }else if(id==='done'){
     t.textContent='Проведённые занятия';
     b.innerHTML=st.doneList.map(x=>rowHtml(x.L,`${x.d} ${MONTHS_GEN[x.m-1]} · ${x.L.time||''}`)).join('')||'<div class="empty-note">Пока нет.</div>';
