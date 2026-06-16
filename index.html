@@ -424,6 +424,12 @@
     padding:10px 12px;font-size:14px;font-family:inherit;color:var(--ink);min-height:64px;resize:vertical;outline:none}
   .note-box textarea:focus{border-color:var(--violet-soft)}
   .time-mem{font-size:13px}
+  .lesson-num-badge{
+    background:var(--violet-tint);border:1.5px solid var(--violet-soft);
+    border-radius:10px;padding:6px 10px;text-align:center;flex:none;cursor:help;
+  }
+  .lnb-num{font-size:16px;font-weight:800;color:var(--violet-deep);line-height:1}
+  .lnb-lab{font-size:10px;font-weight:700;color:var(--violet);margin-top:1px;text-transform:uppercase;letter-spacing:.04em}
   .vc-note{background:var(--surface);border:1.5px solid var(--violet-soft);border-radius:14px;padding:14px 16px;margin-top:16px;
     font-size:14px;line-height:1.5;font-weight:600;color:var(--ink)}
   .vc-note .lab{font-size:11px;font-weight:800;color:var(--violet);margin-bottom:6px}
@@ -441,10 +447,17 @@
     font-size:12px;font-weight:800;padding:6px 11px;border-radius:9px;cursor:pointer;font-family:inherit;flex:none;
   }
   .restore-btn:active{transform:scale(.95)}
+  .delete-forever-btn{
+    border:1.5px solid var(--danger);background:none;color:var(--danger);
+    font-size:15px;padding:6px 9px;border-radius:9px;cursor:pointer;
+    transition:background .12s;
+  }
+  .delete-forever-btn:active{background:#FEF0F2;transform:scale(.95)}
   .stats-panel{display:grid;grid-template-rows:0fr;transition:grid-template-rows .28s ease;overflow:hidden}
   .stats-panel.open{grid-template-rows:1fr}
-  .stats-panel-inner{overflow:hidden;min-height:0;padding:2px 16px 14px}
-  .stats-panel-inner .psub{margin:0 0 10px;font-size:12px;color:var(--muted);font-weight:600}
+  .stats-panel-inner{overflow:hidden;min-height:0}
+  .stats-panel-inner .psub{margin:0 0 10px;font-size:12px;color:var(--muted);font-weight:600;padding:10px 16px 0}
+  .stats-panel-inner .stat-grid{padding:4px 16px 14px}
 </style>
 </head>
 <body>
@@ -586,8 +599,20 @@
     </div>
 
     <div class="vc-note" id="v_noteWrap" style="display:none">
-      <div class="lab">ДЕТАЛИ УРОКА</div>
+      <div class="lab" style="display:flex;align-items:center;justify-content:space-between">
+        ДЕТАЛИ УРОКА
+        <button id="editNoteBtn" style="border:none;background:none;color:var(--violet);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;padding:0">✎ Изменить</button>
+      </div>
       <div id="v_note"></div>
+      <div id="v_noteEdit" style="display:none;margin-top:8px">
+        <textarea id="v_noteInput" class="note-box" style="width:100%;border:1.5px solid var(--line);background:var(--surface-2);border-radius:11px;padding:10px 12px;font-size:14px;font-family:inherit;color:var(--ink);min-height:64px;resize:vertical;outline:none"></textarea>
+        <button id="saveNoteBtn" style="margin-top:8px;width:100%;padding:12px;background:var(--violet);color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">Сохранить</button>
+      </div>
+    </div>
+    <button id="addNoteBtn" class="note-btn" style="display:none">✒ Детали урока</button>
+    <div id="addNoteBox" class="note-box" style="display:none">
+      <textarea id="addNoteInput" placeholder="Что по этому уроку…" style="width:100%;border:1.5px solid var(--line);background:var(--surface-2);border-radius:11px;padding:10px 12px;font-size:14px;font-family:inherit;color:var(--ink);min-height:64px;resize:vertical;outline:none"></textarea>
+      <button id="addNoteSave" style="margin-top:8px;width:100%;padding:12px;background:var(--violet);color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">Сохранить</button>
     </div>
 
     <div class="vc-trial" id="v_trial" style="display:none">🌱 Пробный урок</div>
@@ -1304,7 +1329,19 @@ async function openView(id){
   const aw=document.getElementById('v_aboutWrap');
   if(about){ aw.style.display='block'; document.getElementById('v_about').textContent=about; } else aw.style.display='none';
   const nw=document.getElementById('v_noteWrap');
-  if(L.note){ nw.style.display='block'; document.getElementById('v_note').textContent=L.note; } else nw.style.display='none';
+  const addNoteBtn=document.getElementById('addNoteBtn');
+  const editNoteBtn=document.getElementById('editNoteBtn');
+  document.getElementById('v_noteEdit').style.display='none';
+  document.getElementById('v_noteInput').value=L.note||'';
+  editNoteBtn.style.display='block';
+  if(L.note){
+    document.getElementById('v_note').textContent=L.note;
+    nw.style.display='block';
+    addNoteBtn.style.display='none';
+  }else{
+    nw.style.display='none';
+    addNoteBtn.style.display='block';
+  }
   const pt=document.getElementById('paidToggle');
   const tr=document.getElementById('v_trial');
   if(L.trial){
@@ -1337,6 +1374,59 @@ document.getElementById('viewDelBtn').onclick=async()=>{
   const k=keyOf(cur.y,cur.m,cur.d); let arr=await Store.get(k);
   arr=arr.filter(x=>x.id!==viewId); await Store.set(k,arr);
   viewScreen.classList.remove('on'); await renderHours(); await renderMonth(); toast('Удалено'); haptic('warning');
+};
+
+// детали урока в окне просмотра
+function openNoteEditor(){
+  document.getElementById('v_noteInput').value=document.getElementById('v_note').textContent||'';
+  document.getElementById('v_noteWrap').style.display='block';
+  document.getElementById('v_noteEdit').style.display='block';
+  document.getElementById('editNoteBtn').style.display='none';
+  document.getElementById('addNoteBtn').style.display='none';
+  document.getElementById('addNoteBox').style.display='none';
+}
+document.getElementById('editNoteBtn').onclick=openNoteEditor;
+
+// кнопка добавить детали — аккордеон как в назначении
+document.getElementById('addNoteBtn').onclick=()=>{
+  const open=document.getElementById('addNoteBox').style.display==='none';
+  document.getElementById('addNoteBox').style.display=open?'block':'none';
+  document.getElementById('addNoteBtn').classList.toggle('on',open);
+  if(open) document.getElementById('addNoteInput').focus();
+};
+
+document.getElementById('saveNoteBtn').onclick=async()=>{
+  const k=keyOf(cur.y,cur.m,cur.d); const arr=await Store.get(k);
+  const i=arr.findIndex(x=>x.id===viewId); if(i<0)return;
+  const newNote=document.getElementById('v_noteInput').value.trim();
+  arr[i].note=newNote; await Store.set(k,arr);
+  document.getElementById('v_note').textContent=newNote;
+  document.getElementById('v_noteEdit').style.display='none';
+  document.getElementById('editNoteBtn').style.display='block';
+  if(newNote){
+    document.getElementById('v_noteWrap').style.display='block';
+    document.getElementById('addNoteBtn').style.display='none';
+    document.getElementById('addNoteBox').style.display='none';
+  }else{
+    document.getElementById('v_noteWrap').style.display='none';
+    document.getElementById('addNoteBtn').style.display='block';
+    document.getElementById('addNoteBtn').classList.remove('on');
+  }
+  toast('Сохранено'); haptic('success');
+};
+
+document.getElementById('addNoteSave').onclick=async()=>{
+  const k=keyOf(cur.y,cur.m,cur.d); const arr=await Store.get(k);
+  const i=arr.findIndex(x=>x.id===viewId); if(i<0)return;
+  const newNote=document.getElementById('addNoteInput').value.trim();
+  if(!newNote) return;
+  arr[i].note=newNote; await Store.set(k,arr);
+  document.getElementById('v_note').textContent=newNote;
+  document.getElementById('v_noteWrap').style.display='block';
+  document.getElementById('addNoteBtn').style.display='none';
+  document.getElementById('addNoteBox').style.display='none';
+  document.getElementById('addNoteBtn').classList.remove('on');
+  toast('Сохранено'); haptic('success');
 };
 
 /* ============ STUDENT FORM ============ */
@@ -1530,16 +1620,35 @@ async function renderAssignList(){
     const dt=new Date(parseInt(y),parseInt(m)-1,parseInt(d));
     if(!assignTimes.has(k)) assignTimes.set(k,'12:00');
     const showTrial = trialAvailable && (historyMode || idx===0);
+    // считаем прошедшие уроки с этим учеником (без пробных)
+    const now=new Date();
+    let doneCount=0;
+    for(const dk of Object.keys(dataCache)){
+      (dataCache[dk]||[]).forEach(L=>{
+        if(L.studentId!==profId||L.trial) return;
+        const hh=parseInt((L.time||'0').split(':')[0])||0, mm2=parseInt((L.time||'0').split(':')[1])||0;
+        const [__,ly,lm,ld]=dk.split('_');
+        const end=new Date(+ly,+lm-1,+ld,hh,mm2); end.setMinutes(end.getMinutes()+65);
+        if(end<=now) doneCount++;
+      });
+    }
+    const nextNum=doneCount+1;
     const row=document.createElement('div'); row.className='assign-block'; row.dataset.key=k;
     row.innerHTML=`
       <div class="day-row" style="margin-bottom:0">
-        <div class="dr-left">
-          <div class="dr-date">${parseInt(d)} ${MONTHS_GEN[parseInt(m)-1]}</div>
-          <div class="dr-wd">${WD[dt.getDay()]}</div>
+        <div class="dr-left" style="display:flex;align-items:center;gap:10px">
+          <div class="lesson-num-badge" title="без учёта пробного урока">
+            <div class="lnb-num">${nextNum+idx}</div>
+            <div class="lnb-lab">урок</div>
+          </div>
+          <div>
+            <div class="dr-date">${parseInt(d)} ${MONTHS_GEN[parseInt(m)-1]}</div>
+            <div class="dr-wd">${WD[dt.getDay()]}</div>
+          </div>
         </div>
         <div class="dr-right">
           <input class="dr-time" placeholder="08:00" maxlength="5" inputmode="numeric" value="${esc(assignTimes.get(k))}">
-          ${pastTimes.length?`<button class="dr-same time-mem" title="Прошлые времена">🕑</button>`:''}
+          ${pastTimes.length?`<button class="dr-same time-mem" title="Прошлое время">🕑</button>`:''}
         </div>
       </div>
       ${showTrial?`<div class="trial-row"><button class="trial-pill${assignTrial.has(k)?' on':''}">🌱 Пробный урок</button></div>`:''}
@@ -1668,7 +1777,7 @@ await loadStudents();
   if(!scr){
     scr=document.createElement('div'); scr.className='screen'; scr.id='unpaidScreen';
     scr.innerHTML=`<div class="scr-head"><button class="back" id="unpaidBack">‹</button><div class="ttl">Неоплаченные</div><button class="pencil" id="statOpenBtn" title="Статистика" style="margin-left:auto">📊</button></div>`+
-      `<div class="stats-panel" id="statsPanel"><div class="stats-panel-inner"><p class="psub">нажми на карточку для деталей</p><div class="stat-grid" id="statsBoxes"></div></div></div>`+
+      `<div class="stats-panel" id="statsPanel"><div class="stats-panel-inner"><p class="psub" id="statsPsub" style="display:none">нажми на карточку для деталей</p><div class="stat-grid" id="statsBoxes"></div></div></div>`+
       `<div class="hours" id="unpaidList"></div>`;
     document.body.appendChild(scr);
     document.getElementById('unpaidBack').onclick=()=>{ scr.classList.remove('on'); renderMonth(); };
@@ -1732,7 +1841,10 @@ async function toggleStats(){
   const panel=document.getElementById('statsPanel');
   const wasOpen=panel.classList.contains('open');
   panel.classList.toggle('open',!wasOpen);
-  if(wasOpen) return; // закрываем — пересчёт не нужен
+  if(wasOpen){
+    const psub=document.getElementById('statsPsub'); if(psub) psub.style.display='none';
+    return;
+  }
   const boxes=document.getElementById('statsBoxes');
   boxes.innerHTML='<div class="stat-box wide"><div class="sb-num">…</div><div class="sb-lab">считаю</div></div>';
   const st=await gatherStats();
@@ -1782,6 +1894,7 @@ function renderStatBoxes(st){
   boxes.appendChild(mk(st.plannedList.length,'Запланировано','planned'));
   const avgBox=mk(st.avg?st.avg+' ₽':'—','Средний чек','avg');
   boxes.appendChild(avgBox);
+  const psub=document.getElementById('statsPsub'); if(psub) psub.style.display='block';
 }
 
 function rowHtml(L,extra){
@@ -1795,7 +1908,10 @@ function openStatDetail(id,st){
     const archived=st.students.filter(s=>s.archived);
     const rowS=(s,arch)=>`<div class="vc-item stu-stat-row${arch?' archived':''}" data-sid="${s.id}">`+
       `<div style="flex:1"><div class="v">${esc(s.name)}</div></div>`+
-      (arch?`<button class="restore-btn" data-restore="${s.id}">Восстановить</button>`:'')+
+      (arch?`<div style="display:flex;gap:6px;flex:none">
+        <button class="restore-btn" data-restore="${s.id}">Восстановить</button>
+        <button class="delete-forever-btn" data-delete="${s.id}" title="Удалить навсегда">🗑</button>
+      </div>`:'')+
       `</div>`;
     const html=active.map(s=>rowS(s,false)).join('')+archived.map(s=>rowS(s,true)).join('');
     b.innerHTML=html||'<div class="empty-note">Нет учеников.</div>';
@@ -1805,11 +1921,27 @@ function openStatDetail(id,st){
         const sid=btn.dataset.restore; const s=studentById(sid); if(!s)return;
         s.archived=0;
         const ok=await saveStudent(s);
-        console.log('[restore]', sid, 'saved:', ok, 'archived now:', s.archived, 'cache entry:', studentById(sid));
         haptic('success'); toast('Ученик восстановлен');
         await renderStudents();
-        console.log('[restore] список Ученики после renderStudents:', (studentsCache||[]).filter(x=>!x.archived).map(x=>x.name));
         const fresh=await gatherStats(); openStatDetail('students',fresh); renderStatBoxes(fresh);
+      };
+    });
+    b.querySelectorAll('[data-delete]').forEach(btn=>{
+      btn.onclick=async(e)=>{
+        e.stopPropagation();
+        const sid=btn.dataset.delete;
+        showConfirm('Удалить ученика навсегда? Это нельзя отменить.', async()=>{
+          // физически удаляем из базы
+          try{
+            await apiFetch('/api/students/delete-forever',{method:'POST',body:JSON.stringify({id:sid})});
+          }catch(e){
+            // если эндпоинта ещё нет — убираем из кэша напрямую
+          }
+          if(studentsCache){ studentsCache=studentsCache.filter(x=>x.id!==sid); }
+          haptic('warning'); toast('Ученик удалён навсегда');
+          await renderStudents();
+          const fresh=await gatherStats(); openStatDetail('students',fresh); renderStatBoxes(fresh);
+        });
       };
     });
   }else if(id==='done'){
