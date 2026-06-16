@@ -748,7 +748,11 @@ async function apiFetch(path, opts){
   const r = await fetch(API_BASE+path, Object.assign({}, opts, {
     headers: Object.assign({'Content-Type':'application/json','X-Init-Data':INIT}, (opts&&opts.headers)||{})
   }));
-  if(!r.ok) throw new Error('api '+r.status);
+  if(!r.ok){
+    let body=''; try{ body=await r.text(); }catch(e){}
+    console.error('apiFetch error', path, r.status, body);
+    throw new Error('api '+r.status);
+  }
   return r.json();
 }
 
@@ -949,6 +953,7 @@ async function openDay(y,m,d){
 }
 async function renderHours(){
   try{
+  await loadStudents();
   const arr=await Store.get(keyOf(cur.y,cur.m,cur.d));
   const box=document.getElementById('hours'); box.innerHTML='';
   for(let h=8;h<=22;h++){
@@ -965,14 +970,17 @@ async function renderHours(){
   }catch(e){ console.error('renderHours error',e); }
 }
 function lessonChip(L){
-  const price = L.trial ? 'Пробный' : (L.price?L.price+' ₽':'');
-  // длительность: у привязанных — из профиля, пробный — 30 мин, иначе 60
   const s = L.studentId?studentById(L.studentId):null;
+  // для привязанных уроков — актуальные данные из профиля
+  const name = s ? s.name : (L.name||'Без имени');
+  const level = s ? (s.level||'') : (L.level||'');
+  const priceRaw = s && !L.trial ? s.price : L.price;
+  const price = L.trial ? 'Пробный' : (priceRaw?priceRaw+' ₽':'');
   let dur = L.trial ? 30 : parseInt((s&&s.duration)|| (L.duration) || 60) || 60;
   const timeRange = L.time ? `${L.time}–${addMinutes(L.time,dur)}` : '';
-  const meta=[timeRange, price, L.level||''].filter(Boolean).join(' · ');
+  const meta=[timeRange, price, level].filter(Boolean).join(' · ');
   return `<div class="lesson ${L.paid?'paid':''} ${L.trial?'trial':''}" data-id="${L.id}">
-    <div class="ln-name">${esc(L.name||'Без имени')}
+    <div class="ln-name">${esc(name)}
       ${L.trial?'<span class="paidtag" style="color:#B7791F;border-color:#F2D178;background:#FFF3D6">пробный</span>':(L.paid?'<span class="paidtag">оплачено</span>':'')}
     </div>
     <div class="ln-meta">${esc(meta)}</div>
@@ -1388,9 +1396,13 @@ document.getElementById('stuSaveBtn').onclick=async()=>{
     contacts, price:document.getElementById('s_price').value.trim(),
     duration:formDuration, level:document.getElementById('s_level').value,
     about:document.getElementById('s_about').value.trim(),
-    color:formColor, trialUsed: old?old.trialUsed:0, created: old?old.created:Date.now()
+    color:formColor||'', trialUsed: old?old.trialUsed:0, created: old?old.created:Date.now(),
+    archived: old?(old.archived||0):0
   };
-  await saveStudent(s);
+  console.log('[save student] отправляю:', JSON.stringify(s));
+  const ok=await saveStudent(s);
+  console.log('[save student] результат:', ok, '| в кэше:', (studentsCache||[]).map(x=>x.name));
+  if(!ok) return;
   stuFormScreen.classList.remove('on');
   await renderStudents(); haptic('success'); toast(editingStudent?'Сохранено':'Ученик добавлен');
 };
@@ -1462,7 +1474,8 @@ document.getElementById('stuProfBack').onclick=()=>{ stuProfScreen.classList.rem
 document.getElementById('stuEditBtn').onclick=()=>{ stuProfScreen.classList.remove('on'); openStudentForm(profId); };
 document.getElementById('stuDelBtn').onclick=()=>{
   showConfirm('Удалить ученика?', async()=>{
-    await deleteStudentApi(profId);
+    const ok=await deleteStudentApi(profId);
+    if(!ok) return;
     stuProfScreen.classList.remove('on'); await renderStudents(); toast('Ученик удалён'); haptic('warning');
   });
 };
