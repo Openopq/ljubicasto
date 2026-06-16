@@ -1218,13 +1218,22 @@ document.getElementById('saveBtn').onclick=async()=>{
             color:formColorL, tg:fLessonContacts().find(c=>c.startsWith('@'))||'' };
     }
     if(isTransfer && transferDay){
-      let oldArr=arr.filter(x=>x.id!==editing); await Store.set(k,oldArr);
       const td=dayTimes.get('transfer')||{time:`${pad(formHour)}:00`,same:true};
       const newTime=td.same?`${pad(formHour)}:00`:td.time;
-      const newArr=await Store.get(transferDay);
-      newArr.push({...L,...upd,id:uid(),time:newTime,paid:L.paid||false});
-      await Store.set(transferDay,newArr);
-      toast('Перенесено');
+      // атомарный перенос: один запрос = одна транзакция, нет риска потери данных
+      try{
+        await apiFetch('/api/move_lesson',{method:'POST',body:JSON.stringify({
+          id:editing, old_date:keyToDate(k), new_date:keyToDate(transferDay), new_time:newTime
+        })});
+        // обновляем локальный кэш
+        const oldArr=arr.filter(x=>x.id!==editing); dataCache[k]=oldArr;
+        const newArr=await Store.get(transferDay);
+        newArr.push({...L,...upd,time:newTime,paid:L.paid||false});
+        dataCache[transferDay]=newArr;
+        toast('Перенесено');
+      }catch(e){
+        toast('Не удалось перенести — занятие осталось на месте'); return;
+      }
     }else{
       const i=arr.findIndex(x=>x.id===editing);
       arr[i]={...arr[i],...upd}; await Store.set(k,arr);
@@ -1739,14 +1748,13 @@ async function gatherStats(){
   for(const mk of monthsToLoad){ const[y,m]=mk.split('_').map(Number); await ensureMonthLoaded(y,m); }
   const now=new Date();
   let doneList=[], plannedList=[], paidSums=[];
-  const activeStudents=new Set();
   for(const k of Object.keys(dataCache)){
     const [_,y,m,d]=k.split('_');
     (dataCache[k]||[]).forEach(L=>{
       const hh=parseInt((L.time||'0').split(':')[0])||0, mm=parseInt((L.time||'0').split(':')[1])||0;
       const end=new Date(parseInt(y),parseInt(m)-1,parseInt(d),hh,mm); end.setMinutes(end.getMinutes()+65);
       const rec={L,y:+y,m:+m,d:+d};
-      if(end<=now) doneList.push(rec); else { plannedList.push(rec); const stu=L.studentId?studentById(L.studentId):null; if(stu && !stu.archived) activeStudents.add(L.studentId); }
+      if(end<=now) doneList.push(rec); else { plannedList.push(rec); }
       if(L.paid && L.price && /\d/.test(L.price)) paidSums.push({n:parseInt(L.price.replace(/\D/g,''))||0, rec});
     });
   }
@@ -1754,6 +1762,8 @@ async function gatherStats(){
   plannedList.sort((a,b)=>(`${a.y}${pad(a.m)}${pad(a.d)}`).localeCompare(`${b.y}${pad(b.m)}${pad(b.d)}`));
   const total=paidSums.reduce((s,x)=>s+x.n,0);
   const avg=paidSums.length?Math.round(total/paidSums.length):0;
+  // активных = не архивированных учеников (независимо от наличия уроков)
+  const activeStudents=(studentsCache||[]).filter(s=>!s.archived).length;
   return {students:studentsCache||[], activeStudents, doneList, plannedList, paidSums, total, avg};
 }
 
@@ -1767,7 +1777,7 @@ function renderStatBoxes(st){
     if(id) b.onclick=()=>openStatDetail(id,st);
     return b;
   };
-  boxes.appendChild(mk(`${st.activeStudents.size}<span style="font-size:14px;color:var(--muted-2)"> / ${st.students.length}</span>`,'Активных / всего','students'));
+  boxes.appendChild(mk(`${st.activeStudents}<span style="font-size:14px;color:var(--muted-2)"> / ${st.students.length}</span>`,'Активных / всего','students'));
   boxes.appendChild(mk(st.doneList.length,'Проведено','done'));
   boxes.appendChild(mk(st.plannedList.length,'Запланировано','planned'));
   const avgBox=mk(st.avg?st.avg+' ₽':'—','Средний чек','avg');
