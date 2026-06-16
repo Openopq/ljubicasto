@@ -588,8 +588,16 @@
     <button class="pencil" id="editBtn">✎</button>
   </div>
   <div class="view-card">
-    <div class="vc-name" id="v_name">—</div>
-    <div class="vc-time" id="v_time"></div>
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px">
+      <div>
+        <div class="vc-name" id="v_name">—</div>
+        <div class="vc-time" id="v_time"></div>
+      </div>
+      <div class="lesson-num-badge" id="v_lessonNum" style="display:none;flex:none;margin-top:4px" title="без учёта пробного урока">
+        <div class="lnb-num" id="v_lessonNumVal">—</div>
+        <div class="lnb-lab">урок</div>
+      </div>
+    </div>
 
     <div class="vc-block" id="v_block"></div>
 
@@ -1307,6 +1315,26 @@ async function openView(id){
   const about = s ? s.about : L.about;
   document.getElementById('v_name').textContent=name;
   document.getElementById('v_time').textContent=`${cur.d} ${MONTHS_GEN[cur.m]} · ${L.time}`;
+
+  // счётчик номера урока (только для привязанных к ученику, без пробных)
+  const numBadge=document.getElementById('v_lessonNum');
+  const numVal=document.getElementById('v_lessonNumVal');
+  if(s && !L.trial){
+    // собираем все уроки этого ученика из dataCache, сортируем по дате+время
+    const allLessons=[];
+    for(const dk of Object.keys(dataCache)){
+      (dataCache[dk]||[]).forEach(dl=>{
+        if(dl.studentId===L.studentId && !dl.trial)
+          allLessons.push({id:dl.id, key:dk, time:dl.time||'00:00'});
+      });
+    }
+    allLessons.sort((a,b)=>a.key===b.key?(a.time>b.time?1:-1):(a.key>b.key?1:-1));
+    const pos=allLessons.findIndex(x=>x.id===L.id);
+    if(pos>=0){ numVal.textContent=pos+1; numBadge.style.display='block'; }
+    else numBadge.style.display='none';
+  }else{
+    numBadge.style.display='none';
+  }
   const block=document.getElementById('v_block'); block.innerHTML='';
   const items=[];
   if(phone) items.push({ic:'☎',k:'Телефон',v:`<a href="tel:${esc(phone)}">${esc(phone)}</a>`});
