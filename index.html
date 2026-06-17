@@ -2043,8 +2043,16 @@ function toast(m){ const el=document.getElementById('toast'); el.textContent=m; 
 if(!accessOk()){
   document.body.innerHTML='<div class="empty-note" style="padding-top:80px">Нет доступа.</div>';
 }else{
-  renderMonth().then(()=>{
+  renderMonth().then(async()=>{
     updateStuCount();
+    // подгружаем все месяцы с данными для точного счётчика учеников
+    await fetchAllKeys();
+    if(allKeysCache&&allKeysCache.length){
+      const months=new Set();
+      allKeysCache.forEach(k=>{const p=k.split('_');months.add(`${p[1]}_${parseInt(p[2])-1}`);});
+      await Promise.all([...months].map(mk=>{const[y,m]=mk.split('_');return ensureMonthLoaded(+y,+m);}));
+      updateStuCount(); // пересчитываем с полными данными
+    }
     // переход сразу в день, если открыли по ссылке из уведомления (?d=YYYY-MM-DD)
     const qd = new URLSearchParams(location.search).get('d');
     if(qd && /^\d{4}-\d{2}-\d{2}$/.test(qd)){
