@@ -512,7 +512,13 @@
     <div class="grid" id="grid"></div>
   </div>
 
-  <div class="section-head">Ученики</div>
+  <div class="section-head" style="display:flex;align-items:center;justify-content:space-between">
+    Ученики
+    <div class="lesson-num-badge" id="stuCount" style="display:none" title="Количество учеников без учёта пробных уроков">
+      <div class="lnb-num" id="stuCountNum">0</div>
+      <div class="lnb-lab">ученик</div>
+    </div>
+  </div>
   <div class="stu-list" id="stuList"></div>
 </div>
 
@@ -966,6 +972,32 @@ async function renderStudents(){
   add.innerHTML='<span class="plus">+</span> Добавить ученика';
   add.onclick=()=>openStudentForm(null);
   box.appendChild(add);
+  // счётчик: уникальные ученики с хотя бы одним не пробным уроком
+  updateStuCount();
+}
+
+function pluralStu(n){
+  const m=n%100; const m2=n%10;
+  if(m>=11&&m<=14) return 'учеников';
+  if(m2===1) return 'ученик';
+  if(m2>=2&&m2<=4) return 'ученика';
+  return 'учеников';
+}
+
+function updateStuCount(){
+  const withLesson=new Set();
+  for(const k of Object.keys(dataCache)){
+    (dataCache[k]||[]).forEach(L=>{
+      if(L.studentId && !L.trial) withLesson.add(L.studentId);
+    });
+  }
+  const cnt=withLesson.size;
+  const el=document.getElementById('stuCount');
+  if(cnt>0){
+    document.getElementById('stuCountNum').textContent=cnt;
+    document.querySelector('#stuCount .lnb-lab').textContent=pluralStu(cnt);
+    el.style.display='block';
+  }else el.style.display='none';
 }
 
 document.getElementById('unpaidBtn').onclick=()=>openUnpaid();
@@ -2012,6 +2044,7 @@ if(!accessOk()){
   document.body.innerHTML='<div class="empty-note" style="padding-top:80px">Нет доступа.</div>';
 }else{
   renderMonth().then(()=>{
+    updateStuCount();
     // переход сразу в день, если открыли по ссылке из уведомления (?d=YYYY-MM-DD)
     const qd = new URLSearchParams(location.search).get('d');
     if(qd && /^\d{4}-\d{2}-\d{2}$/.test(qd)){
