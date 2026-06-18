@@ -124,6 +124,7 @@
     transition:transform .26s cubic-bezier(.4,0,.2,1),visibility 0s linear .26s;
     overflow-y:auto;max-width:520px;margin:0 auto;
   }
+  .screen.no-anim{transition:none!important}
   .screen.on{transform:translateX(0);visibility:visible;
     transition:transform .26s cubic-bezier(.4,0,.2,1),visibility 0s}
   .scr-head{
@@ -136,6 +137,14 @@
     display:grid;place-items:center;transition:transform .12s;
   }
   .scr-head .back:active{transform:scale(.9)}
+  .back-sm{
+    width:32px;height:32px;border:none;border-radius:9px;background:var(--surface-2);
+    box-shadow:var(--shadow-soft);color:var(--ink);font-size:17px;cursor:pointer;flex:none;
+    display:grid;place-items:center;transition:transform .12s;
+  }
+  .back-sm:active{transform:scale(.9)}
+  @keyframes statDetailIn{from{opacity:0;transform:translateX(12px)}to{opacity:1;transform:translateX(0)}}
+  #statsPageDetail.anim{animation:statDetailIn .22s ease}
   .scr-head .ttl{font-size:18px;font-weight:800;letter-spacing:-.01em;text-transform:capitalize}
   .scr-head .ttl small{display:block;font-size:12px;color:var(--muted);font-weight:700;text-transform:none}
   .scr-head .pencil{
@@ -434,12 +443,13 @@
     font-size:14px;line-height:1.5;font-weight:600;color:var(--ink)}
   .vc-note .lab{font-size:11px;font-weight:800;color:var(--violet);margin-bottom:6px}
   .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 16px}
-  .stat-box{background:var(--surface);border-radius:15px;box-shadow:var(--shadow-soft);padding:15px 16px;cursor:pointer;
-    transition:transform .1s}
+  .stat-box{background:var(--surface);border-radius:15px;box-shadow:var(--shadow-soft);padding:0 16px;cursor:pointer;
+    height:84px;display:flex;flex-direction:column;justify-content:center;box-sizing:border-box;overflow:hidden;transition:transform .1s}
   .stat-box:active{transform:scale(.97)}
-  .stat-box .sb-num{font-size:24px;font-weight:800;letter-spacing:-.02em;color:var(--violet-deep)}
+  .stat-box .sb-num{font-size:24px;font-weight:800;letter-spacing:-.02em;color:var(--violet-deep);white-space:nowrap}
   .stat-box .sb-lab{font-size:12px;font-weight:700;color:var(--muted);margin-top:3px}
   .stat-box.wide{grid-column:1/3}
+  #statSheetBody{max-height:45vh;overflow-y:auto}
   .stu-stat-row{display:flex;align-items:center;gap:10px}
   .stu-stat-row.archived .v{color:var(--muted-2)}
   .restore-btn{
@@ -458,6 +468,15 @@
   .stats-panel-inner{overflow:hidden;min-height:0}
   .stats-panel-inner .psub{margin:0 0 10px;font-size:12px;color:var(--muted);font-weight:600;padding:10px 16px 0}
   .stats-panel-inner .stat-grid{padding:4px 16px 14px}
+  .settings-item{display:flex;align-items:center;gap:14px;padding:14px 0}
+  .settings-item+.settings-item{border-top:1px solid var(--line)}
+  .settings-icon{width:36px;height:36px;border-radius:10px;background:var(--violet-tint);
+    display:grid;place-items:center;font-size:18px;flex:none}
+  .settings-body{flex:1;min-width:0}
+  .settings-label{font-size:15px;font-weight:700;color:var(--ink)}
+  .settings-sub{font-size:12px;color:var(--muted);font-weight:600;margin-top:1px}
+  .settings-divider{height:1px;background:var(--line);margin:4px 0}
+  .settings-item:active .settings-label{color:var(--violet)}
 </style>
 </head>
 <body>
@@ -494,12 +513,20 @@
         <div class="sub" id="brandsub">расписание занятий Миляны</div>
       </div>
     </div>
+    
   </div>
 
   <div class="month-head">
     <div class="month-title"><b id="mName">—</b><span class="yr" id="mYear"></span></div>
     <div class="nav-btns">
-      <button class="iconbtn" id="unpaidBtn" title="Неоплаченные">₽<span class="cnt" id="unpaidCnt" style="display:none">0</span></button>
+      <button class="iconbtn" id="notifBtn" title="Уведомления" style="position:relative">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--violet)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+          <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+        </svg>
+        <span class="cnt" id="unpaidCnt" style="display:none;background:var(--danger)">0</span>
+      </button>
+      <button class="iconbtn" id="settingsBtnMain" title="Настройки">⚙</button>
       <button class="iconbtn" id="prevM">‹</button>
       <button class="iconbtn" id="nextM">›</button>
     </div>
@@ -591,7 +618,6 @@
   <div class="scr-head">
     <button class="back" id="viewBack">‹</button>
     <div class="ttl">Занятие</div>
-    <button class="pencil" id="editBtn">✎</button>
   </div>
   <div class="view-card">
     <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px">
@@ -607,11 +633,10 @@
 
     <div class="vc-block" id="v_block"></div>
 
-    <div class="vc-about" id="v_aboutWrap" style="display:none">
-      <div class="lab">ОБ УЧЕНИКЕ</div>
-      <div id="v_about"></div>
-    </div>
+    <!-- Открыть профиль (только для привязанных) -->
+    <button class="daysbtn" id="v_openProfBtn" style="display:none;margin-bottom:8px">Открыть профиль</button>
 
+    <!-- Детали урока -->
     <div class="vc-note" id="v_noteWrap" style="display:none">
       <div class="lab" style="display:flex;align-items:center;justify-content:space-between">
         ДЕТАЛИ УРОКА
@@ -627,6 +652,25 @@
     <div id="addNoteBox" class="note-box" style="display:none">
       <textarea id="addNoteInput" placeholder="Что по этому уроку…" style="width:100%;border:1.5px solid var(--line);background:var(--surface-2);border-radius:11px;padding:10px 12px;font-size:14px;font-family:inherit;color:var(--ink);min-height:64px;resize:vertical;outline:none"></textarea>
       <button id="addNoteSave" style="margin-top:8px;width:100%;padding:12px;background:var(--violet);color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">Сохранить</button>
+    </div>
+
+    <!-- Об ученике -->
+    <div class="vc-about" id="v_aboutWrap" style="display:none">
+      <div class="lab">ОБ УЧЕНИКЕ</div>
+      <div id="v_about"></div>
+    </div>
+
+    <!-- Перенести занятие -->
+    <div class="toggle-line" id="v_transferToggle" style="display:none">
+      <div>
+        <div class="t-txt">Перенести занятие</div>
+        <div class="t-sub">переместить на другой день</div>
+      </div>
+      <div class="sw" id="v_transferSw"></div>
+    </div>
+    <div class="rep-box" id="v_transferBox">
+      <button class="daysbtn" id="v_openTransferDay">📅 Выбрать день</button>
+      <div id="v_transferDayRow"></div>
     </div>
 
     <div class="vc-trial" id="v_trial" style="display:none">🌱 Пробный урок</div>
@@ -725,10 +769,86 @@
 </div>
 
 <!-- STATS DETAIL SHEET -->
-<div class="dim" id="statDim"></div>
-<div class="picker" id="statSheet">
-  <h3 id="statSheetTitle">—</h3>
-  <div id="statSheetBody" style="max-height:50vh;overflow-y:auto"></div>
+<div class="dim" id="statDim" style="display:none"></div>
+
+<!-- NOTIFICATIONS SCREEN -->
+<div class="screen" id="notifScreen">
+  <div class="scr-head">
+    <button class="back" id="notifBack">‹</button>
+    <div class="ttl">Уведомления</div>
+  </div>
+  <div style="padding:16px 16px 100px">
+    <div id="notifUnpaidSection">
+      <div class="section-head" style="margin-bottom:10px;color:var(--danger)">Неоплаченные занятия</div>
+      <div id="notifUnpaidList"></div>
+    </div>
+    <div id="notifEmpty" class="empty-note" style="display:none;padding-top:60px;text-align:center">
+      <div style="font-size:42px;margin-bottom:12px">🔔</div>
+      <div style="color:var(--muted);font-weight:600">Новых уведомлений нет</div>
+    </div>
+  </div>
+</div>
+
+<!-- SETTINGS SCREEN -->
+<div class="screen" id="settingsScreen">
+  <div class="scr-head">
+    <button class="back" id="settingsBack">‹</button>
+    <div class="ttl">Настройки</div>
+  </div>
+  <div style="padding:16px 16px 100px">
+
+    <div class="section-head" style="margin-bottom:10px">Напоминания</div>
+    <div class="vc-block" style="margin-bottom:16px">
+      <div class="toggle-line" style="padding:14px 16px;border-bottom:1px solid var(--line)">
+        <div><div class="t-txt">⏰ Напоминание за час</div><div class="t-sub">до начала урока</div></div>
+        <div class="sw" id="settHourSw"></div>
+      </div>
+      <div class="toggle-line" style="padding:14px 16px;border-bottom:1px solid var(--line)">
+        <div><div class="t-txt">🌅 Утренние напоминания</div><div class="t-sub">расписание на день в 8:00</div></div>
+        <div class="sw" id="settMorningSw"></div>
+      </div>
+      <div class="toggle-line" style="padding:14px 16px">
+        <div><div class="t-txt">🌆 Вечерние напоминания</div><div class="t-sub">расписание на завтра в 20:00</div></div>
+        <div class="sw" id="settEveningSw"></div>
+      </div>
+    </div>
+
+    <div class="section-head" style="margin-bottom:10px">Данные</div>
+    <div class="vc-block" style="margin-bottom:16px">
+      <div class="toggle-line" style="padding:14px 16px;border-bottom:1px solid var(--line)">
+        <div><div class="t-txt">📖 Режим истории</div><div class="t-sub">назначать уроки в прошлое</div></div>
+        <div class="sw" id="settHistorySw"></div>
+      </div>
+      <div class="settings-item" id="settStatsBtn" style="padding:14px 16px;cursor:pointer;border-bottom:none">
+        <div class="settings-body"><div class="settings-label">📊 Статистика</div><div class="settings-sub">уроки, ученики, доходы</div></div>
+        <div style="color:var(--muted-2)">›</div>
+      </div>
+    </div>
+
+    <button class="save" id="settSaveBtn">Сохранить</button>
+  </div>
+</div>
+
+<!-- STATS SHEET (из настроек) -->
+<div class="dim" id="statsFromSettingsDim"></div>
+<div class="picker" id="statsFromSettingsSheet" style="height:60vh;display:flex;flex-direction:column">
+  <!-- страница: сводка -->
+  <div id="statsPageSummary" style="flex:1;display:flex;flex-direction:column;min-height:0">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+      <button class="back-sm" id="statsBackToSettings">‹</button>
+      <h3 style="margin:0">Статистика</h3>
+    </div>
+    <p class="psub" id="statsFromSettingsPsub" style="display:none;margin:0 0 10px;font-size:12px;color:var(--muted);font-weight:600">нажми на карточку для деталей</p>
+    <div class="stat-grid" id="statsFromSettingsBoxes"></div>
+  </div>
+  <!-- страница: детали -->
+  <div id="statsPageDetail" style="display:none;flex:1;flex-direction:column;min-height:0">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+      <button class="back-sm" id="statDetailBackInline">‹</button>
+      <h3 style="margin:0" id="statSheetTitle">—</h3>
+    </div>
+    <div id="statSheetBody" style="flex:1;overflow-y:auto;min-height:0"></div>
+  </div>
 </div>
 
 <!-- CONFIRM DIALOG -->
@@ -826,10 +946,6 @@ function preloadAdjacent(y,m){
   ensureMonthLoaded(py,pm);
   ensureMonthLoaded(ny,nm);
 }
-async function refreshAll(){
-  dataCache={}; allKeysCache=null; loadedMonths.clear();
-}
-
 const Store = {
   async get(key){
     if(key in dataCache) return dataCache[key];
@@ -851,7 +967,6 @@ const Store = {
   },
   async keys(){ return fetchAllKeys(); }
 };
-function safeArr(s){ try{ const a=JSON.parse(s); return Array.isArray(a)?a:[]; }catch(e){ return []; } }
 
 /* ============ students store ============ */
 const PALETTE=[];
@@ -1000,7 +1115,7 @@ function updateStuCount(){
   }else el.style.display='none';
 }
 
-document.getElementById('unpaidBtn').onclick=()=>openUnpaid();
+// unpaidBtn removed — settings button handles navigation
 
 /* ============ navigation main month ============ */
 document.getElementById('prevM').onclick=()=>{view.m--;if(view.m<0){view.m=11;view.y--;}renderMonth();haptic('light');};
@@ -1063,6 +1178,7 @@ const formScreen=document.getElementById('formScreen');
 let formHour=null;
 let pickerMode='rep'; // 'rep' | 'transfer'
 let transferDay=null; // key string or null
+let viewTransferDay=null, viewTransferTime=null, viewTransferSame=true;
 let dayTimes=new Map(); // key -> {time, same}
 
 let formColorL=null;   // lesson form colour (for unlinked lessons)
@@ -1215,6 +1331,7 @@ dim.onclick=closePicker;
 document.getElementById('daysOk').onclick=()=>{
   closePicker();
   if(pickerMode==='assign') renderAssignList();
+  else if(pickerMode==='vtransfer') renderViewTransferRow();
   else renderTransferDayRow();
 };
 document.getElementById('pPrev').onclick=()=>{pickView.m--;if(pickView.m<0){pickView.m=11;pickView.y--;}renderPicker();};
@@ -1247,6 +1364,14 @@ async function renderPicker(){
         c.onclick=()=>{
           if(assignDays.has(k)){assignDays.delete(k);assignTimes.delete(k);assignTrial.delete(k);c.classList.remove('sel');}
           else{assignDays.add(k);c.classList.add('sel');}
+          haptic('light');
+        };
+      }else if(pickerMode==='vtransfer'){
+        if(viewTransferDay===k) c.classList.add('sel');
+        c.onclick=()=>{
+          g.querySelectorAll('.cell.sel').forEach(el=>el.classList.remove('sel'));
+          if(viewTransferDay===k){ viewTransferDay=null; }
+          else{ viewTransferDay=k; c.classList.add('sel'); }
           haptic('light');
         };
       }else{
@@ -1412,9 +1537,98 @@ async function openView(id){
     setSw('paidSw',!!L.paid);
     document.getElementById('paidTxt').textContent=L.paid?'Оплачено':'Отметить оплату';
   }
+  // кнопка "Открыть профиль" — только для привязанных
+  const profBtn=document.getElementById('v_openProfBtn');
+  if(s){
+    profBtn.style.display='block';
+    profBtn.onclick=()=>{ viewScreen.classList.remove('on'); dayScreen.classList.remove('on'); openProfile(L.studentId); };
+  }else{
+    profBtn.style.display='none';
+  }
+  // перенос занятия — сбрасываем состояние
+  document.getElementById('v_transferToggle').style.display='flex';
+  setSw('v_transferSw',false);
+  document.getElementById('v_transferBox').classList.remove('on');
+  document.getElementById('v_transferDayRow').innerHTML='';
+  viewTransferDay=null; viewTransferTime=null; viewTransferSame=true;
   viewScreen.classList.add('on');
 }
-document.getElementById('viewBack').onclick=()=>{ viewScreen.classList.remove('on'); renderHours(); };
+document.getElementById('viewBack').onclick=()=>{
+  viewScreen.classList.remove('on');
+  renderHours();
+  // возвращаемся к верху экрана дня (к расписанию, не к ученикам)
+  const ds=document.getElementById('dayScreen');
+  if(ds) ds.scrollTop=0;
+};
+
+// перенос в окне просмотра
+document.getElementById('v_transferToggle').onclick=()=>{
+  const on=!document.getElementById('v_transferSw').classList.contains('on');
+  setSw('v_transferSw',on);
+  document.getElementById('v_transferBox').classList.toggle('on',on);
+  haptic('light');
+};
+document.getElementById('v_openTransferDay').onclick=()=>{
+  pickerMode='vtransfer'; pickView={y:cur.y,m:cur.m}; viewTransferDay=null; viewTransferTime=null; viewTransferSame=true; openPickerAnimated();
+};
+async function renderViewTransferRow(){
+  const box=document.getElementById('v_transferDayRow'); box.innerHTML='';
+  if(!viewTransferDay) return;
+  const [_,y,m,d]=viewTransferDay.split('_');
+  const dt=new Date(+y,+m-1,+d);
+  // время текущего урока (для кнопки "то же время")
+  const arr=await Store.get(keyOf(cur.y,cur.m,cur.d));
+  const L=arr.find(x=>x.id===viewId);
+  const origTime=L?(L.time||'12:00'):'12:00';
+  // по умолчанию — то же время
+  if(viewTransferTime===null){ viewTransferTime=origTime; viewTransferSame=true; }
+  box.innerHTML=`
+    <div class="day-row" style="margin-top:10px">
+      <div class="dr-left">
+        <div class="dr-date">${+d} ${MONTHS_GEN[+m-1]}</div>
+        <div class="dr-wd">${WD[dt.getDay()]}</div>
+      </div>
+      <div class="dr-right">
+        <input class="dr-time" id="v_transferTime" placeholder="08:00" maxlength="5" inputmode="numeric"
+          value="${esc(viewTransferTime||'')}" ${viewTransferSame?'disabled':''}>
+        <button class="dr-same${viewTransferSame?' on':''}" id="v_transferSame" title="То же время, что и у этого занятия">≈</button>
+      </div>
+    </div>
+    <button class="save" id="v_doTransfer" style="margin-top:10px">Перенести на этот день</button>`;
+  const ti=document.getElementById('v_transferTime');
+  const sameBtn=document.getElementById('v_transferSame');
+  ti.addEventListener('input',()=>{ let v=ti.value.replace(/[^0-9]/g,''); if(v.length>=3) v=v.slice(0,2)+':'+v.slice(2,4); ti.value=v; viewTransferTime=v; viewTransferSame=false; sameBtn.classList.remove('on'); });
+  sameBtn.addEventListener('click',()=>{
+    viewTransferSame=!viewTransferSame;
+    if(viewTransferSame){ viewTransferTime=origTime; ti.value=origTime; ti.disabled=true; }
+    else{ ti.disabled=false; }
+    sameBtn.classList.toggle('on',viewTransferSame); haptic('light');
+  });
+  document.getElementById('v_doTransfer').onclick=doViewTransfer;
+}
+async function doViewTransfer(){
+  if(!viewTransferDay){ toast('Выбери день'); return; }
+  const k=keyOf(cur.y,cur.m,cur.d);
+  const arr=await Store.get(k); const L=arr.find(x=>x.id===viewId); if(!L)return;
+  const newTime=viewTransferTime||L.time||'12:00';
+  try{
+    await apiFetch('/api/move_lesson',{method:'POST',body:JSON.stringify({
+      id:viewId, old_date:keyToDate(k), new_date:keyToDate(viewTransferDay), new_time:newTime
+    })});
+    // сбрасываем кэш обоих дней — сервер уже всё переместил, перечитаем заново
+    delete dataCache[k];
+    delete dataCache[viewTransferDay];
+    if(allKeysCache){
+      if(!allKeysCache.includes(viewTransferDay)) allKeysCache.push(viewTransferDay);
+    }
+    await Store.get(k);
+    await Store.get(viewTransferDay);
+    viewScreen.classList.remove('on');
+    const ds=document.getElementById('dayScreen'); if(ds) ds.scrollTop=0;
+    await renderHours(); await renderMonth();
+    toast('Перенесено'); haptic('success');
+  }catch(e){ toast('Не удалось перенести — занятие осталось на месте'); }
+}
 document.getElementById('paidToggle').onclick=async()=>{
   const k=keyOf(cur.y,cur.m,cur.d); const arr=await Store.get(k);
   const i=arr.findIndex(x=>x.id===viewId); if(i<0)return;
@@ -1424,16 +1638,12 @@ document.getElementById('paidToggle').onclick=async()=>{
   document.getElementById('paidTxt').textContent=arr[i].paid?'Оплачено':'Отметить оплату';
   haptic('light');
 };
-document.getElementById('editBtn').onclick=async()=>{
-  const arr=await Store.get(keyOf(cur.y,cur.m,cur.d));
-  const L=arr.find(x=>x.id===viewId); if(!L)return;
-  viewScreen.classList.remove('on');
-  openForm(parseInt(L.time),viewId);
-};
 document.getElementById('viewDelBtn').onclick=async()=>{
   const k=keyOf(cur.y,cur.m,cur.d); let arr=await Store.get(k);
   arr=arr.filter(x=>x.id!==viewId); await Store.set(k,arr);
-  viewScreen.classList.remove('on'); await renderHours(); await renderMonth(); toast('Удалено'); haptic('warning');
+  viewScreen.classList.remove('on'); await renderHours(); await renderMonth();
+  const ds=document.getElementById('dayScreen'); if(ds) ds.scrollTop=0;
+  toast('Удалено'); haptic('warning');
 };
 
 // детали урока в окне просмотра
@@ -1571,19 +1781,6 @@ const colorDim=document.getElementById('colorDim'), colorPicker=document.getElem
 let colorPickerTarget='student';
 function applyAvatar(){ /* цвета убраны */ }
 document.getElementById('avatarPick').onclick=()=>{};
-function _disabledStudentColorPicker(){
-  colorPickerTarget='student';
-  const sw=document.getElementById('swatches'); sw.innerHTML='';
-  const used=usedColors(editingStudent);
-  PALETTE.forEach(col=>{
-    const el=document.createElement('div');
-    el.className='swatch'+(col===formColor?' sel':'')+(used.has(col)&&col!==formColor?' taken':'');
-    el.style.background=col;
-    el.onclick=()=>{ formColor=col; applyAvatar(); closeColor(); };
-    sw.appendChild(el);
-  });
-  colorDim.classList.add('on'); colorPicker.classList.add('on');
-};
 function closeColor(){ colorDim.classList.remove('on'); colorPicker.classList.remove('on'); }
 colorDim.onclick=closeColor;
 
@@ -1821,69 +2018,6 @@ async function refreshUnpaid(){
   if(list.length){ cnt.style.display='grid'; cnt.textContent=list.length; }
   else cnt.style.display='none';
 }
-async function openUnpaid(){
-    // сбрасываем панель статистики без анимации
-  const statsPanelReset=document.getElementById('statsPanel');
-  if(statsPanelReset){
-    statsPanelReset.style.transition='none';
-    statsPanelReset.classList.remove('open');
-    statsPanelReset.offsetHeight;
-    statsPanelReset.style.transition='';
-  }
-
-await loadStudents();
-  const list=await computeUnpaid();
-  let scr=document.getElementById('unpaidScreen');
-  if(!scr){
-    scr=document.createElement('div'); scr.className='screen'; scr.id='unpaidScreen';
-    scr.innerHTML=`<div class="scr-head"><button class="back" id="unpaidBack">‹</button><div class="ttl">Неоплаченные</div><button class="pencil" id="statOpenBtn" title="Статистика" style="margin-left:auto">📊</button></div>`+
-      `<div class="stats-panel" id="statsPanel"><div class="stats-panel-inner"><p class="psub" id="statsPsub" style="display:none">нажми на карточку для деталей</p><div class="stat-grid" id="statsBoxes"></div></div></div>`+
-      `<div class="hours" id="unpaidList"></div>`;
-    document.body.appendChild(scr);
-    document.getElementById('unpaidBack').onclick=()=>{ scr.classList.remove('on'); renderMonth(); };
-    document.getElementById('statOpenBtn').onclick=toggleStats;
-  }
-  const box=document.getElementById('unpaidList'); box.innerHTML='';
-  if(!list.length){ box.innerHTML='<div class="empty-note">Нет неоплаченных занятий.</div>'; }
-  list.forEach(it=>{
-    const L=it.L;
-    const s=L.studentId?studentById(L.studentId):null;
-    const nm=s?s.name:(L.name||'Занятие');
-    const col=s?s.color:lessonColor(L);
-    const price=s&&!L.trial?s.price:L.price;
-    const item=document.createElement('div'); item.className='unpaid-item';
-    item.innerHTML=`
-      <div class="avatar" style="width:38px;height:38px;font-size:15px;background:${col}">${esc(initials(nm))}</div>
-      <div class="ui-info">
-        <div class="ui-name">${esc(nm)}</div>
-        <div class="ui-meta">${it.d} ${MONTHS_GEN[it.m-1]} · ${esc(L.time||'')}</div>
-      </div>
-      <div class="ui-sum">${esc(price||'')}${price&&/\d/.test(price)?' ₽':''}</div>
-      <div class="sw green" style="margin-left:4px"></div>`;
-    const sw=item.querySelector('.sw');
-    sw.onclick=async()=>{
-      const arr=await Store.get(it.key);
-      const i=arr.findIndex(x=>x.id===L.id); if(i<0)return;
-      const newPaid=!arr[i].paid;
-      arr[i].paid=newPaid; await Store.set(it.key,arr);
-      sw.classList.toggle('on',newPaid);
-      item.style.opacity=newPaid?'.55':'1';
-      haptic(newPaid?'success':'light');
-      await refreshUnpaid(); // счётчик обновляется сразу
-    };
-    box.appendChild(item);
-  });
-  // даём браузеру кадр, чтобы начальное состояние применилось до анимации (иначе первый раз вылетает рывком)
-  requestAnimationFrame(()=>requestAnimationFrame(()=>scr.classList.add('on')));
-  // если панель статистики была оставлена открытой с прошлого раза — пересчитываем,
-  // чтобы цифры не оставались устаревшими после добавления/удаления учеников
-  const statsPanel=document.getElementById('statsPanel');
-  if(statsPanel && statsPanel.classList.contains('open')){
-    const st=await gatherStats();
-    renderStatBoxes(st);
-  }
-}
-
 /* ============ CONFIRM DIALOG ============ */
 let confirmCb=null;
 function showConfirm(q,cb){
@@ -1896,21 +2030,173 @@ document.getElementById('confirmYes').onclick=()=>{
   if(confirmCb) confirmCb(); confirmCb=null;
 };
 
-/* ============ STATISTICS (lazy, only on tap) ============ */
-async function toggleStats(){
-  const panel=document.getElementById('statsPanel');
-  const wasOpen=panel.classList.contains('open');
-  panel.classList.toggle('open',!wasOpen);
-  if(wasOpen){
-    const psub=document.getElementById('statsPsub'); if(psub) psub.style.display='none';
-    return;
-  }
-  const boxes=document.getElementById('statsBoxes');
-  boxes.innerHTML='<div class="stat-box wide"><div class="sb-num">…</div><div class="sb-lab">считаю</div></div>';
-  const st=await gatherStats();
-  renderStatBoxes(st);
+/* ============ SETTINGS ============ */
+const settingsScreen=document.getElementById('settingsScreen');
+let settInitial={}; // начальное состояние при открытии
+
+async function openSettings(){
+  // СНАЧАЛА показываем экран с анимацией (контент уже в DOM статично)
+  void settingsScreen.offsetWidth; // reflow для корректной стартовой позиции
+  settingsScreen.classList.add('on');
+  // ПОТОМ подгружаем актуальное состояние
+  let histOn=false, hourOn=true, mornOn=true, eveOn=false;
+  try{ const h=await apiFetch('/api/history'); histOn=h.history===true; }catch(e){}
+  try{ const n=await apiFetch('/api/notify'); hourOn=n.hour_reminder!==false; mornOn=n.morning!==false; eveOn=n.evening===true; }catch(e){}
+  setSw('settHistorySw',histOn);
+  setSw('settHourSw',hourOn);
+  setSw('settMorningSw',mornOn);
+  setSw('settEveningSw',eveOn);
+  settInitial={history:histOn,hour:hourOn,morning:mornOn,evening:eveOn};
 }
 
+document.getElementById('settingsBack').onclick=()=>settingsScreen.classList.remove('on');
+document.getElementById('settingsBtnMain').onclick=openSettings;
+
+// тогглы — просто переключают визуально, сохраняются по кнопке
+document.getElementById('settHistorySw').onclick=()=>{ const on=!document.getElementById('settHistorySw').classList.contains('on'); setSw('settHistorySw',on); haptic('light'); };
+document.getElementById('settHourSw').onclick=()=>{ const on=!document.getElementById('settHourSw').classList.contains('on'); setSw('settHourSw',on); haptic('light'); };
+document.getElementById('settMorningSw').onclick=()=>{ const on=!document.getElementById('settMorningSw').classList.contains('on'); setSw('settMorningSw',on); haptic('light'); };
+document.getElementById('settEveningSw').onclick=()=>{ const on=!document.getElementById('settEveningSw').classList.contains('on'); setSw('settEveningSw',on); haptic('light'); };
+
+document.getElementById('settSaveBtn').onclick=async()=>{
+  const histOn=document.getElementById('settHistorySw').classList.contains('on');
+  const hourOn=document.getElementById('settHourSw').classList.contains('on');
+  const mornOn=document.getElementById('settMorningSw').classList.contains('on');
+  const eveOn=document.getElementById('settEveningSw').classList.contains('on');
+  const histChanged=histOn!==settInitial.history;
+  const notifChanged=hourOn!==settInitial.hour||mornOn!==settInitial.morning||eveOn!==settInitial.evening;
+  const anyChanged=histChanged||notifChanged;
+  if(anyChanged){
+    if(histChanged){
+      try{ await apiFetch('/api/history/set',{method:'POST',body:JSON.stringify({on:histOn})}); historyMode=histOn; }catch(e){}
+    }
+    if(notifChanged){
+      try{ await apiFetch('/api/notify/set',{method:'POST',body:JSON.stringify({hour_reminder:hourOn,morning:mornOn,evening:eveOn})}); }catch(e){}
+    }
+    settingsScreen.classList.remove('on');
+    if(histChanged){
+      // режим истории влияет на то какие дни доступны — обновляем кэш
+      dataCache={}; allKeysCache=null; loadedMonths.clear(); studentsCache=null;
+      await renderMonth(); await renderStudents();
+    }
+    toast('Настройки сохранены'); haptic('success');
+  }else{
+    settingsScreen.classList.remove('on');
+  }
+};
+
+// статистика из настроек
+document.getElementById('settStatsBtn').onclick=async()=>{
+  const dim=document.getElementById('statsFromSettingsDim');
+  const sheet=document.getElementById('statsFromSettingsSheet');
+  const boxes=document.getElementById('statsFromSettingsBoxes');
+  const psub=document.getElementById('statsFromSettingsPsub');
+  // всегда открываем на странице сводки
+  document.getElementById('statsPageSummary').style.display='flex';
+  document.getElementById('statsPageDetail').style.display='none';
+  psub.style.display='none';
+  boxes.innerHTML='<div class="stat-box wide"><div class="sb-num">…</div><div class="sb-lab">считаю</div></div>';
+  dim.classList.add('on'); sheet.classList.add('on');
+  const st=await gatherStats();
+  boxes.innerHTML='';
+  const mk=(num,lab,id)=>{
+    const b=document.createElement('div'); b.className='stat-box';
+    b.innerHTML=`<div class="sb-num">${num}</div><div class="sb-lab">${lab}</div>`;
+    if(id) b.onclick=()=>openStatDetail(id,st);
+    return b;
+  };
+  boxes.appendChild(mk(`${st.activeStudents}<span style="font-size:14px;color:var(--muted-2)"> / ${st.students.length}</span>`,'Активных / всего','students'));
+  boxes.appendChild(mk(st.doneList.length,'Проведено','done'));
+  boxes.appendChild(mk(st.plannedList.length,'Запланировано','planned'));
+  boxes.appendChild(mk(st.avg?st.avg+' ₽':'—','Средний чек','avg'));
+  psub.style.display='block';
+};
+document.getElementById('statsFromSettingsDim').onclick=()=>{
+  document.getElementById('statsFromSettingsDim').classList.remove('on');
+  document.getElementById('statsFromSettingsSheet').classList.remove('on');
+};
+document.getElementById('statsBackToSettings').onclick=()=>{
+  document.getElementById('statsFromSettingsDim').classList.remove('on');
+  document.getElementById('statsFromSettingsSheet').classList.remove('on');
+};
+
+
+/* ============ UNPAID NOTIFICATIONS ============ */
+async function renderUnpaidNotif() {
+  const list = await computeUnpaid();
+  const unpaid = list.filter(it => !it.L.paid);
+  const section = document.getElementById('notifUnpaidSection');
+  const listEl = document.getElementById('notifUnpaidList');
+  const empty = document.getElementById('notifEmpty');
+  const cnt = document.getElementById('unpaidCnt');
+  if (!unpaid.length) {
+    section.style.display = 'none';
+    empty.style.display = 'block';
+    cnt.style.display = 'none';
+    return;
+  }
+  section.style.display = 'block';
+  empty.style.display = 'none';
+  cnt.textContent = unpaid.length; cnt.style.display = 'inline';
+  listEl.innerHTML = '';
+  unpaid.forEach(it => {
+    const L = it.L;
+    const s = L.studentId ? studentById(L.studentId) : null;
+    const nm = s ? s.name : (L.name || 'Занятие');
+    const price = s && !L.trial ? s.price : L.price;
+    const item = document.createElement('div');
+    item.className = 'unpaid-item';
+    item.innerHTML = `
+      <div class="ui-info">
+        <div class="ui-name">${esc(nm)}</div>
+        <div class="ui-meta">${it.d} ${MONTHS_GEN[it.m-1]} · ${esc(L.time||'')}</div>
+      </div>
+      <div class="ui-sum">${esc(price||'')}${price&&/\d/.test(price)?' ₽':''}</div>
+      <div class="sw green" style="margin-left:4px"></div>`;
+    const sw = item.querySelector('.sw');
+    sw.onclick = async () => {
+      const arr = await Store.get(it.key);
+      const i = arr.findIndex(x => x.id === L.id); if (i < 0) return;
+      const newPaid = !arr[i].paid; arr[i].paid = newPaid;
+      await Store.set(it.key, arr);
+      sw.classList.toggle('on', newPaid);
+      haptic(newPaid ? 'success' : 'light');
+      await refreshUnpaid();
+      if (newPaid) {
+        item.style.transition = 'opacity .25s, max-height .3s .05s, margin .3s .05s, padding .3s .05s';
+        item.style.maxHeight = item.offsetHeight + 'px';
+        requestAnimationFrame(() => {
+          item.style.opacity = '0'; item.style.maxHeight = '0';
+          item.style.marginBottom = '0'; item.style.paddingTop = '0'; item.style.paddingBottom = '0';
+          item.style.overflow = 'hidden';
+        });
+        setTimeout(async () => {
+          item.remove();
+          const remaining = (await computeUnpaid()).filter(x => !x.L.paid);
+          if (!remaining.length) {
+            section.style.display = 'none';
+            empty.style.display = 'block';
+            cnt.style.display = 'none';
+          }
+        }, 330);
+      } else {
+        item.style.opacity = '1';
+      }
+    };
+    listEl.appendChild(item);
+  });
+}
+
+// открытие экрана уведомлений
+const notifScreen = document.getElementById('notifScreen');
+document.getElementById('notifBtn').onclick = async () => {
+  void notifScreen.offsetWidth;
+  notifScreen.classList.add('on');
+  await renderUnpaidNotif();
+};
+document.getElementById('notifBack').onclick = () => notifScreen.classList.remove('on');
+
+/* ============ STATISTICS (lazy, only on tap) ============ */
 async function gatherStats(){
   await loadStudents();
   await fetchAllKeys();
@@ -1941,7 +2227,8 @@ async function gatherStats(){
 
 function nameOf(L){ const s=L.studentId?studentById(L.studentId):null; return s?s.name:(L.name||'Занятие'); }
 function renderStatBoxes(st){
-  const boxes=document.getElementById('statsBoxes');
+  const boxes=document.getElementById('statsFromSettingsBoxes');
+  if(!boxes) return;
   boxes.innerHTML='';
   const mk=(num,lab,id)=>{
     const b=document.createElement('div'); b.className='stat-box';
@@ -1954,7 +2241,7 @@ function renderStatBoxes(st){
   boxes.appendChild(mk(st.plannedList.length,'Запланировано','planned'));
   const avgBox=mk(st.avg?st.avg+' ₽':'—','Средний чек','avg');
   boxes.appendChild(avgBox);
-  const psub=document.getElementById('statsPsub'); if(psub) psub.style.display='block';
+  const psub=document.getElementById('statsFromSettingsPsub'); if(psub) psub.style.display='block';
 }
 
 function rowHtml(L,extra){
@@ -1962,6 +2249,11 @@ function rowHtml(L,extra){
 }
 function openStatDetail(id,st){
   const t=document.getElementById('statSheetTitle'), b=document.getElementById('statSheetBody');
+  // переключаем страницы внутри шторки
+  document.getElementById('statsPageSummary').style.display='none';
+  const detail=document.getElementById('statsPageDetail');
+  detail.style.display='flex';
+  detail.classList.remove('anim'); void detail.offsetWidth; detail.classList.add('anim');
   if(id==='students'){
     t.textContent='Ученики';
     const active=st.students.filter(s=>!s.archived);
@@ -2023,12 +2315,10 @@ function openStatDetail(id,st){
         `<div class="vc-item"><div class="ic">Σ</div><div><div class="v">${st.total.toLocaleString('ru')} ₽</div><div class="k">всего заработано (оплачено)</div></div></div>`;
     }
   }
-  document.getElementById('statDim').classList.add('on');
-  document.getElementById('statSheet').classList.add('on');
 }
-document.getElementById('statDim').onclick=()=>{
-  document.getElementById('statDim').classList.remove('on');
-  document.getElementById('statSheet').classList.remove('on');
+document.getElementById('statDetailBackInline').onclick=()=>{
+  document.getElementById('statsPageDetail').style.display='none';
+  document.getElementById('statsPageSummary').style.display='flex';
 };
 
 /* ============ helpers ============ */
