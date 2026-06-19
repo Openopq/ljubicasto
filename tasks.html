@@ -1,0 +1,996 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Конструктор заданий</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+:root{
+  --violet:#6C3FC7;--violet-deep:#4B2A8F;--violet-soft:#C5B3E8;--violet-tint:#F0EBFC;
+  --green:#34B27B;--green-tint:#EAF7F0;
+  --danger:#E5687E;--danger-tint:#FEF0F2;
+  --gold:#D4A017;--gold-tint:#FFF8E6;
+  --ink:#2B2444;--muted:#9088A8;--muted-2:#BDB6CC;
+  --surface:#FFFFFF;--surface-2:#F8F6FC;--bg:#F5F2FC;--line:#EAE4F5;
+  --shadow:0 4px 20px rgba(43,36,68,.10);--shadow-soft:0 2px 8px rgba(43,36,68,.07);
+  --r:15px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:var(--ink)}
+
+/* топбар */
+.topbar{background:var(--surface);border-bottom:1.5px solid var(--line);padding:12px 16px;
+  display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:10}
+.dot{width:34px;height:34px;border-radius:10px;background:var(--surface);
+  box-shadow:var(--shadow-soft);border:1px solid var(--line);display:grid;place-items:center;flex:none}
+.brand-title{font-size:17px;font-weight:800;letter-spacing:-.02em}
+.brand-title span{color:var(--violet)}
+.brand-sub{font-size:11px;color:var(--muted);font-weight:600;margin-top:1px}
+
+/* вкладки */
+.tabs{display:flex;gap:6px;padding:12px 16px;background:var(--surface);
+  border-bottom:1.5px solid var(--line);overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex:none;padding:7px 16px;border-radius:20px;font-size:13px;font-weight:700;
+  border:1.5px solid var(--line);background:var(--bg);color:var(--muted);cursor:pointer;font-family:inherit}
+.tab.on{background:var(--violet);border-color:var(--violet);color:#fff}
+
+/* основной контент */
+.main{padding:14px 16px 120px}
+.panel{display:none}.panel.on{display:block}
+
+/* карточки */
+.card{background:var(--surface);border:1.5px solid var(--line);border-radius:var(--r);margin-bottom:8px;overflow:hidden}
+
+/* уровень */
+.level-header{display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer}
+.level-header:active{background:var(--surface-2)}
+.level-icon{width:36px;height:36px;border-radius:10px;background:var(--violet-tint);
+  display:grid;place-items:center;font-size:16px;flex:none}
+.level-body{flex:1;min-width:0}
+.level-name{font-size:15px;font-weight:800;color:var(--ink)}
+.level-sub{font-size:12px;color:var(--muted);font-weight:600;margin-top:1px}
+.level-actions{display:flex;gap:6px;align-items:center}
+.act-btn{border:none;background:var(--violet-tint);color:var(--violet);font-size:11px;font-weight:800;
+  padding:4px 9px;border-radius:8px;cursor:pointer;font-family:inherit}
+.act-btn.danger{background:var(--danger-tint);color:var(--danger)}
+.chevron{font-size:12px;color:var(--muted-2);transition:transform .18s;flex:none}
+.chevron.open{transform:rotate(90deg)}
+
+/* группы внутри уровня */
+.level-groups{display:none;border-top:1.5px solid var(--line)}
+.level-groups.open{display:block}
+.add-group-row{display:flex;align-items:center;gap:8px;padding:10px 14px;
+  font-size:13px;font-weight:700;color:var(--violet);cursor:pointer;border-top:1px solid var(--line)}
+.add-group-row:active{background:var(--violet-tint)}
+
+/* группа */
+.group-card{border-bottom:1px solid var(--line)}
+.group-card:last-child{border-bottom:none}
+.group-header{display:flex;align-items:center;gap:10px;padding:11px 14px 11px 22px;cursor:pointer}
+.group-header:active{background:var(--surface-2)}
+.group-icon{font-size:14px;width:30px;height:30px;border-radius:8px;background:var(--bg);
+  display:grid;place-items:center;flex:none}
+.group-name{flex:1;font-size:14px;font-weight:700;color:var(--ink)}
+.group-sub{font-size:11px;color:var(--muted);font-weight:600}
+.group-chevron{font-size:11px;color:var(--muted-2);transition:transform .18s;flex:none}
+.group-chevron.open{transform:rotate(90deg)}
+
+/* задания внутри группы */
+.group-tasks{display:none;background:var(--surface-2)}
+.group-tasks.open{display:block}
+.task-item{display:flex;align-items:center;gap:8px;padding:9px 14px 9px 32px;
+  border-top:1px solid var(--line)}
+.task-word{flex:1;min-width:0}
+.task-w{font-size:13px;font-weight:700;color:var(--ink)}
+.task-t{font-size:11px;color:var(--muted);font-weight:600}
+.task-type{font-size:10px;color:var(--muted-2);font-weight:700;padding:2px 6px;
+  border-radius:6px;background:var(--bg);border:1px solid var(--line);flex:none}
+.task-btns{display:flex;gap:4px;flex:none}
+.task-btn{width:26px;height:26px;border-radius:7px;border:none;background:var(--bg);
+  color:var(--muted);font-size:13px;cursor:pointer;display:grid;place-items:center}
+.task-btn:active{background:var(--violet-tint);color:var(--violet)}
+.task-btn.danger:active{background:var(--danger-tint);color:var(--danger)}
+.group-add-task{display:flex;align-items:center;gap:6px;padding:9px 14px 9px 32px;
+  font-size:12px;font-weight:700;color:var(--violet);cursor:pointer;border-top:1px solid var(--line)}
+.group-add-task:active{background:var(--violet-tint)}
+
+/* форма */
+.form-card{background:var(--surface);border:1.5px solid var(--line);border-radius:var(--r);padding:16px;margin-bottom:10px}
+.field{margin-bottom:14px}.field:last-child{margin-bottom:0}
+.field label{font-size:11px;color:var(--muted);font-weight:800;display:block;margin-bottom:5px;letter-spacing:.04em;text-transform:uppercase}
+.field input,.field select,.field textarea{
+  width:100%;font-size:15px;color:var(--ink);background:var(--surface-2);
+  border:1.5px solid var(--line);border-radius:11px;padding:10px 12px;
+  font-family:inherit;outline:none;transition:border-color .12s}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--violet-soft)}
+
+/* тип задания */
+.type-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.type-btn{padding:9px 6px;border:1.5px solid var(--line);border-radius:12px;background:var(--bg);
+  font-size:12px;font-weight:700;color:var(--muted);cursor:pointer;text-align:center;font-family:inherit}
+.type-btn.on{border-color:var(--violet);background:var(--violet-tint);color:var(--violet)}
+
+/* варианты */
+.choices-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.choice-row{display:flex;gap:6px;align-items:center}
+.choice-row input{flex:1;min-width:0;font-size:14px;color:var(--ink);background:var(--surface-2);
+  border:1.5px solid var(--line);border-radius:10px;padding:8px 10px;font-family:inherit;outline:none}
+.choice-check{width:30px;height:30px;border-radius:9px;border:1.5px solid var(--line);
+  background:var(--bg);display:grid;place-items:center;cursor:pointer;flex:none;font-size:14px}
+.choice-check.on{background:var(--green-tint);border-color:var(--green);color:var(--green)}
+
+/* кнопка добавить задание */
+.add-task-btn{display:flex;align-items:center;justify-content:center;gap:8px;
+  padding:12px;border:2px dashed var(--violet-soft);border-radius:var(--r);
+  background:var(--violet-tint);color:var(--violet);font-size:13px;font-weight:800;
+  cursor:pointer;margin-bottom:10px;font-family:inherit;width:100%}
+.add-task-btn:active{opacity:.8}
+
+/* блок доп задания */
+.extra-task{background:var(--surface);border:1.5px solid var(--violet-soft);border-radius:var(--r);
+  padding:14px;margin-bottom:10px;position:relative}
+.extra-task-del{position:absolute;top:10px;right:10px;border:none;background:var(--danger-tint);
+  color:var(--danger);border-radius:8px;width:28px;height:28px;font-size:16px;cursor:pointer;
+  display:grid;place-items:center}
+
+/* кнопки */
+.save-btn{width:100%;padding:14px;background:var(--violet);color:#fff;border:none;
+  border-radius:var(--r);font-size:15px;font-weight:800;font-family:inherit;cursor:pointer}
+.save-btn:active{opacity:.85}
+
+/* пустой экран */
+.empty{text-align:center;padding:48px 20px;color:var(--muted)}
+.empty-icon{font-size:42px;margin-bottom:12px}
+.empty-txt{font-size:14px;font-weight:600}
+
+/* dim + sheet */
+.dim{position:fixed;inset:0;background:rgba(43,36,68,.45);z-index:40;opacity:0;pointer-events:none;transition:opacity .2s}
+.dim.on{opacity:1;pointer-events:all}
+.sheet{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-radius:20px 20px 0 0;
+  z-index:41;transform:translateY(100%);transition:transform .28s cubic-bezier(.32,.72,0,1);
+  padding:20px 20px 36px;max-height:80vh;overflow-y:auto}
+.sheet.on{transform:translateY(0)}
+.sheet h3{font-size:17px;font-weight:800;margin-bottom:16px}
+.sheet-btn{width:100%;padding:13px;border:none;border-radius:12px;font-size:15px;font-weight:700;
+  font-family:inherit;cursor:pointer;margin-bottom:8px}
+.sheet-btn.primary{background:var(--violet);color:#fff}
+.sheet-btn.danger{background:var(--danger-tint);color:var(--danger)}
+.sheet-btn.cancel{background:var(--bg);color:var(--muted)}
+
+/* toast */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);
+  background:var(--ink);color:#fff;padding:10px 18px;border-radius:20px;
+  font-size:13px;font-weight:700;opacity:0;transition:all .2s;z-index:99;white-space:nowrap}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* экран сортировки */
+.screen{position:fixed;inset:0;z-index:60;background:var(--bg);
+  transform:translateX(100%);visibility:hidden;
+  transition:transform .26s cubic-bezier(.4,0,.2,1),visibility 0s linear .26s;
+  overflow-y:auto}
+.screen.on{transform:translateX(0);visibility:visible;transition:transform .26s cubic-bezier(.4,0,.2,1),visibility 0s}
+.reorder-item{display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--line)}
+.reorder-item:last-child{border-bottom:none}
+.num-badge{min-width:36px;height:36px;border-radius:10px;background:var(--violet-tint);
+  border:1.5px solid var(--violet-soft);color:var(--violet);font-size:16px;font-weight:800;
+  display:grid;place-items:center;cursor:pointer;transition:all .12s;flex:none}
+.num-badge:active{background:var(--violet);color:#fff}
+.num-badge.dup{background:var(--danger-tint);border-color:var(--danger);color:var(--danger)}
+.num-cell{padding:10px;background:var(--bg);border:1.5px solid var(--line);border-radius:10px;
+  font-size:16px;font-weight:800;text-align:center;cursor:pointer;color:var(--ink)}
+.num-cell:active{background:var(--violet-tint);border-color:var(--violet);color:var(--violet)}
+.num-cell.cur{background:var(--violet);border-color:var(--violet);color:#fff}
+
+/* перенос */
+.move-list{display:flex;flex-direction:column;gap:6px;max-height:50vh;overflow-y:auto}
+.move-item{padding:11px 13px;background:var(--bg);border-radius:11px;
+  border:1.5px solid var(--line);cursor:pointer;font-size:14px;font-weight:600}
+.move-item:active{border-color:var(--violet);background:var(--violet-tint);color:var(--violet)}
+
+/* секция добавить уровень */
+.add-level-row{display:flex;align-items:center;gap:8px;padding:12px 14px;
+  font-size:13px;font-weight:700;color:var(--violet);cursor:pointer;
+  background:var(--surface);border:1.5px solid var(--line);border-radius:var(--r);margin-bottom:8px}
+.add-level-row:active{background:var(--violet-tint)}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="dot">
+    <svg viewBox="0 0 32 32" width="24" height="24" xmlns="http://www.w3.org/2000/svg">
+      <path d="M16 19 Q15 24 15.5 29" stroke="#5A9E6F" stroke-width="1.6" stroke-linecap="round" fill="none"/>
+      <path d="M15.5 24 Q11 22 10 18 Q14 18.5 15.5 24z" fill="#6FB173"/>
+      <ellipse cx="16" cy="10.2" rx="3.2" ry="4.5" fill="#7C5CDB" opacity=".92"/>
+      <ellipse cx="11.5" cy="16.5" rx="3.2" ry="4.5" transform="rotate(-60 11.5 16.5)" fill="#A78BEA" opacity=".92"/>
+      <ellipse cx="20.5" cy="16.5" rx="3.2" ry="4.5" transform="rotate(60 20.5 16.5)" fill="#A78BEA" opacity=".92"/>
+      <ellipse cx="10.2" cy="12.5" rx="3.2" ry="4.5" transform="rotate(-30 10.2 12.5)" fill="#8B6FE8" opacity=".88"/>
+      <ellipse cx="21.8" cy="12.5" rx="3.2" ry="4.5" transform="rotate(30 21.8 12.5)" fill="#8B6FE8" opacity=".88"/>
+      <circle cx="16" cy="15" r="2.8" fill="#FFF176"/>
+      <circle cx="16" cy="15" r="1.4" fill="#F9A825"/>
+    </svg>
+  </div>
+  <div>
+    <div class="brand-title">Љуби<span>чица</span></div>
+    <div class="brand-sub">конструктор заданий</div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab on" onclick="switchTab('library')">Библиотека</button>
+  <button class="tab" onclick="switchTab('new')">Новое задание</button>
+</div>
+
+<div class="main">
+
+  <!-- БИБЛИОТЕКА -->
+  <div class="panel on" id="panel-library">
+    <div class="add-level-row" onclick="openAddLevel()">
+      + Добавить уровень
+    </div>
+    <div id="levelsList"></div>
+  </div>
+
+  <!-- НОВОЕ ЗАДАНИЕ -->
+  <div class="panel" id="panel-new">
+    <!-- шапка группы — название + уровень -->
+    <div class="form-card">
+      <div class="field">
+        <label>Название группы заданий</label>
+        <input id="f_groupName" placeholder="нпр. Семья · базовые слова" autocomplete="off" oninput="checkGroupExists()">
+        <div id="groupExistsHint" style="display:none;margin-top:8px;background:var(--violet-tint);border-radius:10px;padding:10px 12px;font-size:13px;color:var(--violet);font-weight:600;line-height:1.5">
+          Группа с таким названием уже существует.
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <button onclick="confirmAddToExisting()" style="flex:1;padding:8px;background:var(--violet);color:#fff;border:none;border-radius:9px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer">Добавить в неё</button>
+            <button onclick="makeGroupCopy()" style="flex:1;padding:8px;background:var(--bg);color:var(--muted);border:1.5px solid var(--line);border-radius:9px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer">Создать копию</button>
+          </div>
+        </div>
+      </div>
+      <div class="field">
+        <label>Уровень</label>
+        <select id="f_level" onchange="updateGroupSelect()">
+          <option value="">— выбери уровень —</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- задания -->
+    <div id="tasksContainer"></div>
+
+    <button class="add-task-btn" onclick="addTaskBlock()">+ Добавить задание</button>
+
+    <button class="save-btn" onclick="saveGroup()">Сохранить группу</button>
+  </div>
+
+</div>
+
+<!-- dim -->
+<div class="dim" id="dim" onclick="closeSheet()"></div>
+
+<!-- Добавить/редактировать уровень -->
+<div class="sheet" id="levelSheet">
+  <h3 id="levelSheetTitle">Уровень</h3>
+  <div class="field"><label>Название</label><input id="levelName" placeholder="нпр. А1" autocomplete="off"></div>
+  <button class="sheet-btn primary" onclick="saveLevel()">Сохранить</button>
+  <button class="sheet-btn cancel" onclick="closeSheet()">Отмена</button>
+</div>
+
+<!-- Добавить/редактировать группу -->
+<div class="sheet" id="groupSheet">
+  <h3 id="groupSheetTitle">Группа заданий</h3>
+  <div class="field"><label>Название</label><input id="groupName" placeholder="нпр. Семья" autocomplete="off"></div>
+  <div class="field"><label>Уровень</label><select id="groupLevelSel"></select></div>
+  <button class="sheet-btn primary" onclick="saveGroupSheet()">Сохранить</button>
+  <button class="sheet-btn cancel" onclick="closeSheet()">Отмена</button>
+</div>
+
+<!-- Дублировать группу -->
+<div class="sheet" id="dupGroupSheet">
+  <h3>Дублировать группу</h3>
+  <div class="field"><label>Новое название</label><input id="dupGroupName" autocomplete="off"></div>
+  <div class="field"><label>Уровень</label><select id="dupGroupLevel"></select></div>
+  <button class="sheet-btn primary" onclick="doDupGroup()">Дублировать</button>
+  <button class="sheet-btn cancel" onclick="closeSheet()">Отмена</button>
+</div>
+
+<!-- Перенести задание -->
+<div class="sheet" id="moveSheet">
+  <h3>Перенести в группу</h3>
+  <div class="move-list" id="moveList"></div>
+  <button class="sheet-btn cancel" style="margin-top:10px" onclick="closeSheet()">Отмена</button>
+</div>
+
+<!-- Подтверждение -->
+<div class="sheet" id="confirmSheet">
+  <h3 id="confirmTitle">Подтверждение</h3>
+  <p id="confirmMsg" style="font-size:14px;color:var(--muted);margin-bottom:20px;line-height:1.5"></p>
+  <button class="sheet-btn danger" id="confirmYesBtn">Удалить</button>
+  <button class="sheet-btn cancel" onclick="closeSheet()">Отмена</button>
+</div>
+
+<!-- Задание внутри группы — шторка редактирования -->
+<div class="sheet" id="taskEditSheet">
+  <h3 id="taskEditTitle">Задание</h3>
+  <div id="taskEditBody"></div>
+</div>
+
+<!-- Экран сортировки заданий -->
+<div class="screen" id="reorderScreen" style="visibility:hidden">
+  <div class="scr-head" style="position:sticky;top:0;background:var(--bg);z-index:5;display:flex;align-items:center;gap:12px;padding:16px 16px 12px;border-bottom:1.5px solid var(--line)">
+    <button class="back" onclick="closeReorderScreen()" style="width:38px;height:38px;border:none;border-radius:11px;background:var(--surface);box-shadow:0 2px 8px rgba(43,36,68,.07);color:var(--ink);font-size:20px;cursor:pointer;display:grid;place-items:center">‹</button>
+    <div style="font-size:18px;font-weight:800">Порядок заданий</div>
+  </div>
+  <div style="padding:14px 16px 120px" id="reorderList"></div>
+  <div style="position:fixed;bottom:0;left:0;right:0;padding:16px;background:var(--bg);border-top:1.5px solid var(--line)">
+    <button class="save-btn" onclick="saveReorder()">Сохранить порядок</button>
+  </div>
+</div>
+
+<!-- Выбор номера позиции -->
+<div class="dim" id="numDim" onclick="closeNumPicker()" style="z-index:70"></div>
+<div class="sheet" id="numSheet" style="z-index:71">
+  <h3 id="numSheetTitle">Поставить на позицию</h3>
+  <div id="numGrid" style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px"></div>
+  <button class="sheet-btn cancel" style="margin-top:12px" onclick="closeNumPicker()">Отмена</button>
+</div>
+
+<div class="sheet" id="positionSheet" style="display:none"></div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const ALLOWED=[7653945813,6571313515];
+const MOCK=false;
+const tg=window.Telegram?.WebApp;
+if(tg) tg.expand();
+
+function accessOk(){
+  if(!ALLOWED.length) return true;
+  const u=tg&&tg.initDataUnsafe&&tg.initDataUnsafe.user;
+  return u&&ALLOWED.includes(u.id);
+}
+if(!accessOk()){
+  document.body.innerHTML='<div style="text-align:center;padding:80px 20px;color:#9088A8;font-family:sans-serif">Нет доступа.</div>';
+}
+
+async function api(path,opts){
+  const API='https://bot-1781087941-4553-ruserb.bothost.tech';
+  const INIT=(tg&&tg.initData)||'';
+  const r=await fetch(API+path,Object.assign({},opts,{headers:Object.assign({'Content-Type':'application/json','X-Init-Data':INIT},(opts&&opts.headers)||{})}));
+  if(!r.ok) throw new Error('api '+r.status);
+  return r.json();
+}
+
+// ---- state ----
+let levels=[],groups=[],tasks=[];
+let openLevels=new Set(),openGroups=new Set();
+let editingLevel=null,editingGroup=null,dupGroupId=null,movingTaskId=null;
+let activeSheet=null;
+let editingTaskId=null; // для редактирования задания
+let taskBlocks=[]; // блоки заданий в форме новой группы
+let editingGroupId=null; // редактирование существующей группы
+let toastT=null;
+
+function toast(m){const el=document.getElementById('toast');el.textContent=m;el.classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>el.classList.remove('on'),2200);}
+function uid(){return 't'+Date.now()+Math.floor(Math.random()*9999);}
+function esc(s){const d=document.createElement('div');d.textContent=s||'';return d.innerHTML;}
+
+// ---- загрузка ----
+async function loadAll(){
+  const[ld,gd,td]=await Promise.all([api('/api/levels'),api('/api/groups'),api('/api/tasks')]);
+  levels=ld.levels||[];groups=gd.groups||[];tasks=td.tasks||[];
+}
+
+async function init(){
+  await loadAll();
+  if(levels.length===0){
+    const defaults=['С нуля','А1','А2','В1','В2','С1','Разговорный','★ Индивидуальные'];
+    for(let i=0;i<defaults.length;i++){
+      const lv={id:uid(),name:defaults[i],sort:i,created:Date.now()+i};
+      await api('/api/levels',{method:'POST',body:JSON.stringify(lv)});
+      levels.push(lv);
+    }
+  }
+  renderAll();
+}
+
+function renderAll(){renderLibrary();renderNewFormSelects();}
+
+// ---- вкладки ----
+function switchTab(t){
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('on'));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('on'));
+  document.querySelectorAll('.tab')[['library','new'].indexOf(t)].classList.add('on');
+  document.getElementById('panel-'+t).classList.add('on');
+}
+
+// ---- БИБЛИОТЕКА ----
+function renderLibrary(){
+  const box=document.getElementById('levelsList');
+  if(!levels.length){box.innerHTML='<div class="empty"><div class="empty-icon">📂</div><div class="empty-txt">Уровней пока нет</div></div>';return;}
+  box.innerHTML=levels.map(lv=>{
+    const lvGroups=groups.filter(g=>g.level_id===lv.id);
+    const lvTasks=tasks.filter(t=>t.level_id===lv.id);
+    const isOpen=openLevels.has(lv.id);
+    const groupsHtml=lvGroups.map(g=>renderGroupCard(g)).join('');
+    return`<div class="card" style="margin-bottom:10px">
+      <div class="level-header" onclick="toggleLevel('${esc(lv.id)}')">
+        <div class="level-icon">🎯</div>
+        <div class="level-body">
+          <div class="level-name">${esc(lv.name)}</div>
+          <div class="level-sub">${lvGroups.length} групп · ${lvTasks.length} заданий</div>
+        </div>
+        <div class="level-actions" onclick="event.stopPropagation()">
+          <button class="act-btn" onclick="openEditLevel('${esc(lv.id)}')">✎</button>
+          <button class="act-btn danger" onclick="confirmDeleteLevel('${esc(lv.id)}')">✕</button>
+        </div>
+        <div class="chevron${isOpen?' open':''}">›</div>
+      </div>
+      <div class="level-groups${isOpen?' open':''}">
+        ${groupsHtml}
+        <div class="add-group-row" onclick="openAddGroup('${esc(lv.id)}')">+ Добавить группу</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderGroupCard(g){
+  const lv=levels.find(l=>l.id===g.level_id);
+  const gTasks=tasks.filter(t=>t.group_id===g.id).sort((a,b)=>a.sort-b.sort);
+  const isOpen=openGroups.has(g.id);
+  const typeLabel={choice:'Выбор',audio:'Произн.',input:'Ввод'};
+  const tasksHtml=gTasks.map((t,idx)=>`
+    <div class="task-item" id="ti-${esc(t.id)}">
+      <div class="reorder-btns">
+        <button class="reorder-btn" onclick="reorderTask('${esc(g.id)}','${esc(t.id)}',-1)" ${idx===0?'style="opacity:.3;pointer-events:none"':''}>▲</button>
+        <button class="reorder-btn" onclick="reorderTask('${esc(g.id)}','${esc(t.id)}',1)" ${idx===gTasks.length-1?'style="opacity:.3;pointer-events:none"':''}>▼</button>
+      </div>
+      <div class="task-word">
+        <div class="task-w">${esc(t.word)}</div>
+        <div class="task-t">${esc(t.translation)}</div>
+      </div>
+      <div class="task-type">${typeLabel[t.type]||t.type}</div>
+      <div class="task-btns">
+        <button class="task-btn" onclick="editTask('${esc(t.id)}')" title="Редактировать">✎</button>
+        <button class="task-btn" onclick="dupTask('${esc(t.id)}')" title="Дублировать">⧉</button>
+        <button class="task-btn danger" onclick="confirmDeleteTask('${esc(t.id)}')" title="Удалить">✕</button>
+      </div>
+    </div>`).join('');
+  return`<div class="group-card">
+    <div class="group-header" onclick="toggleGroup('${esc(g.id)}')">
+      <div class="group-icon">📁</div>
+      <div class="task-word">
+        <div class="group-name">${esc(g.name)}</div>
+        <div class="group-sub">${gTasks.length} заданий</div>
+      </div>
+      <div class="task-btns" onclick="event.stopPropagation()">
+        <button class="task-btn" onclick="editGroup('${esc(g.id)}')" title="Редактировать задания">✎</button>
+        <button class="task-btn" onclick="openRenameGroup('${esc(g.id)}')" title="Переименовать">Аа</button>
+        <button class="task-btn" onclick="openDupGroup('${esc(g.id)}')" title="Дублировать группу">⧉</button>
+        <button class="task-btn danger" onclick="confirmDeleteGroup('${esc(g.id)}')" title="Удалить">✕</button>
+      </div>
+      <div class="group-chevron${isOpen?' open':''}">›</div>
+    </div>
+    <div class="group-tasks${isOpen?' open':''}">
+      ${tasksHtml}
+      <div class="group-add-task" onclick="addTaskToGroup('${esc(g.id)}','${esc(g.level_id)}')">+ Добавить задание</div>
+    </div>
+  </div>`;
+}
+
+function toggleLevel(id){if(openLevels.has(id))openLevels.delete(id);else openLevels.add(id);renderLibrary();}
+function toggleGroup(id){if(openGroups.has(id))openGroups.delete(id);else openGroups.add(id);renderLibrary();}
+
+// ---- ФОРМА НОВОГО ЗАДАНИЯ ----
+function renderNewFormSelects(){
+  const lsel=document.getElementById('f_level');
+  const v=lsel.value;
+  lsel.innerHTML='<option value="">— выбери уровень —</option>'+levels.map(l=>`<option value="${esc(l.id)}">${esc(l.name)}</option>`).join('');
+  lsel.value=v;
+}
+
+// инициализация блоков заданий
+function initNewForm(prefillGroupId,prefillLevelId){
+  editingGroupId=prefillGroupId||null;
+  addingToExisting=false;
+  document.getElementById('groupExistsHint').style.display='none';
+  document.getElementById('f_groupName').value='';
+  document.getElementById('f_level').value=prefillLevelId||'';
+  if(prefillGroupId){
+    const g=groups.find(x=>x.id===prefillGroupId);
+    if(g){document.getElementById('f_groupName').value=g.name;document.getElementById('f_level').value=g.level_id;}
+  }
+  taskBlocks=[];
+  document.getElementById('tasksContainer').innerHTML='';
+  addTaskBlock();
+}
+
+function addTaskBlock(prefill){
+  const idx=taskBlocks.length;
+  const id='tb'+idx+'_'+Date.now();
+  const block={id,type:'choice',correct:0,prefill:prefill||null};
+  taskBlocks.push(block);
+  const div=document.createElement('div');
+  div.className='form-card';div.id=id;div.style.position='relative';
+  div.innerHTML=`
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div style="display:flex;gap:4px">
+        <button class="task-btn" style="width:30px;height:30px" onclick="moveTaskBlock('${id}',-1)" title="Вверх">▲</button>
+        <button class="task-btn" style="width:30px;height:30px" onclick="moveTaskBlock('${id}',1)" title="Вниз">▼</button>
+        <button class="task-btn" style="width:auto;padding:0 8px;height:30px;font-size:11px;font-weight:800" onclick="openReorderScreen()" title="Сортировка">1↔2</button>
+      </div>
+      ${idx>0?`<button class="extra-task-del" style="position:static;width:28px;height:28px" onclick="removeTaskBlock('${id}')">✕</button>`:'<div></div>'}
+    </div>
+    <div class="field" style="margin-bottom:10px">
+      <label>Тип задания</label>
+      <div class="type-row">
+        <button class="type-btn on" onclick="setBlockType('${id}','choice',this)">Выбор варианта</button>
+        <button class="type-btn" onclick="setBlockType('${id}','input',this)">Ввод слова</button>
+        <button class="type-btn" onclick="setBlockType('${id}','audio',this)">Произношение</button>
+      </div>
+    </div>
+    <div class="field">
+      <label>Слово / фраза (сербский)</label>
+      <input class="tb-word" placeholder="нпр. уцак" autocomplete="off">
+    </div>
+    <div class="field">
+      <label>Перевод (русский)</label>
+      <input class="tb-trans" placeholder="нпр. дядя" autocomplete="off">
+    </div>
+    <div class="tb-choices field">
+      <label>Варианты ответа <span style="font-weight:600;color:var(--muted);font-size:10px">— отметь верный ✓</span></label>
+      <div class="choices-grid">
+        <div class="choice-row"><input placeholder="Вариант 1" autocomplete="off" data-idx="0"><div class="choice-check on" data-idx="0" onclick="setBlockCorrect('${id}',0)">✓</div></div>
+        <div class="choice-row"><input placeholder="Вариант 2" autocomplete="off" data-idx="1"><div class="choice-check" data-idx="1" onclick="setBlockCorrect('${id}',1)">✓</div></div>
+        <div class="choice-row"><input placeholder="Вариант 3" autocomplete="off" data-idx="2"><div class="choice-check" data-idx="2" onclick="setBlockCorrect('${id}',2)">✓</div></div>
+        <div class="choice-row"><input placeholder="Вариант 4" autocomplete="off" data-idx="3"><div class="choice-check" data-idx="3" onclick="setBlockCorrect('${id}',3)">✓</div></div>
+      </div>
+    </div>
+    <div class="tb-audio field" style="display:none">
+      <label>Аудио file_id</label>
+      <input class="tb-audio-inp" placeholder="Telegram file_id (загрузим позже)" autocomplete="off">
+      <div style="margin-top:6px;font-size:12px;color:var(--muted);line-height:1.5">💡 Отправь голосовое боту — он вернёт file_id</div>
+    </div>
+    <div class="tb-input-hint field" style="display:none">
+      <div style="background:var(--violet-tint);border-radius:11px;padding:11px 13px;font-size:13px;color:var(--violet);font-weight:600;line-height:1.5">
+        Ученик будет вводить перевод с клавиатуры.
+      </div>
+    </div>`;
+  document.getElementById('tasksContainer').appendChild(div);
+
+  if(prefill){
+    div.querySelector('.tb-word').value=prefill.word||'';
+    div.querySelector('.tb-trans').value=prefill.translation||'';
+    if(prefill.type&&prefill.type!=='choice'){
+      setBlockType(id,prefill.type,div.querySelectorAll('.type-btn')[prefill.type==='input'?1:2]);
+    }
+    if(prefill.choices){
+      const ch=prefill.choices.split('|');
+      div.querySelectorAll('.choices-grid input').forEach((inp,i)=>inp.value=ch[i]||'');
+    }
+    if(prefill.correct){setBlockCorrect(id,prefill.correct);}
+    if(prefill.audio_file_id)div.querySelector('.tb-audio-inp').value=prefill.audio_file_id||'';
+  }
+}
+
+// ---- экран сортировки заданий ----
+let reorderNums=[]; // текущие номера позиций (индексы 0..n-1, отображаются как 1..n)
+let reorderPickingIdx=null; // какой блок сейчас выбирает позицию
+
+function openReorderScreen(){
+  const scr=document.getElementById('reorderScreen');
+  // инициализируем reorderNums = текущий порядок
+  reorderNums=taskBlocks.map((_,i)=>i);
+  renderReorderList();
+  scr.style.visibility='';
+  void scr.offsetWidth;
+  scr.classList.add('on');
+}
+
+function closeReorderScreen(){
+  document.getElementById('reorderScreen').classList.remove('on');
+}
+
+function renderReorderList(){
+  const list=document.getElementById('reorderList');
+  list.innerHTML='';
+  // сортируем по выбранным позициям
+  const pairs=taskBlocks.map((b,i)=>({b,blockIdx:i,num:reorderNums[i]}));
+  pairs.sort((a,b)=>a.num-b.num);
+  pairs.forEach(({b,blockIdx,num})=>{
+    const div=document.getElementById(b.id);
+    const word=div?div.querySelector('.tb-word')?.value||'Задание '+(blockIdx+1):'Задание '+(blockIdx+1);
+    const trans=div?div.querySelector('.tb-trans')?.value||'':'';
+    const row=document.createElement('div');
+    row.className='reorder-item';
+    row.innerHTML=`
+      <div class="num-badge" onclick="openNumPicker(${blockIdx})">${num+1}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:14px;font-weight:700;color:var(--ink)">${esc(word)}</div>
+        <div style="font-size:12px;color:var(--muted);font-weight:600">${esc(trans)}</div>
+      </div>`;
+    list.appendChild(row);
+  });
+}
+
+function openNumPicker(blockIdx){
+  reorderPickingIdx=blockIdx;
+  const n=taskBlocks.length;
+  const cur=reorderNums[blockIdx];
+  document.getElementById('numSheetTitle').textContent=`Задание ${blockIdx+1} → поставить на позицию`;
+  const grid=document.getElementById('numGrid');
+  grid.innerHTML='';
+  for(let i=0;i<n;i++){
+    const cell=document.createElement('div');
+    cell.className='num-cell'+(i===cur?' cur':'');
+    cell.textContent=i+1;
+    cell.onclick=()=>{ selectNum(i); };
+    grid.appendChild(cell);
+  }
+  const dim=document.getElementById('numDim');
+  const sheet=document.getElementById('numSheet');
+  dim.classList.add('on');
+  sheet.classList.add('on');
+}
+
+function selectNum(num){
+  if(reorderPickingIdx===null) return;
+  // swap: если на целевой позиции уже есть задание — меняем местами
+  const otherIdx=reorderNums.findIndex((n,i)=>n===num&&i!==reorderPickingIdx);
+  if(otherIdx!==-1){
+    reorderNums[otherIdx]=reorderNums[reorderPickingIdx];
+  }
+  reorderNums[reorderPickingIdx]=num;
+  closeNumPicker();
+  renderReorderList();
+}
+
+function closeNumPicker(){
+  document.getElementById('numDim').classList.remove('on');
+  document.getElementById('numSheet').classList.remove('on');
+  reorderPickingIdx=null;
+}
+
+function saveReorder(){
+  // проверяем дубли
+  const counts={};
+  reorderNums.forEach(n=>counts[n]=(counts[n]||0)+1);
+  const hasDups=Object.values(counts).some(c=>c>1);
+  if(hasDups){
+    renderReorderList(); // подсветит красным
+    toast('Есть повторы — исправь номера');
+    return;
+  }
+  // применяем новый порядок — переставляем taskBlocks и DOM
+  const paired=taskBlocks.map((b,i)=>({b,num:reorderNums[i]}));
+  paired.sort((a,b)=>a.num-b.num);
+  taskBlocks=paired.map(p=>p.b);
+  const container=document.getElementById('tasksContainer');
+  taskBlocks.forEach(b=>container.appendChild(document.getElementById(b.id)));
+  closeReorderScreen();
+  toast('Порядок применён');
+}
+
+function moveTaskBlock(id, dir){
+  const idx=taskBlocks.findIndex(b=>b.id===id);
+  const newIdx=idx+dir;
+  if(newIdx<0||newIdx>=taskBlocks.length) return;
+  // запоминаем id обоих блоков ДО swap
+  const idA=taskBlocks[idx].id;
+  const idB=taskBlocks[newIdx].id;
+  // меняем в массиве
+  [taskBlocks[idx],taskBlocks[newIdx]]=[taskBlocks[newIdx],taskBlocks[idx]];
+  // меняем в DOM
+  const container=document.getElementById('tasksContainer');
+  const divA=document.getElementById(idA);
+  const divB=document.getElementById(idB);
+  if(dir===-1){
+    // A едет вверх: вставляем A перед B
+    container.insertBefore(divA,divB);
+  } else {
+    // A едет вниз: вставляем B перед A
+    container.insertBefore(divB,divA);
+  }
+}
+
+function removeTaskBlock(id){
+  taskBlocks=taskBlocks.filter(b=>b.id!==id);
+  document.getElementById(id).remove();
+}
+
+function setBlockType(blockId,type,el){
+  const b=taskBlocks.find(x=>x.id===blockId);if(b)b.type=type;
+  const div=document.getElementById(blockId);
+  div.querySelectorAll('.type-btn').forEach(btn=>btn.classList.remove('on'));
+  el.classList.add('on');
+  div.querySelector('.tb-choices').style.display=type==='choice'?'block':'none';
+  div.querySelector('.tb-audio').style.display=type==='audio'?'block':'none';
+  div.querySelector('.tb-input-hint').style.display=type==='input'?'block':'none';
+}
+
+function setBlockCorrect(blockId,idx){
+  const b=taskBlocks.find(x=>x.id===blockId);if(b)b.correct=idx;
+  const div=document.getElementById(blockId);
+  div.querySelectorAll('.choice-check').forEach((c,i)=>c.classList.toggle('on',i===idx));
+}
+
+async function saveGroup(){
+  const groupName=document.getElementById('f_groupName').value.trim();
+  if(!groupName){toast('Введи название группы');return;}
+  const levelId=document.getElementById('f_level').value;
+  if(!levelId){toast('Выбери уровень');return;}
+  // собираем задания
+  const collected=[];
+  for(const b of taskBlocks){
+    const div=document.getElementById(b.id);if(!div)continue;
+    const word=div.querySelector('.tb-word').value.trim();
+    const trans=div.querySelector('.tb-trans').value.trim();
+    if(!word||!trans){toast('Заполни слово и перевод в каждом задании');return;}
+    const choices=b.type==='choice'?[...div.querySelectorAll('.choices-grid input')].map(i=>i.value.trim()).join('|'):'';
+    const audio=b.type==='audio'?(div.querySelector('.tb-audio-inp').value.trim()||''):'';
+    collected.push({type:b.type,word,translation:trans,choices,correct:b.correct||0,audio_file_id:audio});
+  }
+  if(!collected.length){toast('Добавь хотя бы одно задание');return;}
+  // сохраняем группу
+  const gid=editingGroupId||uid();
+  const g={id:gid,name:groupName,level_id:levelId,sort:groups.length,created:Date.now()};
+  await api('/api/groups',{method:'POST',body:JSON.stringify(g)});
+  if(editingGroupId){const i=groups.findIndex(x=>x.id===gid);if(i>=0)groups[i]=g;}
+  else groups.push(g);
+  // при редактировании (не добавлении в существующую) удаляем старые задания группы
+  if(editingGroupId && !addingToExisting){
+    const oldTasks=tasks.filter(t=>t.group_id===gid);
+    for(const ot of oldTasks){
+      await api('/api/tasks/delete',{method:'POST',body:JSON.stringify({id:ot.id})});
+    }
+    tasks=tasks.filter(t=>t.group_id!==gid);
+  }
+  // сохраняем задания
+  let sortIdx=addingToExisting?tasks.filter(t=>t.group_id===gid).length:0;
+  for(const c of collected){
+    const t={id:uid(),group_id:gid,level_id:levelId,sort:sortIdx++,created:Date.now(),...c};
+    await api('/api/tasks',{method:'POST',body:JSON.stringify(t)});
+    tasks.push(t);
+  }
+  // сброс формы
+  editingGroupId=null; addingToExisting=false; taskBlocks=[];
+  document.getElementById('tasksContainer').innerHTML='';
+  document.getElementById('f_groupName').value='';
+  addTaskBlock();
+  openLevels.add(levelId);
+  openGroups.add(gid);
+  renderAll();
+  toast('Группа сохранена');
+  switchTab('library');
+}
+
+// переход из библиотеки к добавлению задания в группу
+function addTaskToGroup(groupId,levelId){
+  initNewForm(groupId,levelId);
+  switchTab('new');
+}
+
+// ---- обнаружение существующей группы ----
+let addingToExisting=false; // режим добавления в существующую
+
+function checkGroupExists(){
+  if(editingGroupId) return; // при редактировании не показываем
+  const name=document.getElementById('f_groupName').value.trim().toLowerCase();
+  const levelId=document.getElementById('f_level').value;
+  const hint=document.getElementById('groupExistsHint');
+  if(!name){hint.style.display='none';addingToExisting=false;return;}
+  const exists=groups.find(g=>g.name.trim().toLowerCase()===name&&(!levelId||g.level_id===levelId));
+  if(exists&&!addingToExisting){
+    hint.style.display='block';
+  }else{
+    hint.style.display='none';
+  }
+}
+
+function confirmAddToExisting(){
+  const name=document.getElementById('f_groupName').value.trim().toLowerCase();
+  const levelId=document.getElementById('f_level').value;
+  const exists=groups.find(g=>g.name.trim().toLowerCase()===name&&(!levelId||g.level_id===levelId));
+  if(!exists)return;
+  // переключаемся в режим добавления в существующую группу
+  editingGroupId=exists.id;
+  addingToExisting=true;
+  document.getElementById('groupExistsHint').style.display='none';
+  document.getElementById('f_groupName').value=exists.name;
+  document.getElementById('f_level').value=exists.level_id;
+  toast('Задания добавятся в существующую группу');
+}
+
+function makeGroupCopy(){
+  const inp=document.getElementById('f_groupName');
+  inp.value=inp.value.trim()+' (копия)';
+  addingToExisting=false;
+  document.getElementById('groupExistsHint').style.display='none';
+}
+
+// ---- УРОВНИ ----
+function openAddLevel(){editingLevel=null;document.getElementById('levelName').value='';document.getElementById('levelSheetTitle').textContent='Новый уровень';openSheet('levelSheet');}
+function openEditLevel(id){editingLevel=id;const l=levels.find(x=>x.id===id);if(l)document.getElementById('levelName').value=l.name;document.getElementById('levelSheetTitle').textContent='Редактировать уровень';openSheet('levelSheet');}
+
+async function saveLevel(){
+  const name=document.getElementById('levelName').value.trim();
+  if(!name){toast('Введи название');return;}
+  const lv={id:editingLevel||uid(),name,sort:editingLevel?levels.find(x=>x.id===editingLevel)?.sort||levels.length:levels.length,created:Date.now()};
+  await api('/api/levels',{method:'POST',body:JSON.stringify(lv)});
+  if(editingLevel){const i=levels.findIndex(x=>x.id===editingLevel);if(i>=0)levels[i]=lv;}
+  else levels.push(lv);
+  editingLevel=null;closeSheet();renderAll();toast('Уровень сохранён');
+}
+
+function confirmDeleteLevel(id){
+  const l=levels.find(x=>x.id===id);if(!l)return;
+  const gcnt=groups.filter(g=>g.level_id===id).length;
+  const tcnt=tasks.filter(t=>t.level_id===id).length;
+  document.getElementById('confirmTitle').textContent=`Удалить уровень «${l.name}»?`;
+  document.getElementById('confirmMsg').textContent=gcnt||tcnt?`В уровне ${gcnt} групп и ${tcnt} заданий — всё удалится.`:'Уровень будет удалён.';
+  document.getElementById('confirmYesBtn').onclick=async()=>{
+    await api('/api/levels/delete',{method:'POST',body:JSON.stringify({id})});
+    levels=levels.filter(l=>l.id!==id);
+    const gids=groups.filter(g=>g.level_id===id).map(g=>g.id);
+    groups=groups.filter(g=>g.level_id!==id);
+    tasks=tasks.filter(t=>!gids.includes(t.group_id));
+    closeSheet();renderAll();toast('Уровень удалён');
+  };
+  openSheet('confirmSheet');
+}
+
+// ---- ГРУППЫ ----
+function openRenameGroup(id){
+  editingGroup=id; const g=groups.find(x=>x.id===id); if(!g) return;
+  document.getElementById('groupName').value=g.name;
+  const sel=document.getElementById('groupLevelSel');
+  sel.innerHTML=levels.map(l=>`<option value="${esc(l.id)}"${l.id===g.level_id?' selected':''}>${esc(l.name)}</option>`).join('');
+  document.getElementById('groupSheetTitle').textContent='Переименовать группу';
+  openSheet('groupSheet');
+}
+
+function openAddGroup(levelId){
+  editingGroup=null;
+  document.getElementById('groupName').value='';
+  const sel=document.getElementById('groupLevelSel');
+  sel.innerHTML=levels.map(l=>`<option value="${esc(l.id)}"${l.id===levelId?' selected':''}>${esc(l.name)}</option>`).join('');
+  document.getElementById('groupSheetTitle').textContent='Новая группа';
+  openSheet('groupSheet');
+}
+
+function editGroup(id){
+  const g=groups.find(x=>x.id===id); if(!g) return;
+  editingGroupId=id;
+  document.getElementById('f_groupName').value=g.name;
+  document.getElementById('f_level').value=g.level_id;
+  // загружаем все задания группы как блоки
+  taskBlocks=[];
+  document.getElementById('tasksContainer').innerHTML='';
+  const gTasks=tasks.filter(t=>t.group_id===id).sort((a,b)=>a.sort-b.sort);
+  if(gTasks.length){ gTasks.forEach(t=>addTaskBlock(t)); }
+  else addTaskBlock();
+  switchTab('new');
+}
+
+async function saveGroupSheet(){
+  const name=document.getElementById('groupName').value.trim();
+  if(!name){toast('Введи название');return;}
+  const level_id=document.getElementById('groupLevelSel').value;
+  const g={id:editingGroup||uid(),name,level_id,sort:editingGroup?groups.find(x=>x.id===editingGroup)?.sort||groups.length:groups.length,created:Date.now()};
+  await api('/api/groups',{method:'POST',body:JSON.stringify(g)});
+  if(editingGroup){const i=groups.findIndex(x=>x.id===editingGroup);if(i>=0)groups[i]=g;}
+  else groups.push(g);
+  editingGroup=null;closeSheet();renderAll();toast('Группа сохранена');
+}
+
+function confirmDeleteGroup(id){
+  const g=groups.find(x=>x.id===id);if(!g)return;
+  const cnt=tasks.filter(t=>t.group_id===id).length;
+  if(cnt>0){
+    document.getElementById('confirmTitle').textContent=`В группе «${g.name}» есть задания`;
+    document.getElementById('confirmMsg').textContent=`В группе ${cnt} заданий — удалятся вместе с группой. Продолжить?`;
+    document.getElementById('confirmYesBtn').onclick=()=>doDeleteGroup(id,true);
+  }else{
+    document.getElementById('confirmTitle').textContent=`Удалить группу «${g.name}»?`;
+    document.getElementById('confirmMsg').textContent='Группа будет удалена.';
+    document.getElementById('confirmYesBtn').onclick=()=>doDeleteGroup(id,false);
+  }
+  openSheet('confirmSheet');
+}
+
+async function doDeleteGroup(id,force){
+  await api('/api/groups/delete',{method:'POST',body:JSON.stringify({id,force})});
+  groups=groups.filter(g=>g.id!==id);
+  if(force)tasks=tasks.filter(t=>t.group_id!==id);
+  closeSheet();renderAll();toast('Группа удалена');
+}
+
+// дублирование группы
+function openDupGroup(id){
+  dupGroupId=id;
+  const g=groups.find(x=>x.id===id);if(!g)return;
+  document.getElementById('dupGroupName').value=g.name+' (копия)';
+  const sel=document.getElementById('dupGroupLevel');
+  sel.innerHTML=levels.map(l=>`<option value="${esc(l.id)}"${l.id===g.level_id?' selected':''}>${esc(l.name)}</option>`).join('');
+  openSheet('dupGroupSheet');
+}
+
+async function doDupGroup(){
+  const name=document.getElementById('dupGroupName').value.trim();
+  if(!name){toast('Введи название');return;}
+  const level_id=document.getElementById('dupGroupLevel').value;
+  const newGid=uid();
+  const g={id:newGid,name,level_id,sort:groups.length,created:Date.now()};
+  await api('/api/groups',{method:'POST',body:JSON.stringify(g)});
+  groups.push(g);
+  // дублируем задания
+  const srcTasks=tasks.filter(t=>t.group_id===dupGroupId).sort((a,b)=>a.sort-b.sort);
+  for(let i=0;i<srcTasks.length;i++){
+    const t={...srcTasks[i],id:uid(),group_id:newGid,level_id,sort:i,created:Date.now()};
+    await api('/api/tasks',{method:'POST',body:JSON.stringify(t)});
+    tasks.push(t);
+  }
+  dupGroupId=null;closeSheet();openGroups.add(newGid);openLevels.add(level_id);renderAll();toast('Группа продублирована');
+}
+
+// ---- ЗАДАНИЯ ----
+function editTask(id){
+  const t=tasks.find(x=>x.id===id);if(!t)return;
+  const g=groups.find(g=>g.id===t.group_id);
+  // переходим на форму, предзаполняем
+  initNewForm(t.group_id,t.level_id);
+  // удаляем пустой блок и добавляем с данными
+  taskBlocks=[];document.getElementById('tasksContainer').innerHTML='';
+  addTaskBlock(t);
+  editingGroupId=t.group_id;
+  editingTaskId=id;
+  switchTab('new');
+  closeSheet();
+}
+
+function dupTask(id){
+  const t=tasks.find(x=>x.id===id);if(!t)return;
+  const newT={...t,id:uid(),sort:tasks.filter(x=>x.group_id===t.group_id).length,created:Date.now()};
+  api('/api/tasks',{method:'POST',body:JSON.stringify(newT)}).then(()=>{
+    tasks.push(newT);renderAll();toast('Задание продублировано');
+  });
+}
+
+function confirmDeleteTask(id){
+  const t=tasks.find(x=>x.id===id);if(!t)return;
+  document.getElementById('confirmTitle').textContent='Удалить задание?';
+  document.getElementById('confirmMsg').textContent=`«${t.word}» — ${t.translation}`;
+  document.getElementById('confirmYesBtn').onclick=async()=>{
+    await api('/api/tasks/delete',{method:'POST',body:JSON.stringify({id})});
+    tasks=tasks.filter(x=>x.id!==id);closeSheet();renderAll();toast('Задание удалено');
+  };
+  openSheet('confirmSheet');
+}
+
+async function reorderTask(groupId,taskId,dir){
+  const gTasks=tasks.filter(t=>t.group_id===groupId).sort((a,b)=>a.sort-b.sort);
+  const idx=gTasks.findIndex(t=>t.id===taskId);
+  const swapIdx=idx+dir;
+  if(swapIdx<0||swapIdx>=gTasks.length)return;
+  const tmp=gTasks[idx].sort; gTasks[idx].sort=gTasks[swapIdx].sort; gTasks[swapIdx].sort=tmp;
+  const ids=gTasks.sort((a,b)=>a.sort-b.sort).map(t=>t.id);
+  await api('/api/tasks/reorder',{method:'POST',body:JSON.stringify({ids})});
+  renderLibrary();
+  toast('Порядок сохранён');
+}
+
+// ---- ШТОРКИ ----
+function openSheet(id){closeSheet();activeSheet=id;document.getElementById('dim').classList.add('on');document.getElementById(id).classList.add('on');}
+function closeSheet(){if(activeSheet){document.getElementById(activeSheet)?.classList.remove('on');}document.getElementById('dim').classList.remove('on');activeSheet=null;}
+
+// ---- INIT ----
+document.getElementById('f_level').onchange=renderNewFormSelects;
+// инициализируем один пустой блок задания
+taskBlocks=[];
+addTaskBlock();
+init();
+</script>
+</body>
+</html>
