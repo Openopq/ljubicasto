@@ -72,6 +72,9 @@
     display:grid;place-items:center;cursor:pointer;transition:transform .12s,background .12s;
   }
   .iconbtn:active{transform:scale(.92);background:var(--violet-tint)}
+  [contenteditable][data-placeholder]:empty::before{
+    content:attr(data-placeholder);color:var(--muted-2);pointer-events:none;
+  }
 
   /* ---------- calendar ---------- */
   .cal{padding:0 16px}
@@ -520,13 +523,18 @@
     <div class="month-title"><b id="mName">—</b><span class="yr" id="mYear"></span></div>
     <div class="nav-btns">
       <button class="iconbtn" id="notifBtn" title="Уведомления" style="position:relative">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--violet)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--violet)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
           <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
         </svg>
         <span class="cnt" id="unpaidCnt" style="display:none;background:var(--danger)">0</span>
       </button>
-      <button class="iconbtn" id="settingsBtnMain" title="Настройки">⚙</button>
+      <button class="iconbtn" id="settingsBtnMain" title="Настройки">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--violet)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+      </button>
       <button class="iconbtn" id="prevM">‹</button>
       <button class="iconbtn" id="nextM">›</button>
     </div>
@@ -541,9 +549,16 @@
 
   <div class="section-head" style="display:flex;align-items:center;justify-content:space-between">
     Ученики
-    <div class="lesson-num-badge" id="stuCount" style="display:none" title="Количество учеников без учёта пробных уроков">
-      <div class="lnb-num" id="stuCountNum">0</div>
-      <div class="lnb-lab">ученик</div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <button id="broadcastBtn" title="Рассылка" onclick="openBroadcast()" style="width:38px;height:38px;border:none;background:var(--violet-tint);border-radius:11px;cursor:pointer;display:grid;place-items:center;color:var(--violet);transition:transform .12s,background .12s" onmousedown="this.style.transform='scale(.92)'" onmouseup="this.style.transform=''">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 2L11 13"/><path d="M22 2L15 22l-4-9-9-4 20-7z"/>
+        </svg>
+      </button>
+      <div class="lesson-num-badge" id="stuCount" style="display:none;padding:4px 8px" title="Количество учеников без учёта пробных уроков">
+        <div class="lnb-num" id="stuCountNum" style="font-size:13px">0</div>
+        <div class="lnb-lab">ученик</div>
+      </div>
     </div>
   </div>
   <div class="stu-list" id="stuList"></div>
@@ -644,13 +659,15 @@
       </div>
       <div id="v_note"></div>
       <div id="v_noteEdit" style="display:none;margin-top:8px">
-        <textarea id="v_noteInput" class="note-box" style="width:100%;border:1.5px solid var(--line);background:var(--surface-2);border-radius:11px;padding:10px 12px;font-size:14px;font-family:inherit;color:var(--ink);min-height:64px;resize:vertical;outline:none"></textarea>
+        <textarea id="v_noteInput" class="note-box" maxlength="2000" oninput="updateNoteCounter('v_noteInput','v_noteCounter')" style="width:100%;border:1.5px solid var(--line);background:var(--surface-2);border-radius:11px;padding:10px 12px;font-size:14px;font-family:inherit;color:var(--ink);min-height:64px;resize:vertical;outline:none"></textarea>
+        <div style="text-align:right;font-size:11px;color:var(--muted-2);font-weight:600;margin-top:3px" id="v_noteCounter">0 / 2000</div>
         <button id="saveNoteBtn" style="margin-top:8px;width:100%;padding:12px;background:var(--violet);color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">Сохранить</button>
       </div>
     </div>
     <button id="addNoteBtn" class="note-btn" style="display:none">✒ Детали урока</button>
     <div id="addNoteBox" class="note-box" style="display:none">
-      <textarea id="addNoteInput" placeholder="Что по этому уроку…" style="width:100%;border:1.5px solid var(--line);background:var(--surface-2);border-radius:11px;padding:10px 12px;font-size:14px;font-family:inherit;color:var(--ink);min-height:64px;resize:vertical;outline:none"></textarea>
+      <textarea id="addNoteInput" placeholder="Что по этому уроку…" maxlength="2000" oninput="updateNoteCounter('addNoteInput','addNoteCounter')" style="width:100%;border:1.5px solid var(--line);background:var(--surface-2);border-radius:11px;padding:10px 12px;font-size:14px;font-family:inherit;color:var(--ink);min-height:64px;resize:vertical;outline:none"></textarea>
+      <div style="text-align:right;font-size:11px;color:var(--muted-2);font-weight:600;margin-top:3px" id="addNoteCounter">0 / 2000</div>
       <button id="addNoteSave" style="margin-top:8px;width:100%;padding:12px;background:var(--violet);color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">Сохранить</button>
     </div>
 
@@ -725,6 +742,9 @@
     <div class="field about"><label>Об ученике</label>
       <textarea id="s_about" placeholder="Основная информация" autocomplete="off"></textarea>
     </div>
+    <div class="field"><label>Город ученика</label>
+      <input id="s_city" placeholder="нпр. Владивосток (для часового пояса)" autocomplete="off">
+    </div>
   </div>
   <div class="savebar">
     <button class="save" id="stuSaveBtn">✓ Сохранить ученика</button>
@@ -739,10 +759,67 @@
     <button class="pencil" id="stuEditBtn">✎</button>
   </div>
   <div class="view-card">
-    <div class="vc-name" id="p_name"><span class="avatar" id="p_avatar" style="width:34px;height:34px;font-size:15px"></span><span id="p_nameTxt">—</span></div>
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px">
+      <div class="vc-name" id="p_name" style="margin:0">
+        <span class="avatar" id="p_avatar" style="width:34px;height:34px;font-size:15px"></span>
+        <span id="p_nameTxt">—</span>
+        <span id="p_connectedBadge" style="display:none;margin-left:6px;cursor:pointer" title="Ученик подключён к приложению" onclick="openStudentNotifSettings()">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+            <circle cx="9" cy="9" r="9" fill="#6C3FC7"/>
+            <path d="M5 9l3 3 5-5" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </span>
+      </div>
+      <button id="p_refLinkBtn" title="Реферальная ссылка" onclick="openRefLink()"
+        style="width:36px;height:36px;border:none;border-radius:10px;background:var(--violet-tint);color:var(--violet);
+        cursor:pointer;display:grid;place-items:center;flex:none;margin-top:2px">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+          <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+        </svg>
+      </button>
+    </div>
     <div class="vc-time" id="p_sub"></div>
 
     <div class="vc-block" id="p_block"></div>
+
+    <!-- ЗАМЕТКИ О УЧЕНИКЕ -->
+    <div id="p_notesWrap" style="margin-top:14px">
+      <div id="p_notesView" style="display:none">
+        <div class="vc-about" style="position:relative">
+          <div class="lab" style="display:flex;align-items:center;justify-content:space-between">
+            ЗАМЕТКИ
+            <button id="p_notesEditBtn" style="border:none;background:none;color:var(--violet);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;padding:0">✎ Изменить</button>
+          </div>
+          <div id="p_notesText" style="font-size:14px;line-height:1.6;white-space:pre-wrap;word-break:break-word;max-height:200px;overflow-y:auto"></div>
+        </div>
+      </div>
+      <div id="p_notesEdit" style="display:none;margin-top:0">
+        <div style="background:var(--violet-tint);border-radius:14px;padding:14px 16px">
+          <div class="lab" style="font-size:11px;font-weight:800;color:var(--violet);margin-bottom:8px;letter-spacing:.04em">ЗАМЕТКИ</div>
+          <textarea id="p_notesInput" maxlength="2000" oninput="updateNoteCounter('p_notesInput','p_notesCounter')"
+            placeholder="Заметки о ученике — что сейчас проходим, что нужно не забыть…"
+            style="width:100%;min-height:100px;resize:vertical;border:1.5px solid var(--violet-soft);background:var(--surface);border-radius:11px;padding:10px 12px;font-size:14px;font-family:inherit;color:var(--ink);outline:none;line-height:1.5"></textarea>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-top:4px">
+            <div style="font-size:11px;color:var(--muted);font-weight:600" id="p_notesCounter">0 / 2000</div>
+          </div>
+          <button id="p_notesSaveBtn" style="margin-top:8px;width:100%;padding:11px;background:var(--violet);color:#fff;border:none;border-radius:11px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit" onclick="saveStudentNotes()">Сохранить</button>
+        </div>
+      </div>
+      <button id="p_notesAddBtn" class="note-btn" style="margin-top:10px">✒ Заметки</button>
+      <div id="p_notesAddBox" style="display:none;margin-top:6px">
+        <div style="background:var(--violet-tint);border-radius:14px;padding:14px 16px">
+          <div class="lab" style="font-size:11px;font-weight:800;color:var(--violet);margin-bottom:8px;letter-spacing:.04em">ЗАМЕТКИ</div>
+          <textarea id="p_notesAddInput" maxlength="2000" oninput="updateNoteCounter('p_notesAddInput','p_notesAddCounter')"
+            placeholder="Заметки о ученике…"
+            style="width:100%;min-height:100px;resize:vertical;border:1.5px solid var(--violet-soft);background:var(--surface);border-radius:11px;padding:10px 12px;font-size:14px;font-family:inherit;color:var(--ink);outline:none;line-height:1.5"></textarea>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-top:4px">
+            <div style="font-size:11px;color:var(--muted);font-weight:600" id="p_notesAddCounter">0 / 2000</div>
+          </div>
+          <button style="margin-top:8px;width:100%;padding:11px;background:var(--violet);color:#fff;border:none;border-radius:11px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit" onclick="saveStudentNotes(true)">Сохранить</button>
+        </div>
+      </div>
+    </div>
 
     <div class="vc-about" id="p_aboutWrap" style="display:none">
       <div class="lab">ОБ УЧЕНИКЕ</div>
@@ -750,6 +827,7 @@
     </div>
 
     <button class="save" id="assignBtn" style="margin-top:18px">Назначить урок</button>
+    <button class="save" id="homeworkBtn" style="margin-top:10px;background:var(--violet-tint);color:var(--violet);border:1.5px solid var(--violet-soft)" onclick="openHomeworkAssign()">📚 Домашнее задание</button>
 
     <div class="rep-box" id="assignBox" style="margin-top:14px">
       <button class="daysbtn" id="openAssignDays">📅 Выбрать дни</button>
@@ -758,6 +836,28 @@
 
     <button class="save del" id="stuDelBtn" style="margin-top:14px;width:100%;padding:14px;border:none;border-radius:14px;background:none;color:var(--danger);font-weight:700;font-size:14px;cursor:pointer;font-family:inherit">Удалить ученика</button>
   </div>
+</div>
+
+<!-- REFERRAL LINK SHEET -->
+<div class="dim" id="refLinkDim"></div>
+<div class="picker" id="refLinkSheet">
+  <h3>Ссылка для подключения</h3>
+  <p style="font-size:13px;color:var(--muted);font-weight:600;margin-bottom:14px">Отправь эту ссылку ученику — по ней он подключится к боту и получит доступ к заданиям.</p>
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px">
+    <input id="refLinkInput" readonly
+      style="flex:1;min-width:0;font-size:13px;font-family:monospace;color:var(--ink);background:var(--surface-2);
+      border:1.5px solid var(--violet-soft);border-radius:11px;padding:11px 12px;outline:none"
+      onclick="this.select()">
+    <button onclick="copyRefLink()" id="refLinkCopyBtn"
+      style="flex:none;width:46px;height:44px;border:none;border-radius:11px;background:var(--violet);color:#fff;
+      cursor:pointer;display:grid;place-items:center">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="9" y="9" width="13" height="13" rx="2"/>
+        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+      </svg>
+    </button>
+  </div>
+  <button onclick="closeRefLink()" style="width:100%;padding:13px;border:none;border-radius:12px;background:var(--bg);color:var(--muted);font-size:15px;font-weight:700;font-family:inherit;cursor:pointer">Закрыть</button>
 </div>
 
 <!-- COLOR PICKER SHEET -->
@@ -771,6 +871,120 @@
 <!-- STATS DETAIL SHEET -->
 <div class="dim" id="statDim" style="display:none"></div>
 
+<!-- HOMEWORK ASSIGN SCREEN -->
+<div class="screen" id="hwScreen">
+  <div class="scr-head">
+    <button class="back" id="hwBack">‹</button>
+    <div class="ttl">Домашнее задание</div>
+  </div>
+  <div style="padding:14px 16px 120px" id="hwLevelsList"></div>
+  <div style="position:fixed;bottom:0;left:0;right:0;padding:16px;background:var(--bg);border-top:1.5px solid var(--line)">
+    <div id="hwSelCount" style="font-size:12px;color:var(--muted);font-weight:700;margin-bottom:8px;text-align:center">Выбрано: 0 заданий</div>
+    <button class="save" id="hwSendBtn" onclick="sendHomework()">Отправить домашнее задание</button>
+  </div>
+</div>
+
+<!-- STUDENT NOTIF SETTINGS SHEET -->
+<div class="dim" id="stuNotifDim"></div>
+<div class="picker" id="stuNotifSheet">
+  <h3>Уведомления ученика</h3>
+  <p style="font-size:13px;color:var(--muted);font-weight:600;margin-bottom:16px" id="stuNotifName">—</p>
+  <div class="toggle-line" style="padding:12px 0;border-bottom:1px solid var(--line)">
+    <div><div class="t-txt">📚 Домашнее задание</div><div class="t-sub">уведомление о новом дз</div></div>
+    <div class="sw" id="sn_homework"></div>
+  </div>
+  <div class="toggle-line" style="padding:12px 0;border-bottom:1px solid var(--line)">
+    <div><div class="t-txt">⏰ За час до урока</div><div class="t-sub">напоминание об уроке</div></div>
+    <div class="sw" id="sn_hour"></div>
+  </div>
+  <div class="toggle-line" style="padding:12px 0">
+    <div><div class="t-txt">🌅 Утром в день урока</div><div class="t-sub">напоминание о занятии</div></div>
+    <div class="sw" id="sn_day"></div>
+  </div>
+  <div style="margin-top:16px;font-size:12px;color:var(--muted-2);font-weight:600" id="stuNotifTz"></div>
+  <button class="save" id="stuNotifSave" style="margin-top:16px">Сохранить</button>
+</div>
+
+<!-- HOMEWORK RESULT STATS SHEET -->
+<div class="dim" id="hwStatsDim"></div>
+<div class="picker" id="hwStatsSheet">
+  <h3 id="hwStatsTitle">Результаты</h3>
+  <div id="hwStatsBody" style="max-height:50vh;overflow-y:auto"></div>
+  <button class="sheet-btn cancel" style="margin-top:12px" onclick="closeHwStats()">Закрыть</button>
+</div>
+
+<!-- BROADCAST SCREEN -->
+<div class="screen" id="broadcastScreen">
+  <div class="scr-head">
+    <button class="back" id="broadcastBack">‹</button>
+    <div class="ttl">Рассылка</div>
+  </div>
+  <div style="padding:16px 16px 120px">
+
+    <!-- поле сообщения -->
+    <div style="background:var(--surface);border:1.5px solid var(--line);border-radius:var(--r);padding:14px;margin-bottom:12px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div style="font-size:12px;font-weight:800;color:var(--muted);letter-spacing:.04em;text-transform:uppercase">Сообщение</div>
+        <button id="broadcastHistoryBtn" title="Сохранённые тексты" style="border:none;background:none;cursor:pointer;color:var(--muted);padding:4px;display:flex" onclick="toggleBroadcastHistory()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <polyline points="12 6 12 12 16 14"/>
+          </svg>
+        </button>
+      </div>
+      <!-- история сохранённых -->
+      <div id="broadcastHistoryList" style="display:none;margin-bottom:10px;max-height:200px;overflow-y:auto;border:1.5px solid var(--line);border-radius:10px"></div>
+
+      <!-- панель форматирования -->
+      <div style="display:flex;gap:6px;margin-bottom:8px">
+        <button type="button" onmousedown="event.preventDefault()" onclick="formatText('bold')" title="Жирный"
+          style="width:34px;height:34px;border:1.5px solid var(--line);border-radius:9px;background:var(--bg);color:var(--ink);font-weight:800;font-size:15px;cursor:pointer;font-family:inherit">Ж</button>
+        <button type="button" onmousedown="event.preventDefault()" onclick="formatText('italic')" title="Курсив"
+          style="width:34px;height:34px;border:1.5px solid var(--line);border-radius:9px;background:var(--bg);color:var(--ink);font-style:italic;font-weight:700;font-size:15px;cursor:pointer;font-family:inherit">К</button>
+        <button type="button" onmousedown="event.preventDefault()" onclick="formatText('underline')" title="Подчёркнутый"
+          style="width:34px;height:34px;border:1.5px solid var(--line);border-radius:9px;background:var(--bg);color:var(--ink);text-decoration:underline;font-weight:700;font-size:15px;cursor:pointer;font-family:inherit">П</button>
+      </div>
+
+      <div id="broadcastText" contenteditable="true" data-placeholder="Введи сообщение для учеников…"
+        style="width:100%;min-height:120px;border:1.5px solid var(--line);border-radius:11px;
+        padding:10px 12px;font-size:15px;font-family:inherit;color:var(--ink);background:var(--surface-2);outline:none;line-height:1.5;overflow-wrap:break-word"
+        oninput="updateBroadcastCounter(this)"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:6px">
+        <div style="font-size:11px;color:var(--muted-2);font-weight:600" id="broadcastCounter">0 / 4096</div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button id="broadcastSaveBtn" onclick="saveBroadcastDraft()" style="flex:1;padding:10px;border:1.5px solid var(--line);border-radius:10px;background:var(--bg);color:var(--muted-2);font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;transition:all .15s" disabled>💾 Сохранить</button>
+      </div>
+    </div>
+
+    <!-- получатели -->
+    <div style="background:var(--surface);border:1.5px solid var(--line);border-radius:var(--r);padding:14px;margin-bottom:12px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div style="font-size:12px;font-weight:800;color:var(--muted);letter-spacing:.04em;text-transform:uppercase">Получатели</div>
+        <button onclick="selectAllRecipients()" style="border:none;background:var(--violet-tint);color:var(--violet);font-size:12px;font-weight:800;padding:5px 11px;border-radius:20px;cursor:pointer;font-family:inherit">Все</button>
+      </div>
+      <div id="recipientsList">
+        <div style="text-align:center;padding:20px;color:var(--muted);font-size:13px;font-weight:600">Загрузка…</div>
+      </div>
+    </div>
+
+    <button onclick="confirmBroadcast()" class="save" style="width:100%;padding:14px;font-size:15px">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:6px"><path d="M22 2L11 13"/><path d="M22 2L15 22l-4-9-9-4 20-7z"/></svg>
+      Отправить
+    </button>
+  </div>
+</div>
+
+<!-- CONFIRM BROADCAST SHEET -->
+<div class="dim" id="broadcastConfirmDim"></div>
+<div class="picker" id="broadcastConfirmSheet">
+  <h3>Подтверждение рассылки</h3>
+  <p style="font-size:13px;color:var(--muted);font-weight:600;margin-bottom:12px">Сообщение будет отправлено:</p>
+  <div id="broadcastConfirmNames" style="margin-bottom:20px;display:flex;flex-direction:column;gap:6px"></div>
+  <button class="save" onclick="sendBroadcast()" style="margin-bottom:10px">Да, отправить</button>
+  <button onclick="cancelBroadcastConfirm()" style="width:100%;padding:13px;border:none;border-radius:12px;background:var(--bg);color:var(--muted);font-size:15px;font-weight:700;font-family:inherit;cursor:pointer">Нет, назад</button>
+</div>
+
 <!-- NOTIFICATIONS SCREEN -->
 <div class="screen" id="notifScreen">
   <div class="scr-head">
@@ -781,6 +995,11 @@
     <div id="notifUnpaidSection">
       <div class="section-head" style="margin-bottom:10px;color:var(--danger)">Неоплаченные занятия</div>
       <div id="notifUnpaidList"></div>
+    </div>
+    <!-- выполненные домашние задания -->
+    <div id="notifHwSection" style="display:none;margin-top:16px">
+      <div class="section-head" style="margin-bottom:10px;color:var(--violet)">Выполненные задания</div>
+      <div id="notifHwList"></div>
     </div>
     <div id="notifEmpty" class="empty-note" style="display:none;padding-top:60px;text-align:center">
       <div style="font-size:42px;margin-bottom:12px">🔔</div>
@@ -807,9 +1026,13 @@
         <div><div class="t-txt">🌅 Утренние напоминания</div><div class="t-sub">расписание на день в 8:00</div></div>
         <div class="sw" id="settMorningSw"></div>
       </div>
-      <div class="toggle-line" style="padding:14px 16px">
+      <div class="toggle-line" style="padding:14px 16px;border-bottom:1px solid var(--line)">
         <div><div class="t-txt">🌆 Вечерние напоминания</div><div class="t-sub">расписание на завтра в 20:00</div></div>
         <div class="sw" id="settEveningSw"></div>
+      </div>
+      <div class="toggle-line" style="padding:14px 16px">
+        <div><div class="t-txt">📚 Уведомления о дз</div><div class="t-sub">когда ученик выполнил задание</div></div>
+        <div class="sw" id="settHwResultsSw"></div>
       </div>
     </div>
 
@@ -1075,9 +1298,10 @@ async function renderStudents(){
   const box=document.getElementById('stuList'); box.innerHTML='';
   (studentsCache||[]).filter(s=>!s.archived).forEach(s=>{
     const card=document.createElement('div'); card.className='stu-card';
+    const connBadge=isConnected(s.id)?`<svg width="16" height="16" viewBox="0 0 18 18" fill="none" style="flex:none;margin-left:6px"><circle cx="9" cy="9" r="9" fill="#6C3FC7"/><path d="M5 9l3 3 5-5" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`:'';
     card.innerHTML=`
       <div>
-        <div class="sc-name">${esc(s.name||'Без имени')}</div>
+        <div class="sc-name" style="display:flex;align-items:center">${esc(s.name||'Без имени')}${connBadge}</div>
         <div class="sc-sub">${esc([s.level,s.price?s.price+' ₽':''].filter(Boolean).join(' · ')||'нажми, чтобы открыть')}</div>
       </div>`;
     card.onclick=()=>openProfile(s.id);
@@ -1647,8 +1871,15 @@ document.getElementById('viewDelBtn').onclick=async()=>{
 };
 
 // детали урока в окне просмотра
+function updateNoteCounter(inputId, counterId){
+  const el = document.getElementById(inputId);
+  const cnt = document.getElementById(counterId);
+  if(el && cnt) cnt.textContent = `${el.value.length} / 2000`;
+}
+
 function openNoteEditor(){
   document.getElementById('v_noteInput').value=document.getElementById('v_note').textContent||'';
+  updateNoteCounter('v_noteInput','v_noteCounter');
   document.getElementById('v_noteWrap').style.display='block';
   document.getElementById('v_noteEdit').style.display='block';
   document.getElementById('editNoteBtn').style.display='none';
@@ -1793,6 +2024,9 @@ async function openProfile(id){
   profId=id; const s=studentById(id); if(!s)return;
   document.getElementById('p_nameTxt').textContent=s.name||'Без имени';
   document.getElementById('p_sub').textContent=[s.level, s.duration?s.duration+' мин':''].filter(Boolean).join(' · ');
+  // индикатор подключения
+  const badge=document.getElementById('p_connectedBadge');
+  badge.style.display=isConnected(id)?'inline-flex':'none';
   const block=document.getElementById('p_block'); block.innerHTML='';
   const items=[];
   if(s.phone) items.push({ic:'☎',k:'Телефон',v:`<a href="tel:${esc(s.phone)}">${esc(s.phone)}</a>`});
@@ -1820,6 +2054,8 @@ async function openProfile(id){
   }
   const aw=document.getElementById('p_aboutWrap');
   if(s.about){ aw.style.display='block'; document.getElementById('p_about').textContent=s.about; }else aw.style.display='none';
+  // заметки о ученике
+  renderStudentNotes(s.notes||'');
   // reset assign box
   document.getElementById('assignBox').classList.remove('on');
   document.getElementById('assignDayList').innerHTML='';
@@ -1835,6 +2071,79 @@ document.getElementById('stuDelBtn').onclick=()=>{
     stuProfScreen.classList.remove('on'); await renderStudents(); toast('Ученик удалён'); haptic('warning');
   });
 };
+
+function openRefLink(){
+  const s=studentById(profId); if(!s)return;
+  const link=`https://t.me/milyana_schedule_bot?start=s_${s.id}`;
+  document.getElementById('refLinkInput').value=link;
+  document.getElementById('refLinkDim').classList.add('on');
+  document.getElementById('refLinkSheet').classList.add('on');
+  setTimeout(()=>{ const inp=document.getElementById('refLinkInput'); inp.focus(); inp.select(); },150);
+}
+function closeRefLink(){
+  document.getElementById('refLinkDim').classList.remove('on');
+  document.getElementById('refLinkSheet').classList.remove('on');
+}
+document.getElementById('refLinkDim').onclick=closeRefLink;
+
+function copyRefLink(){
+  const inp=document.getElementById('refLinkInput');
+  inp.select(); inp.setSelectionRange(0,9999);
+  try{
+    navigator.clipboard.writeText(inp.value).then(()=>{
+      toast('Ссылка скопирована'); haptic('success');
+    }).catch(()=>{ document.execCommand('copy'); toast('Ссылка скопирована'); haptic('success'); });
+  }catch(e){
+    document.execCommand('copy'); toast('Ссылка скопирована'); haptic('success');
+  }
+}
+
+function renderStudentNotes(notes){
+  const view=document.getElementById('p_notesView');
+  const editBox=document.getElementById('p_notesEdit');
+  const addBtn=document.getElementById('p_notesAddBtn');
+  const addBox=document.getElementById('p_notesAddBox');
+  // сбрасываем состояние
+  editBox.style.display='none';
+  addBox.style.display='none';
+  addBtn.classList.remove('on');
+  if(notes){
+    view.style.display='block';
+    addBtn.style.display='none';
+    document.getElementById('p_notesText').textContent=notes;
+  }else{
+    view.style.display='none';
+    addBtn.style.display='block';
+  }
+}
+
+document.getElementById('p_notesEditBtn').onclick=()=>{
+  const s=studentById(profId); if(!s)return;
+  document.getElementById('p_notesInput').value=s.notes||'';
+  updateNoteCounter('p_notesInput','p_notesCounter');
+  document.getElementById('p_notesView').style.display='none';
+  document.getElementById('p_notesEdit').style.display='block';
+};
+
+document.getElementById('p_notesAddBtn').onclick=()=>{
+  const open=document.getElementById('p_notesAddBox').style.display==='none';
+  document.getElementById('p_notesAddBox').style.display=open?'block':'none';
+  document.getElementById('p_notesAddBtn').classList.toggle('on',open);
+  if(open){ document.getElementById('p_notesAddInput').value=''; updateNoteCounter('p_notesAddInput','p_notesAddCounter'); }
+};
+
+async function saveStudentNotes(fromAdd){
+  const inputId=fromAdd?'p_notesAddInput':'p_notesInput';
+  const notes=document.getElementById(inputId).value.trim();
+  const s=studentById(profId); if(!s)return;
+  s.notes=notes;
+  await apiFetch('/api/students',{method:'POST',body:JSON.stringify(s)});
+  // обновляем кэш
+  const idx=(studentsCache||[]).findIndex(x=>x.id===profId);
+  if(idx>=0) studentsCache[idx].notes=notes;
+  renderStudentNotes(notes);
+  toast('Заметки сохранены'); haptic('success');
+}
 
 /* ============ ASSIGN LESSON ============ */
 let assignDays=new Set();        // key strings
@@ -2030,6 +2339,457 @@ document.getElementById('confirmYes').onclick=()=>{
   if(confirmCb) confirmCb(); confirmCb=null;
 };
 
+/* ============ BROADCAST ============ */
+const broadcastScreen = document.getElementById('broadcastScreen');
+let broadcastDrafts = JSON.parse(localStorage.getItem('broadcastDrafts') || '[]');
+let broadcastSelectedIds = new Set();
+let broadcastConnectedStudents = []; // [{id, name}]
+
+document.getElementById('broadcastBack').onclick = () => broadcastScreen.classList.remove('on');
+
+async function formatText(cmd){
+  document.getElementById('broadcastText').focus();
+  document.execCommand(cmd, false, null);
+  updateBroadcastCounter(document.getElementById('broadcastText'));
+}
+
+function updateBroadcastCounter(el){
+  const len = el.textContent.length;
+  const max = 4096;
+  document.getElementById('broadcastCounter').textContent = `${len} / ${max}`;
+  el.style.borderColor = len > 0 ? 'var(--violet-soft)' : '';
+  const saveBtn = document.getElementById('broadcastSaveBtn');
+  if(len > 0){
+    saveBtn.disabled = false;
+    saveBtn.style.background = 'var(--violet)';
+    saveBtn.style.color = '#fff';
+    saveBtn.style.borderColor = 'var(--violet)';
+  } else {
+    saveBtn.disabled = true;
+    saveBtn.style.background = 'var(--bg)';
+    saveBtn.style.color = 'var(--muted-2)';
+    saveBtn.style.borderColor = 'var(--line)';
+  }
+}
+
+// конвертация HTML из contenteditable в Telegram HTML-разметку
+function htmlToTelegramHtml(html){
+  const div = document.createElement('div');
+  div.innerHTML = html;
+  function walk(node){
+    let out = '';
+    node.childNodes.forEach(n => {
+      if(n.nodeType === 3){ out += n.textContent.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); return; }
+      if(n.nodeType !== 1) return;
+      const tag = n.tagName.toLowerCase();
+      const inner = walk(n);
+      if(tag==='b'||tag==='strong') out += `<b>${inner}</b>`;
+      else if(tag==='i'||tag==='em') out += `<i>${inner}</i>`;
+      else if(tag==='u') out += `<u>${inner}</u>`;
+      else if(tag==='div'||tag==='p') out += inner + '\n';
+      else if(tag==='br') out += '\n';
+      else out += inner;
+    });
+    return out;
+  }
+  return walk(div).replace(/\n{3,}/g,'\n\n').trim();
+}
+
+async function openBroadcast(){
+  broadcastSelectedIds.clear();
+  const ta = document.getElementById('broadcastText');
+  ta.innerHTML = '';
+  ta.style.borderColor = '';
+  document.getElementById('broadcastCounter').textContent = '0 / 4096';
+  const saveBtn = document.getElementById('broadcastSaveBtn');
+  saveBtn.disabled = true;
+  saveBtn.style.background = 'var(--bg)';
+  saveBtn.style.color = 'var(--muted-2)';
+  saveBtn.style.borderColor = 'var(--line)';
+  document.getElementById('broadcastHistoryList').style.display = 'none';
+  void broadcastScreen.offsetWidth;
+  broadcastScreen.classList.add('on');
+  await loadBroadcastRecipients();
+}
+
+async function loadBroadcastRecipients(){
+  const box = document.getElementById('recipientsList');
+  try {
+    // берём подключённых учеников
+    const r = await apiFetch('/api/students/connected');
+    const connected = new Set(r.connected || []);
+    await loadStudents();
+    broadcastConnectedStudents = (studentsCache || [])
+      .filter(s => !s.archived && connected.has(s.id));
+    renderRecipients();
+  } catch(e) {
+    box.innerHTML = '<div style="text-align:center;padding:16px;color:var(--muted);font-size:13px">Нет подключённых учеников</div>';
+  }
+}
+
+function renderRecipients(){
+  const box = document.getElementById('recipientsList');
+  if(!broadcastConnectedStudents.length){
+    box.innerHTML = '<div style="text-align:center;padding:16px;color:var(--muted);font-size:13px;font-weight:600">Нет подключённых учеников</div>';
+    return;
+  }
+  box.innerHTML = '';
+  broadcastConnectedStudents.forEach(s => {
+    const row = document.createElement('div');
+    const checked = broadcastSelectedIds.has(s.id);
+    row.style.cssText = 'display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--line);cursor:pointer';
+    row.innerHTML = `
+      <div style="width:24px;height:24px;border-radius:7px;border:1.5px solid ${checked?'var(--violet)':'var(--line)'};background:${checked?'var(--violet)':'var(--bg)'};display:grid;place-items:center;flex:none;transition:all .12s">
+        ${checked?'<svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 6l3 3 5-5" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>':''}
+      </div>
+      <div style="flex:1">
+        <div style="font-size:15px;font-weight:700;color:var(--ink)">${esc(s.name)}</div>
+        ${s.level?`<div style="font-size:12px;color:var(--muted);font-weight:600">${esc(s.level)}</div>`:''}
+      </div>`;
+    row.onclick = () => {
+      if(broadcastSelectedIds.has(s.id)) broadcastSelectedIds.delete(s.id);
+      else broadcastSelectedIds.add(s.id);
+      renderRecipients();
+    };
+    box.appendChild(row);
+  });
+}
+
+function selectAllRecipients(){
+  const allSelected = broadcastConnectedStudents.every(s => broadcastSelectedIds.has(s.id));
+  if(allSelected) broadcastSelectedIds.clear();
+  else broadcastConnectedStudents.forEach(s => broadcastSelectedIds.add(s.id));
+  renderRecipients();
+}
+
+// история сохранённых текстов
+function toggleBroadcastHistory(){
+  const list = document.getElementById('broadcastHistoryList');
+  const isOpen = list.style.display !== 'none';
+  if(isOpen){ list.style.display='none'; return; }
+  renderBroadcastHistory();
+  list.style.display = 'block';
+}
+
+function renderBroadcastHistory(){
+  const list = document.getElementById('broadcastHistoryList');
+  if(!broadcastDrafts.length){
+    list.innerHTML='<div style="padding:12px;text-align:center;color:var(--muted);font-size:13px;font-weight:600">Нет сохранённых текстов</div>';
+    return;
+  }
+  list.innerHTML = broadcastDrafts.map((d,i) => {
+    const plain = d.text || '';
+    const preview = plain.length > 60 ? plain.slice(0,60)+'…' : plain;
+    return `<div style="display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line);cursor:pointer" onclick="loadDraft(${i})">
+      <div style="flex:1;font-size:13px;font-weight:600;color:var(--ink)">${esc(preview)||'<i>пусто</i>'}</div>
+      <button onclick="deleteDraft(${i});event.stopPropagation()" style="border:none;background:none;color:var(--danger);font-size:16px;cursor:pointer;padding:2px 4px;flex:none">✕</button>
+    </div>`;
+  }).join('');
+}
+
+function loadDraft(idx){
+  document.getElementById('broadcastText').innerHTML = broadcastDrafts[idx].html || '';
+  updateBroadcastCounter(document.getElementById('broadcastText'));
+  document.getElementById('broadcastHistoryList').style.display = 'none';
+  haptic('light');
+}
+
+function deleteDraft(idx){
+  broadcastDrafts.splice(idx, 1);
+  localStorage.setItem('broadcastDrafts', JSON.stringify(broadcastDrafts));
+  renderBroadcastHistory();
+}
+
+function saveBroadcastDraft(){
+  const el = document.getElementById('broadcastText');
+  const text = el.textContent.trim();
+  if(!text){ toast('Введи текст'); return; }
+  const html = el.innerHTML;
+  if(broadcastDrafts.some(d => d.text === text)){ toast('Уже сохранён'); return; }
+  broadcastDrafts.unshift({text, html});
+  if(broadcastDrafts.length > 20) broadcastDrafts.pop();
+  localStorage.setItem('broadcastDrafts', JSON.stringify(broadcastDrafts));
+  toast('Текст сохранён'); haptic('success');
+}
+
+// подтверждение и отправка
+function confirmBroadcast(){
+  const el = document.getElementById('broadcastText');
+  const text = el.textContent.trim();
+  if(!text){ toast('Введи текст сообщения'); return; }
+  if(!broadcastSelectedIds.size){ toast('Выбери хотя бы одного ученика'); return; }
+  const selected = broadcastConnectedStudents.filter(s => broadcastSelectedIds.has(s.id));
+  const namesEl = document.getElementById('broadcastConfirmNames');
+  namesEl.innerHTML = selected.map(s =>
+    `<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--surface-2);border-radius:10px">
+      <div style="width:8px;height:8px;border-radius:50%;background:var(--violet);flex:none"></div>
+      <div style="font-size:14px;font-weight:700">${esc(s.name)}</div>
+    </div>`
+  ).join('');
+  document.getElementById('broadcastConfirmDim').classList.add('on');
+  document.getElementById('broadcastConfirmSheet').classList.add('on');
+}
+
+async function sendBroadcast(){
+  const el = document.getElementById('broadcastText');
+  const telegramHtml = htmlToTelegramHtml(el.innerHTML);
+  const studentIds = [...broadcastSelectedIds];
+  document.getElementById('broadcastConfirmDim').classList.remove('on');
+  document.getElementById('broadcastConfirmSheet').classList.remove('on');
+  try {
+    await apiFetch('/api/broadcast', {method:'POST', body:JSON.stringify({text: telegramHtml, student_ids: studentIds, html: true})});
+    broadcastScreen.classList.remove('on');
+    toast('Сообщение отправлено'); haptic('success');
+  } catch(e) { toast('Ошибка отправки'); }
+}
+
+function cancelBroadcastConfirm(){
+  document.getElementById('broadcastConfirmDim').classList.remove('on');
+  document.getElementById('broadcastConfirmSheet').classList.remove('on');
+}
+
+document.getElementById('broadcastConfirmDim').onclick = cancelBroadcastConfirm;
+
+/* ============ CONNECTED STUDENTS ============ */
+let connectedStudents = new Set();
+
+async function loadConnectedStudents(){
+  try {
+    const r = await apiFetch('/api/students/connected');
+    connectedStudents = new Set(r.connected || []);
+  } catch(e) {}
+}
+
+function isConnected(studentId){ return connectedStudents.has(studentId); }
+
+/* ============ HOMEWORK ASSIGN ============ */
+let hwSelectedTasks = new Set(); // task_id
+let hwTargetStudentId = null;
+let hwLevels = [], hwGroups = [], hwTasks = [];
+let hwOpenLevels = new Set(), hwOpenGroups = new Set();
+
+async function openHomeworkAssign(){
+  hwTargetStudentId = profId;
+  hwSelectedTasks.clear();
+  hwOpenLevels.clear(); hwOpenGroups.clear();
+  document.getElementById('hwSelCount').textContent = 'Выбрано: 0 заданий';
+  // загружаем библиотеку
+  const [ld, gd, td] = await Promise.all([
+    apiFetch('/api/levels'), apiFetch('/api/groups'), apiFetch('/api/tasks')
+  ]);
+  hwLevels = ld.levels || []; hwGroups = gd.groups || []; hwTasks = td.tasks || [];
+  renderHwLibrary();
+  const scr = document.getElementById('hwScreen');
+  void scr.offsetWidth; scr.classList.add('on');
+}
+
+document.getElementById('hwBack').onclick = () => document.getElementById('hwScreen').classList.remove('on');
+
+function renderHwLibrary(){
+  const box = document.getElementById('hwLevelsList');
+  if(!hwLevels.length){ box.innerHTML = '<div class="empty-note">Нет уровней</div>'; return; }
+  box.innerHTML = hwLevels.map(lv => {
+    const lvGroups = hwGroups.filter(g => g.level_id === lv.id);
+    if(!lvGroups.length) return '';
+    const isOpen = hwOpenLevels.has(lv.id);
+    const groupsHtml = lvGroups.map(g => {
+      const gTasks = hwTasks.filter(t => t.group_id === g.id);
+      const isGOpen = hwOpenGroups.has(g.id);
+      const tasksHtml = gTasks.map(t => {
+        const checked = hwSelectedTasks.has(t.id);
+        return `<div style="display:flex;align-items:center;gap:10px;padding:9px 14px 9px 28px;border-top:1px solid var(--line);cursor:pointer" onclick="toggleHwTask('${esc(t.id)}')">
+          <div style="width:22px;height:22px;border-radius:6px;border:1.5px solid ${checked?'var(--violet)':'var(--line)'};background:${checked?'var(--violet)':'var(--bg)'};display:grid;place-items:center;flex:none">
+            ${checked?'<svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 6l3 3 5-5" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>':''}
+          </div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:14px;font-weight:700">${esc(t.word)}</div>
+            <div style="font-size:11px;color:var(--muted);font-weight:600">${esc(t.translation)}</div>
+          </div>
+        </div>`;
+      }).join('');
+      return `<div style="border-top:1px solid var(--line)">
+        <div style="display:flex;align-items:center;gap:8px;padding:10px 14px 10px 20px;cursor:pointer;background:var(--surface-2)" onclick="toggleHwGroup('${esc(g.id)}')">
+          <div style="flex:1;font-size:13px;font-weight:700">${esc(g.name)} <span style="color:var(--muted);font-weight:600">${gTasks.length} заданий</span></div>
+          <div style="font-size:11px;color:var(--muted-2)">${isGOpen?'▲':'▼'}</div>
+        </div>
+        ${isGOpen ? tasksHtml : ''}
+      </div>`;
+    }).join('');
+    return `<div class="card" style="margin-bottom:8px">
+      <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer" onclick="toggleHwLevel('${esc(lv.id)}')">
+        <div style="flex:1;font-size:15px;font-weight:800">${esc(lv.name)}</div>
+        <div style="font-size:12px;color:var(--muted-2)">${isOpen?'▲':'▼'}</div>
+      </div>
+      ${isOpen ? `<div style="border-top:1px solid var(--line)">${groupsHtml}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function toggleHwLevel(id){ if(hwOpenLevels.has(id)) hwOpenLevels.delete(id); else hwOpenLevels.add(id); renderHwLibrary(); }
+function toggleHwGroup(id){ if(hwOpenGroups.has(id)) hwOpenGroups.delete(id); else hwOpenGroups.add(id); renderHwLibrary(); }
+function toggleHwTask(id){
+  if(hwSelectedTasks.has(id)) hwSelectedTasks.delete(id); else hwSelectedTasks.add(id);
+  document.getElementById('hwSelCount').textContent = `Выбрано: ${hwSelectedTasks.size} заданий`;
+  renderHwLibrary();
+}
+
+async function sendHomework(){
+  if(!hwSelectedTasks.size){ toast('Выбери хотя бы одно задание'); return; }
+  if(!hwTargetStudentId){ toast('Ученик не выбран'); return; }
+  // группируем по group_id
+  const byGroup = {};
+  hwSelectedTasks.forEach(tid => {
+    const t = hwTasks.find(x => x.id === tid);
+    if(!t) return;
+    if(!byGroup[t.group_id]) byGroup[t.group_id] = [];
+    byGroup[t.group_id].push(tid);
+  });
+  for(const [gid, tids] of Object.entries(byGroup)){
+    await apiFetch('/api/homework/assign', {method:'POST', body:JSON.stringify({
+      student_id: hwTargetStudentId, task_ids: tids, group_id: gid
+    })});
+  }
+  document.getElementById('hwScreen').classList.remove('on');
+  toast('Домашнее задание отправлено'); haptic('success');
+}
+
+/* ============ STUDENT NOTIF SETTINGS ============ */
+let stuNotifStudentId = null;
+let stuNotifInitial = {};
+
+async function openStudentNotifSettings(){
+  stuNotifStudentId = profId;
+  const su = await apiFetch('/api/student/notif?student_id=' + profId).catch(() => null);
+  if(!su){ toast('Ученик не подключён к приложению'); return; }
+  const s = studentsCache?.find(x => x.id === profId);
+  document.getElementById('stuNotifName').textContent = s ? s.name : '—';
+  document.getElementById('stuNotifTz').textContent = su.timezone ? `Часовой пояс: ${su.timezone}` : '';
+  setSw('sn_homework', su.notif_homework !== false);
+  setSw('sn_hour', su.notif_hour !== false);
+  setSw('sn_day', !!su.notif_day);
+  stuNotifInitial = {homework: !!su.notif_homework, hour: !!su.notif_hour, day: !!su.notif_day};
+  document.getElementById('stuNotifDim').classList.add('on');
+  document.getElementById('stuNotifSheet').classList.add('on');
+}
+
+['sn_homework','sn_hour','sn_day'].forEach(id => {
+  document.getElementById(id).onclick = () => {
+    const on = !document.getElementById(id).classList.contains('on');
+    setSw(id, on); haptic('light');
+  };
+});
+
+document.getElementById('stuNotifDim').onclick = () => {
+  document.getElementById('stuNotifDim').classList.remove('on');
+  document.getElementById('stuNotifSheet').classList.remove('on');
+};
+
+document.getElementById('stuNotifSave').onclick = async () => {
+  const homework = document.getElementById('sn_homework').classList.contains('on');
+  const hour = document.getElementById('sn_hour').classList.contains('on');
+  const day = document.getElementById('sn_day').classList.contains('on');
+  await apiFetch('/api/student/notif', {method:'POST', body:JSON.stringify({
+    student_id: stuNotifStudentId, homework, hour, day
+  })});
+  document.getElementById('stuNotifDim').classList.remove('on');
+  document.getElementById('stuNotifSheet').classList.remove('on');
+  toast('Настройки уведомлений сохранены'); haptic('success');
+};
+
+/* ============ HW RESULTS IN NOTIF SCREEN ============ */
+let hwResults = [];
+
+async function renderHwResults(){
+  const r = await apiFetch('/api/homework/results').catch(() => ({results:[]}));
+  hwResults = r.results || [];
+  const section = document.getElementById('notifHwSection');
+  const listEl = document.getElementById('notifHwList');
+  const empty = document.getElementById('notifEmpty');
+  const unpaidVisible = document.getElementById('notifUnpaidSection').style.display !== 'none';
+  if(!hwResults.length){
+    section.style.display = 'none';
+    if(!unpaidVisible) empty.style.display = 'block';
+    return;
+  }
+  section.style.display = 'block';
+  empty.style.display = 'none';
+  listEl.innerHTML = '';
+  hwResults.forEach(r => {
+    const item = document.createElement('div');
+    item.className = 'unpaid-item';
+    item.innerHTML = `
+      <div class="ui-info" style="cursor:pointer" onclick="showHwStats('${esc(r.id)}','${esc(r.student_id)}','${esc(r.group_id)}','${esc(r.student_name||'')}','${esc(r.group_name||'')}')">
+        <div class="ui-name">${esc(r.student_name||'Ученик')}</div>
+        <div class="ui-meta">выполнил «${esc(r.group_name||'задание')}»</div>
+      </div>
+      <div class="sw green" style="margin-left:8px"></div>`;
+    const sw = item.querySelector('.sw');
+    sw.onclick = async () => {
+      sw.classList.add('on'); haptic('success');
+      item.style.transition = 'opacity .25s'; item.style.opacity = '0';
+      setTimeout(async () => {
+        await apiFetch('/api/homework/dismiss', {method:'POST', body:JSON.stringify({id: r.id})});
+        item.remove();
+        hwResults = hwResults.filter(x => x.id !== r.id);
+        if(!hwResults.length) section.style.display = 'none';
+        updateNotifBell();
+      }, 260);
+    };
+    listEl.appendChild(item);
+  });
+  updateNotifBell();
+}
+
+async function showHwStats(resultId, studentId, groupId, studentName, groupName){
+  document.getElementById('hwStatsTitle').textContent = `${studentName} — ${groupName}`;
+  document.getElementById('hwStatsBody').innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted)">Загрузка…</div>';
+  document.getElementById('hwStatsDim').classList.add('on');
+  document.getElementById('hwStatsSheet').classList.add('on');
+  const r = await apiFetch(`/api/homework/stats?student_id=${studentId}&group_id=${groupId}`).catch(() => ({stats:[]}));
+  const stats = r.stats || [];
+  if(!stats.length){ document.getElementById('hwStatsBody').innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted)">Нет данных</div>'; return; }
+  document.getElementById('hwStatsBody').innerHTML = stats.map(s => {
+    const wrongs = s.wrong_inputs ? s.wrong_inputs.split('|').filter(Boolean) : [];
+    return `<div style="padding:12px 0;border-bottom:1px solid var(--line)">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <div style="font-size:15px;font-weight:700">${esc(s.word)}</div>
+          <div style="font-size:12px;color:var(--muted);font-weight:600">${esc(s.translation)}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:13px;font-weight:700;color:${s.attempts===1&&s.correct_count===1?'var(--green)':'var(--danger)'}">
+            ${s.attempts} ${s.attempts===1?'попытка':'попытки'} · ${s.correct_count?'✓':'✗'}
+          </div>
+          ${wrongs.length?`<div style="font-size:11px;color:var(--muted);margin-top:2px">Вводил: ${wrongs.map(w=>`«${esc(w)}»`).join(', ')}</div>`:''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+document.getElementById('hwStatsDim').onclick = closeHwStats;
+function closeHwStats(){
+  document.getElementById('hwStatsDim').classList.remove('on');
+  document.getElementById('hwStatsSheet').classList.remove('on');
+}
+
+/* ============ NOTIF BELL COLOR ============ */
+function updateNotifBell(){
+  const btn = document.getElementById('notifBtn');
+  const svg = btn.querySelector('svg');
+  const hasHw = hwResults.length > 0;
+  if(hasHw){
+    svg.querySelector('path:first-child').setAttribute('fill', 'var(--violet)');
+    svg.querySelector('path:last-child').setAttribute('fill', 'var(--violet)');
+    svg.querySelectorAll('path').forEach(p => { p.setAttribute('stroke', 'var(--violet)'); });
+  } else {
+    svg.querySelectorAll('path').forEach(p => {
+      p.setAttribute('stroke', 'var(--violet)');
+      p.setAttribute('fill', 'none');
+    });
+  }
+}
+
 /* ============ SETTINGS ============ */
 const settingsScreen=document.getElementById('settingsScreen');
 let settInitial={}; // начальное состояние при открытии
@@ -2039,14 +2799,15 @@ async function openSettings(){
   void settingsScreen.offsetWidth; // reflow для корректной стартовой позиции
   settingsScreen.classList.add('on');
   // ПОТОМ подгружаем актуальное состояние
-  let histOn=false, hourOn=true, mornOn=true, eveOn=false;
+  let histOn=false, hourOn=true, mornOn=true, eveOn=false, hwResOn=false;
   try{ const h=await apiFetch('/api/history'); histOn=h.history===true; }catch(e){}
-  try{ const n=await apiFetch('/api/notify'); hourOn=n.hour_reminder!==false; mornOn=n.morning!==false; eveOn=n.evening===true; }catch(e){}
+  try{ const n=await apiFetch('/api/notify'); hourOn=n.hour_reminder!==false; mornOn=n.morning!==false; eveOn=n.evening===true; hwResOn=n.hw_results===true; }catch(e){}
   setSw('settHistorySw',histOn);
   setSw('settHourSw',hourOn);
   setSw('settMorningSw',mornOn);
   setSw('settEveningSw',eveOn);
-  settInitial={history:histOn,hour:hourOn,morning:mornOn,evening:eveOn};
+  setSw('settHwResultsSw',hwResOn);
+  settInitial={history:histOn,hour:hourOn,morning:mornOn,evening:eveOn,hwResults:hwResOn};
 }
 
 document.getElementById('settingsBack').onclick=()=>settingsScreen.classList.remove('on');
@@ -2057,21 +2818,23 @@ document.getElementById('settHistorySw').onclick=()=>{ const on=!document.getEle
 document.getElementById('settHourSw').onclick=()=>{ const on=!document.getElementById('settHourSw').classList.contains('on'); setSw('settHourSw',on); haptic('light'); };
 document.getElementById('settMorningSw').onclick=()=>{ const on=!document.getElementById('settMorningSw').classList.contains('on'); setSw('settMorningSw',on); haptic('light'); };
 document.getElementById('settEveningSw').onclick=()=>{ const on=!document.getElementById('settEveningSw').classList.contains('on'); setSw('settEveningSw',on); haptic('light'); };
+document.getElementById('settHwResultsSw').onclick=()=>{ const on=!document.getElementById('settHwResultsSw').classList.contains('on'); setSw('settHwResultsSw',on); haptic('light'); };
 
 document.getElementById('settSaveBtn').onclick=async()=>{
   const histOn=document.getElementById('settHistorySw').classList.contains('on');
   const hourOn=document.getElementById('settHourSw').classList.contains('on');
   const mornOn=document.getElementById('settMorningSw').classList.contains('on');
   const eveOn=document.getElementById('settEveningSw').classList.contains('on');
+  const hwResOn=document.getElementById('settHwResultsSw').classList.contains('on');
   const histChanged=histOn!==settInitial.history;
-  const notifChanged=hourOn!==settInitial.hour||mornOn!==settInitial.morning||eveOn!==settInitial.evening;
+  const notifChanged=hourOn!==settInitial.hour||mornOn!==settInitial.morning||eveOn!==settInitial.evening||hwResOn!==settInitial.hwResults;
   const anyChanged=histChanged||notifChanged;
   if(anyChanged){
     if(histChanged){
       try{ await apiFetch('/api/history/set',{method:'POST',body:JSON.stringify({on:histOn})}); historyMode=histOn; }catch(e){}
     }
     if(notifChanged){
-      try{ await apiFetch('/api/notify/set',{method:'POST',body:JSON.stringify({hour_reminder:hourOn,morning:mornOn,evening:eveOn})}); }catch(e){}
+      try{ await apiFetch('/api/notify/set',{method:'POST',body:JSON.stringify({hour_reminder:hourOn,morning:mornOn,evening:eveOn,hw_results:hwResOn})}); }catch(e){}
     }
     settingsScreen.classList.remove('on');
     if(histChanged){
@@ -2193,6 +2956,7 @@ document.getElementById('notifBtn').onclick = async () => {
   void notifScreen.offsetWidth;
   notifScreen.classList.add('on');
   await renderUnpaidNotif();
+  await renderHwResults();
 };
 document.getElementById('notifBack').onclick = () => notifScreen.classList.remove('on');
 
@@ -2335,6 +3099,8 @@ if(!accessOk()){
 }else{
   renderMonth().then(async()=>{
     updateStuCount();
+    await loadConnectedStudents();
+    renderStudents();
     // подгружаем все месяцы с данными для точного счётчика учеников
     await fetchAllKeys();
     if(allKeysCache&&allKeysCache.length){
