@@ -1,0 +1,1662 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Љубичица — ученик</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+:root{
+  --violet:#6C3FC7;--violet-deep:#4B2A8F;--violet-soft:#C5B3E8;--violet-tint:#F0EBFC;
+  --green:#34B27B;--green-tint:#EAF7F0;
+  --danger:#E5687E;--danger-tint:#FEF0F2;
+  --gold:#D4A017;--gold-tint:#FFF8E6;--gold-soft:#F2D178;
+  --ink:#2B2444;--muted:#9088A8;--muted-2:#BDB6CC;
+  --surface:#FFFFFF;--surface-2:#F8F6FC;--bg:#F5F2FC;--line:#EAE4F5;
+  --shadow:0 4px 20px rgba(43,36,68,.10);--shadow-soft:0 2px 8px rgba(43,36,68,.07);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:var(--ink)}
+
+.header{position:sticky;top:0;z-index:10;background:linear-gradient(180deg,var(--bg) 70%,rgba(244,240,251,0));padding:18px 20px 14px;transition:transform .25s ease}
+.header.hidden{transform:translateY(-100%)}
+.brand{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+.dot{width:36px;height:36px;border-radius:11px;background:var(--surface);box-shadow:var(--shadow-soft);display:grid;place-items:center;flex:none}
+.brand h1{font-size:20px;font-weight:800;letter-spacing:-.02em;color:var(--ink)}
+.brand h1 span{color:var(--violet)}
+
+.next-lesson{background:linear-gradient(145deg,var(--violet-deep),var(--violet));border-radius:14px;padding:14px 16px;position:relative;overflow:hidden}
+.next-lesson::after{content:'';position:absolute;right:-20px;top:-20px;width:100px;height:100px;border-radius:50%;background:rgba(255,255,255,.08)}
+.nl-label{font-size:11px;font-weight:700;color:rgba(255,255,255,.65);letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px;position:relative}
+.nl-date{font-size:20px;font-weight:800;color:#fff;letter-spacing:-.02em;position:relative}
+.nl-time{font-size:14px;color:rgba(255,255,255,.8);font-weight:600;margin-top:2px;position:relative}
+.nl-badge{position:absolute;right:14px;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.18);border-radius:10px;padding:6px 10px;font-size:12px;font-weight:800;color:#fff}
+
+.main{padding:16px 16px 40px}
+
+/* карусель сообщений от преподавателя */
+#msgCarouselTrack::-webkit-scrollbar{display:none}
+.msg-card{flex:0 0 100%;scroll-snap-align:start;background:var(--surface);border:1.5px solid var(--line);
+  border-radius:16px;box-shadow:var(--shadow-soft);overflow:hidden}
+.msg-card img{width:100%;max-height:240px;object-fit:cover;display:block;cursor:zoom-in}
+.lightbox{position:fixed;inset:0;background:rgba(20,16,30,.92);z-index:90;display:none;
+  align-items:center;justify-content:center;padding:20px;opacity:0;transition:opacity .2s}
+.lightbox.on{display:flex;opacity:1}
+.lightbox img{max-width:100%;max-height:90vh;border-radius:12px;object-fit:contain;box-shadow:0 8px 40px rgba(0,0,0,.4)}
+.lightbox-close{position:absolute;top:18px;right:18px;width:40px;height:40px;border-radius:50%;
+  background:rgba(255,255,255,.15);border:none;color:#fff;font-size:20px;cursor:pointer;
+  display:grid;place-items:center;backdrop-filter:blur(4px)}
+.msg-card-body{padding:16px 18px}
+.msg-card-text{font-size:15px;line-height:1.55;color:var(--ink);word-break:break-word}
+.msg-card-text b{font-weight:800}
+.msg-card-time{font-size:11px;color:var(--muted-2);font-weight:600;margin-top:10px}
+.msg-arrow{width:34px;height:34px;border-radius:50%;background:var(--surface);box-shadow:var(--shadow-soft);
+  border:1.5px solid var(--line);display:grid;place-items:center;cursor:pointer;flex:none;color:var(--violet);
+  transition:opacity .15s,transform .12s}
+.msg-arrow:active{transform:scale(.9)}
+.msg-arrow.disabled{opacity:.3;pointer-events:none}
+.msg-dot{width:6px;height:6px;border-radius:50%;background:var(--line);transition:background .2s}
+.msg-dot.active{background:var(--violet)}
+
+/* карточки-сторис */
+.card-tile{flex:0 0 78px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer}
+.card-tile-frame{width:78px;height:78px;border-radius:18px;padding:3px;transition:opacity .15s;
+  background:var(--line)}
+.card-tile-frame.is-new{background:linear-gradient(135deg,var(--violet),#8B6AD4,var(--gold-soft))}
+.card-tile-frame.has-progress{
+  background:conic-gradient(var(--violet) var(--prog,0%), var(--line) var(--prog,0%));
+}
+.card-tile.viewed .card-tile-frame{background:var(--line)}
+.card-tile-inner{width:100%;height:100%;border-radius:15px;overflow:hidden;background:var(--surface-2);
+  display:grid;place-items:center}
+.card-tile-inner img{width:100%;height:100%;object-fit:cover}
+.card-tile-name{font-size:11px;font-weight:700;color:var(--ink);text-align:center;max-width:78px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.card-tile.viewed .card-tile-name{color:var(--muted)}
+
+/* полноэкранный просмотр сторис */
+.story-viewer{position:fixed;inset:0;background:rgba(20,16,32,.72);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  z-index:95;display:none;flex-direction:column;opacity:0;transition:opacity .25s ease}
+.story-viewer.on{display:flex;opacity:1}
+.story-progress-row{display:flex;gap:4px;padding:12px 14px 0}
+.story-progress-bar{flex:1;height:3px;border-radius:2px;background:rgba(255,255,255,.25);overflow:hidden}
+.story-progress-fill{height:100%;width:0%;background:#fff;border-radius:2px}
+.story-progress-fill.done{width:100% !important}
+.story-progress-fill.animating{transition:width linear}
+.story-header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;gap:10px}
+.story-title{color:#fff;font-size:14px;font-weight:700;text-shadow:0 1px 4px rgba(0,0,0,.4)}
+.story-header-right{display:flex;align-items:center;gap:10px}
+.story-volume{display:flex;align-items:center;gap:6px}
+.story-volume input[type=range]{-webkit-appearance:none;width:64px;height:3px;border-radius:2px;
+  background:rgba(255,255,255,.3);outline:none;cursor:pointer}
+.story-volume input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;height:13px;
+  border-radius:50%;background:#fff;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.4)}
+.story-volume input[type=range]::-moz-range-thumb{width:13px;height:13px;border-radius:50%;background:#fff;
+  border:none;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.4)}
+.story-volume-icon{color:rgba(255,255,255,.85);display:flex;flex:none}
+.story-close{width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.18);border:none;
+  color:#fff;cursor:pointer;display:grid;place-items:center;flex:none;transition:background .12s}
+.story-close:active{background:rgba(255,255,255,.32)}
+.story-restart-btn{width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.14);border:none;
+  color:rgba(255,255,255,.85);cursor:pointer;display:grid;place-items:center;flex:none;transition:background .12s}
+.story-restart-btn:active{background:rgba(255,255,255,.28)}
+.story-body{flex:1;position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden;
+  padding:0 56px}
+.story-slide{position:absolute;inset:0 56px;display:none;flex-direction:column;align-items:center;justify-content:center;
+  cursor:pointer}
+.story-slide.active{display:flex}
+.story-slide img{max-width:100%;max-height:100%;object-fit:contain;border-radius:18px;
+  box-shadow:0 12px 40px rgba(0,0,0,.35)}
+.story-caption{position:absolute;bottom:90px;left:20px;right:20px;color:#fff;font-size:18px;font-weight:800;
+  text-align:center;text-shadow:0 2px 8px rgba(0,0,0,.5);pointer-events:none}
+.story-nav-btn{position:absolute;top:50%;transform:translateY(-50%);width:40px;height:40px;border-radius:50%;
+  background:rgba(255,255,255,.16);border:1.5px solid rgba(255,255,255,.22);color:#fff;cursor:pointer;
+  display:grid;place-items:center;z-index:5;transition:background .15s,transform .12s;backdrop-filter:blur(6px)}
+.story-nav-btn:active{transform:translateY(-50%) scale(.88);background:rgba(255,255,255,.3)}
+.story-nav-btn.disabled{opacity:.25;pointer-events:none}
+.story-nav-left{left:10px}
+.story-nav-right{right:10px}
+.story-controls{display:flex;align-items:center;justify-content:center;gap:16px;padding:14px 14px 26px}
+.story-audio-btn{width:54px;height:54px;border-radius:50%;background:rgba(255,255,255,.16);border:1.5px solid rgba(255,255,255,.2);
+  color:#fff;cursor:pointer;display:grid;place-items:center;transition:transform .12s,background .12s}
+.story-audio-btn:active{transform:scale(.9);background:rgba(255,255,255,.28)}
+.story-loop-btn{width:42px;height:42px;border-radius:50%;background:rgba(255,255,255,.16);border:1.5px solid rgba(255,255,255,.2);
+  color:#fff;cursor:pointer;display:grid;place-items:center;transition:transform .12s,background .12s}
+.story-loop-btn:active{transform:scale(.9)}
+.story-loop-btn.on{background:var(--violet);border-color:var(--violet)}
+.section-head{font-size:12px;font-weight:800;color:var(--muted);letter-spacing:.07em;text-transform:uppercase;margin-bottom:12px}
+.help-tabs{display:flex;gap:6px;padding:12px 16px;background:var(--surface);
+  border-bottom:1.5px solid var(--line);overflow-x:auto;scrollbar-width:none}
+.help-tabs::-webkit-scrollbar{display:none}
+.help-tab{flex:none;padding:7px 16px;border-radius:20px;font-size:13px;font-weight:700;
+  border:1.5px solid var(--line);background:var(--bg);color:var(--muted);cursor:pointer;font-family:inherit}
+.help-tab.on{background:var(--violet);border-color:var(--violet);color:#fff}
+.help-panel{display:none}
+.help-panel.on{display:block}
+.help-step{display:flex;gap:12px;margin-bottom:16px}
+.help-step-num{flex:none;width:26px;height:26px;border-radius:50%;background:var(--violet-tint);color:var(--violet);
+  font-size:13px;font-weight:800;display:grid;place-items:center}
+.help-step-text{font-size:14px;color:var(--ink);line-height:1.55;padding-top:2px}
+.help-step-text b{color:var(--violet-deep)}
+.help-switch-box{background:var(--violet-tint);border-radius:12px;padding:12px 14px;font-size:13px;color:var(--violet-deep);
+  font-weight:600;line-height:1.5;margin-top:4px}
+
+/* домашки */
+.hw-card{background:var(--surface);border-radius:15px;box-shadow:var(--shadow-soft);border:1.5px solid var(--line);margin-bottom:10px;overflow:hidden;cursor:pointer;transition:transform .12s}
+.hw-card:active{transform:scale(.98)}
+.hw-inner{display:flex;align-items:center;gap:14px;padding:14px 16px}
+.hw-icon{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;font-size:20px;flex:none}
+.hw-icon.new{background:var(--violet-tint)}
+.hw-icon.done{background:var(--green-tint)}
+.hw-body{flex:1;min-width:0}
+.hw-name{font-size:15px;font-weight:700;margin-bottom:2px}
+.hw-sub{font-size:12px;color:var(--muted);font-weight:600}
+.progress-bar{height:4px;background:var(--line);border-radius:2px;margin-top:6px;overflow:hidden}
+.progress-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,var(--violet),#8B6AD4);transition:width .3s}
+.hw-badge{font-size:11px;font-weight:800;padding:3px 8px;border-radius:8px;white-space:nowrap}
+.hw-badge.new{background:var(--violet-tint);color:var(--violet)}
+.hw-badge.done{background:var(--green-tint);color:var(--green)}
+
+/* настройки (bottom sheet) */
+.dim{position:fixed;inset:0;background:rgba(43,36,68,.45);z-index:40;opacity:0;pointer-events:none;transition:opacity .2s}
+.dim.on{opacity:1;pointer-events:all}
+.picker{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-radius:20px 20px 0 0;z-index:41;transform:translateY(100%);transition:transform .28s cubic-bezier(.32,.72,0,1);padding:20px 20px 36px;max-height:80vh;overflow-y:auto}
+.picker.on{transform:translateY(0)}
+.picker h3{font-size:17px;font-weight:800;margin-bottom:16px}
+.toggle-line{display:flex;align-items:center;justify-content:space-between}
+.t-txt{font-size:15px;font-weight:700;color:var(--ink)}
+.t-sub{font-size:12px;color:var(--muted);font-weight:600;margin-top:2px}
+.sw{width:44px;height:26px;border-radius:13px;background:var(--line);position:relative;cursor:pointer;transition:background .2s;flex:none}
+.sw::after{content:'';position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:10px;background:#fff;transition:left .2s;box-shadow:0 1px 4px rgba(0,0,0,.2)}
+.sw.on{background:var(--violet)}
+.sw.on::after{left:21px}
+.sheet-btn{width:100%;padding:13px;border:none;border-radius:12px;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;margin-bottom:8px}
+.sheet-btn.cancel{background:var(--bg);color:var(--muted)}
+
+/* экран задания */
+.screen{position:fixed;inset:0;z-index:60;background:var(--bg);transform:translateX(100%);visibility:hidden;transition:transform .26s cubic-bezier(.4,0,.2,1),visibility 0s linear .26s;overflow-y:auto}
+.screen.on{transform:translateX(0);visibility:visible;transition:transform .26s cubic-bezier(.4,0,.2,1),visibility 0s}
+.scr-head{position:sticky;top:0;background:var(--bg);z-index:5;display:flex;align-items:center;gap:12px;padding:16px 16px 12px;border-bottom:1.5px solid var(--line)}
+.back-btn{width:38px;height:38px;border:none;border-radius:11px;background:var(--surface);box-shadow:var(--shadow-soft);color:var(--ink);font-size:20px;cursor:pointer;display:grid;place-items:center}
+.task-restart-btn{width:36px;height:36px;border:none;border-radius:10px;background:var(--violet-tint);box-shadow:var(--shadow-soft);color:var(--violet);cursor:pointer;display:grid;place-items:center;flex:none;transition:transform .12s}
+.task-restart-btn:active{transform:scale(.9)}
+
+/* упражнение */
+.exercise{padding:24px 20px;text-align:center}
+.ex-progress{height:4px;background:var(--line);border-radius:2px;margin-bottom:24px;overflow:hidden}
+.ex-fill{height:100%;background:var(--violet);border-radius:2px;transition:width .4s}
+.ex-counter{font-size:12px;font-weight:800;color:var(--muted);letter-spacing:.05em;text-transform:uppercase;margin-bottom:20px}
+.ex-word{font-size:36px;font-weight:800;color:var(--ink);letter-spacing:-.02em;margin-bottom:8px}
+.ex-hint{font-size:13px;color:var(--muted);font-weight:600;margin-bottom:28px}
+.choices{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px}
+.choice{background:var(--bg);border:2px solid var(--line);border-radius:14px;padding:16px 12px;font-size:15px;font-weight:700;cursor:pointer;transition:all .12s;text-align:center}
+.choice:active{transform:scale(.97)}
+.choice.correct{background:var(--green-tint);border-color:var(--green);color:var(--green)}
+.choice.wrong{background:var(--danger-tint);border-color:var(--danger);color:var(--danger)}
+.choice.disabled{pointer-events:none;opacity:.55}
+.input-wrap{margin-bottom:20px}
+.input-wrap input{width:100%;font-size:18px;font-weight:700;text-align:center;padding:14px;border:2px solid var(--line);border-radius:14px;background:var(--surface);font-family:inherit;outline:none;color:var(--ink)}
+.input-wrap input:focus{border-color:var(--violet-soft)}
+.input-wrap input.correct{border-color:var(--green);background:var(--green-tint);color:var(--green)}
+.input-wrap input.wrong{border-color:var(--danger);background:var(--danger-tint);color:var(--danger)}
+.input-wrap input.shake{animation:shakeInput .4s}
+@keyframes shakeInput{
+  10%,90%{transform:translateX(-3px)}
+  20%,80%{transform:translateX(5px)}
+  30%,50%,70%{transform:translateX(-8px)}
+  40%,60%{transform:translateX(8px)}
+}
+.ex-comment{margin-top:16px;padding:13px 16px;border-radius:14px;font-size:14px;line-height:1.5;
+  text-align:left;animation:commentIn .25s ease}
+.ex-comment.correct{background:var(--green-tint);color:var(--green);border:1.5px solid #BCE8D2}
+.ex-comment.wrong{background:var(--danger-tint);color:var(--danger);border:1.5px solid #F2C2CC}
+@keyframes commentIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+.audio-wrap{margin-bottom:24px}
+.audio-btn{width:80px;height:80px;border-radius:50%;background:var(--violet-tint);border:3px solid var(--violet-soft);display:grid;place-items:center;cursor:pointer;margin:0 auto 12px;transition:all .12s}
+.audio-btn:active{transform:scale(.92);background:var(--violet);border-color:var(--violet)}
+.audio-btn svg{width:32px;height:32px}
+.audio-hint{font-size:13px;color:var(--muted);font-weight:600}
+.next-btn{width:100%;padding:16px;background:var(--violet);color:#fff;border:none;border-radius:14px;font-size:16px;font-weight:800;font-family:inherit;cursor:pointer;display:none}
+.next-btn:active{opacity:.85}
+.next-btn.on{display:block}
+.check-btn{width:100%;padding:16px;background:var(--violet);color:#fff;border:none;border-radius:14px;font-size:16px;font-weight:800;font-family:inherit;cursor:pointer;display:none}
+.check-btn.on{display:block}
+
+/* результат */
+.result{text-align:center;padding:40px 20px}
+.result-emoji{font-size:56px;margin-bottom:12px}
+.result-title{font-size:22px;font-weight:800;margin-bottom:6px}
+.result-sub{font-size:14px;color:var(--muted);font-weight:600;margin-bottom:24px}
+.result-score{display:inline-flex;align-items:center;gap:8px;background:var(--gold-tint);border:2px solid var(--gold-soft);border-radius:14px;padding:12px 20px;font-size:18px;font-weight:800;color:var(--gold);margin-bottom:24px}
+.done-btn{width:100%;padding:16px;background:var(--violet);color:#fff;border:none;border-radius:14px;font-size:16px;font-weight:800;font-family:inherit;cursor:pointer}
+
+/* часовой пояс */
+.tz-screen{position:fixed;inset:0;z-index:80;background:rgba(20,16,32,.55);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 20px;text-align:center;opacity:0;transition:opacity .3s ease}
+#tzScreenContent{width:100%;display:flex;flex-direction:column;align-items:center}
+.tz-screen.on{opacity:1}
+.tz-greeting{font-size:30px;font-weight:800;letter-spacing:-.02em;margin-bottom:26px;color:#fff;line-height:1.25;text-shadow:0 2px 12px rgba(0,0,0,.25)}
+.tz-btn{width:100%;padding:14px;background:var(--surface);border:1.5px solid var(--line);border-radius:14px;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;margin-bottom:10px;color:var(--ink);box-shadow:var(--shadow-soft);transition:transform .1s}
+.tz-btn:active{transform:scale(.97);background:var(--violet-tint);border-color:var(--violet);color:var(--violet)}
+.tz-btn.primary{background:var(--violet);border-color:var(--violet);color:#fff}
+.tz-btn.primary:active{background:var(--violet-deep);color:#fff}
+.tz-back-btn{display:flex;align-items:center;justify-content:center;gap:6px;background:transparent;box-shadow:none;border:none;color:#fff;opacity:.9;width:auto;margin:0 auto 14px}
+.tz-back-btn:active{transform:scale(.96);background:transparent}
+.tz-search{width:100%;padding:12px 14px;border:1.5px solid var(--line);border-radius:14px;font-size:15px;font-family:inherit;outline:none;background:var(--surface);color:var(--ink);margin-bottom:10px}
+.tz-search:focus{border-color:var(--violet-soft)}
+.tz-list{width:100%;max-height:300px;overflow-y:auto;display:none}
+
+/* empty */
+.empty{text-align:center;padding:48px 20px;color:var(--muted)}
+.empty-icon{margin:0 auto 12px;display:block}
+.empty-txt{font-size:14px;font-weight:600}
+
+/* nav */
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1.5px solid var(--line);display:flex;padding:10px 0 20px;box-shadow:0 -4px 20px rgba(43,36,68,.08)}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:4px 0}
+.nav-icon{font-size:22px}
+.nav-label{font-size:10px;font-weight:700;color:var(--muted)}
+.nav-item.active .nav-label{color:var(--violet)}
+
+/* toast */
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:10px 18px;border-radius:20px;font-size:13px;font-weight:700;opacity:0;transition:all .2s;z-index:99;white-space:nowrap}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+
+</style>
+</head>
+<body>
+
+<!-- ЧАСОВОЙ ПОЯС (если нужен выбор) -->
+<div class="tz-screen" id="tzScreen" style="display:none" onclick="onTzScreenBgClick(event)">
+  <div id="tzScreenContent" onclick="event.stopPropagation()">
+    <div class="tz-greeting" id="tzGreeting" style="display:none"></div>
+    <div id="tzDetected" style="margin-bottom:16px"></div>
+    <button class="tz-btn tz-back-btn" id="tzBackBtn" onclick="showTzConfirmAgain()" style="display:none">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      Назад
+    </button>
+    <input class="tz-search" id="tzSearch" placeholder="Поиск города…" oninput="searchTz()" style="display:none">
+    <div class="tz-list" id="tzList"></div>
+  </div>
+</div>
+
+<!-- НЕ ПОДКЛЮЧЁН -->
+<div id="notConnected" style="display:none;text-align:center;padding:80px 20px">
+  <div style="margin:0 auto 16px;width:64px;height:64px">
+    <svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+      <path d="M16 19 Q15 24 15.5 29" stroke="#5A9E6F" stroke-width="1.6" stroke-linecap="round" fill="none"/>
+      <path d="M15.5 24 Q11 22 10 18 Q14 18.5 15.5 24z" fill="#6FB173"/>
+      <ellipse cx="16" cy="10.2" rx="3.2" ry="4.5" fill="#7C5CDB" opacity=".92"/>
+      <ellipse cx="11.5" cy="16.5" rx="3.2" ry="4.5" transform="rotate(-60 11.5 16.5)" fill="#A78BEA" opacity=".92"/>
+      <ellipse cx="20.5" cy="16.5" rx="3.2" ry="4.5" transform="rotate(60 20.5 16.5)" fill="#A78BEA" opacity=".92"/>
+      <ellipse cx="10.2" cy="12.5" rx="3.2" ry="4.5" transform="rotate(-30 10.2 12.5)" fill="#8B6FE8" opacity=".88"/>
+      <ellipse cx="21.8" cy="12.5" rx="3.2" ry="4.5" transform="rotate(30 21.8 12.5)" fill="#8B6FE8" opacity=".88"/>
+      <circle cx="16" cy="15" r="2.8" fill="#FFF176"/>
+      <circle cx="16" cy="15" r="1.4" fill="#F9A825"/>
+    </svg>
+  </div>
+  <div style="font-size:20px;font-weight:800;margin-bottom:8px;color:var(--ink)">Љубичица</div>
+  <div style="font-size:14px;color:var(--muted);font-weight:600;line-height:1.6">Вы не подключены.<br>Попросите Миляну прислать вам ссылку для входа.</div>
+</div>
+
+<!-- ГЛАВНЫЙ ЭКРАН -->
+<div id="mainApp" style="display:none">
+  <div class="header">
+    <div class="brand" style="justify-content:space-between">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="dot">
+          <svg viewBox="0 0 32 32" width="27" height="27" xmlns="http://www.w3.org/2000/svg">
+            <path d="M16 19 Q15 24 15.5 29" stroke="#5A9E6F" stroke-width="1.6" stroke-linecap="round" fill="none"/>
+            <path d="M15.5 24 Q11 22 10 18 Q14 18.5 15.5 24z" fill="#6FB173"/>
+            <ellipse cx="16" cy="10.2" rx="3.2" ry="4.5" fill="#7C5CDB" opacity=".92"/>
+            <ellipse cx="11.5" cy="16.5" rx="3.2" ry="4.5" transform="rotate(-60 11.5 16.5)" fill="#A78BEA" opacity=".92"/>
+            <ellipse cx="20.5" cy="16.5" rx="3.2" ry="4.5" transform="rotate(60 20.5 16.5)" fill="#A78BEA" opacity=".92"/>
+            <ellipse cx="10.2" cy="12.5" rx="3.2" ry="4.5" transform="rotate(-30 10.2 12.5)" fill="#8B6FE8" opacity=".88"/>
+            <ellipse cx="21.8" cy="12.5" rx="3.2" ry="4.5" transform="rotate(30 21.8 12.5)" fill="#8B6FE8" opacity=".88"/>
+            <circle cx="16" cy="15" r="2.8" fill="#FFF176"/>
+            <circle cx="16" cy="15" r="1.4" fill="#F9A825"/>
+          </svg>
+        </div>
+        <div>
+          <h1>Љуби<span>чица</span></h1>
+          <div style="font-size:12px;color:var(--muted);font-weight:600;margin-top:1px">расписание и задания</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <button onclick="openHelp()" title="Помощь" id="helpBtn"
+          style="width:38px;height:38px;border:none;border-radius:11px;background:var(--surface);
+          box-shadow:var(--shadow-soft);color:var(--violet);cursor:pointer;display:grid;place-items:center;flex:none">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+            <line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+        </button>
+        <button onclick="openSettings()" title="Настройки" id="settingsBtn"
+          style="width:38px;height:38px;border:none;border-radius:11px;background:var(--surface);
+          box-shadow:var(--shadow-soft);color:var(--violet);cursor:pointer;display:grid;place-items:center;flex:none">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+    <div class="next-lesson" id="nextLessonBlock" style="display:none">
+      <div class="nl-label">Следующий урок</div>
+      <div class="nl-date" id="nextLessonDate">—</div>
+      <div style="display:flex;align-items:baseline;gap:8px;position:relative">
+        <div class="nl-time" id="nextLessonTime">—</div>
+        <div id="nextLessonTz" style="font-size:11px;color:rgba(255,255,255,.65);font-weight:600;display:none"></div>
+      </div>
+      <div class="nl-badge" id="nextLessonBadge" style="display:none"></div>
+    </div>
+    <div id="noLessonBlock" style="display:none;color:var(--muted);font-size:14px;font-weight:600">Ближайших уроков нет</div>
+  </div>
+
+  <!-- КАРТОЧКИ-СТОРИС -->
+  <div id="cardsStripWrap" style="display:none;padding:14px 16px 0">
+    <div class="section-head" style="margin-bottom:8px">Карточки</div>
+    <div id="cardsStrip" style="display:flex;gap:10px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;padding-bottom:2px"></div>
+  </div>
+
+  <!-- КАРУСЕЛЬ СООБЩЕНИЙ ОТ МИЛЯНЫ -->
+  <div id="msgCarouselWrap" style="display:none;padding:14px 16px 0">
+    <div style="display:flex;align-items:center;gap:8px">
+      <button class="msg-arrow" id="msgArrowLeft" onclick="msgCarouselNav(-1)" title="Предыдущее">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <div id="msgCarouselTrack" style="flex:1;min-width:0;display:flex;overflow-x:auto;gap:10px;scroll-snap-type:x mandatory;scrollbar-width:none;-webkit-overflow-scrolling:touch"></div>
+      <button class="msg-arrow" id="msgArrowRight" onclick="msgCarouselNav(1)" title="Следующее">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+    </div>
+    <div id="msgCarouselDots" style="display:flex;justify-content:center;gap:5px;margin-top:10px"></div>
+  </div>
+
+  <div class="main" id="onbHomework">
+    <div class="section-head">Домашние задания</div>
+    <div id="hwList"></div>
+    <div id="hwEmpty" class="empty" style="display:none">
+      <svg class="empty-icon" width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="var(--violet-soft)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+      <div class="empty-txt">Домашних заданий пока нет</div>
+    </div>
+  </div>
+</div>
+
+<!-- ЭКРАН ЗАДАНИЯ -->
+<div class="screen" id="taskScreen">
+  <div class="scr-head">
+    <button class="back-btn" onclick="closeTask()">‹</button>
+    <div style="font-size:16px;font-weight:800;flex:1" id="taskTitle">Задание</div>
+    <button class="task-restart-btn" onclick="restartTask()" title="Начать сначала">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+    </button>
+  </div>
+  <div class="exercise" id="exerciseContainer"></div>
+</div>
+
+<!-- ПОМОЩЬ -->
+<div class="screen" id="helpScreen">
+  <div class="scr-head">
+    <button class="back-btn" onclick="closeHelp()">‹</button>
+    <div style="font-size:16px;font-weight:800;flex:1">Сербская раскладка</div>
+  </div>
+
+  <div class="help-tabs">
+    <button class="help-tab on" onclick="switchHelpTab('android')">Android</button>
+    <button class="help-tab" onclick="switchHelpTab('ios')">iPhone</button>
+    <button class="help-tab" onclick="switchHelpTab('windows')">Windows</button>
+    <button class="help-tab" onclick="switchHelpTab('mac')">Mac</button>
+  </div>
+
+  <div style="padding:18px 20px;max-width:560px">
+
+    <!-- ANDROID -->
+    <div class="help-panel on" id="helpPanel-android">
+      <div class="section-head">Через клавиатуру Gboard</div>
+      <div class="help-step">
+        <div class="help-step-num">1</div>
+        <div class="help-step-text">Откройте любое приложение с клавиатурой (например, чат в Телеграм)</div>
+      </div>
+      <div class="help-step">
+        <div class="help-step-num">2</div>
+        <div class="help-step-text">Тапните по полю ввода, чтобы открылась клавиатура, затем нажмите значок <b>⚙️ настроек</b> над ней</div>
+      </div>
+      <div class="help-step">
+        <div class="help-step-num">3</div>
+        <div class="help-step-text"><b>Языки</b> → <b>Добавить клавиатуру</b></div>
+      </div>
+      <div class="help-step">
+        <div class="help-step-num">4</div>
+        <div class="help-step-text">Выберите <b>Сербский</b> → выберите раскладку (кириллица или латиница) → <b>Готово</b></div>
+      </div>
+      <div class="help-switch-box">Переключение языка: зажмите пробел и проведите в сторону, либо тапните значок 🌐</div>
+    </div>
+
+    <!-- IOS -->
+    <div class="help-panel" id="helpPanel-ios">
+      <div class="section-head">Системная клавиатура iOS</div>
+      <div class="help-step">
+        <div class="help-step-num">1</div>
+        <div class="help-step-text"><b>Настройки → Основные → Клавиатура → Клавиатуры</b></div>
+      </div>
+      <div class="help-step">
+        <div class="help-step-num">2</div>
+        <div class="help-step-text">Нажмите <b>Добавить клавиатуру…</b></div>
+      </div>
+      <div class="help-step">
+        <div class="help-step-num">3</div>
+        <div class="help-step-text">Выберите <b>Сербский</b> (кириллица или латиница — можно добавить сразу обе)</div>
+      </div>
+      <div class="help-switch-box">Переключение языка: зажмите значок 🌐 рядом с пробелом, выберите нужный язык</div>
+    </div>
+
+    <!-- WINDOWS -->
+    <div class="help-panel" id="helpPanel-windows">
+      <div class="section-head">Windows 11</div>
+      <div class="help-step">
+        <div class="help-step-num">1</div>
+        <div class="help-step-text"><b>Параметры</b> (Win+I) <b>→ Время и язык → Язык и регион</b></div>
+      </div>
+      <div class="help-step">
+        <div class="help-step-num">2</div>
+        <div class="help-step-text"><b>Добавить язык</b> → найдите <b>Сербский</b> → <b>Далее → Установить</b></div>
+      </div>
+      <div class="help-step">
+        <div class="help-step-num">3</div>
+        <div class="help-step-text">Если нужна отдельная раскладка: рядом с языком нажмите <b>⋯ → Параметры языка → Добавить клавиатуру</b></div>
+      </div>
+
+      <div class="section-head" style="margin-top:22px">Windows 10</div>
+      <div class="help-step">
+        <div class="help-step-num">1</div>
+        <div class="help-step-text"><b>Параметры → Время и язык → Язык</b></div>
+      </div>
+      <div class="help-step">
+        <div class="help-step-num">2</div>
+        <div class="help-step-text"><b>Добавить язык</b> → найдите <b>Сербский</b> → <b>Далее → Установить</b></div>
+      </div>
+      <div class="help-step">
+        <div class="help-step-num">3</div>
+        <div class="help-step-text">Откроется список языков → выберите его → <b>Параметры → Добавить клавиатуру</b></div>
+      </div>
+      <div class="help-switch-box">Переключение языка (10 и 11): <b>Win + Пробел</b> или <b>Left Alt + Shift</b> (привычный способ для большинства), либо значок языка в трее</div>
+    </div>
+
+    <!-- MAC -->
+    <div class="help-panel" id="helpPanel-mac">
+      <div class="section-head">macOS</div>
+      <div class="help-step">
+        <div class="help-step-num">1</div>
+        <div class="help-step-text"><b>Меню Apple → Системные настройки → Клавиатура</b></div>
+      </div>
+      <div class="help-step">
+        <div class="help-step-num">2</div>
+        <div class="help-step-text">Раздел <b>Ввод текста → Изменить</b></div>
+      </div>
+      <div class="help-step">
+        <div class="help-step-num">3</div>
+        <div class="help-step-text">Нажмите <b>+</b> внизу слева, найдите <b>Сербский</b> (кириллица/латиница), выберите, <b>Добавить</b></div>
+      </div>
+      <div class="help-switch-box">Переключение языка: значок языка в строке меню, либо <b>Ctrl + Пробел</b></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- НАСТРОЙКИ -->
+<div class="dim" id="settDim" onclick="closeSettings()"></div>
+<div class="picker" id="settSheet">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+    <h3 style="margin:0">Настройки уведомлений</h3>
+    <div style="display:flex;align-items:center;gap:7px">
+      <span style="font-size:11px;color:var(--muted);font-weight:700">Все</span>
+      <div class="sw" id="sw_all" onclick="toggleAllNotif()"></div>
+    </div>
+  </div>
+  <div class="toggle-line" style="padding:12px 0;border-bottom:1px solid var(--line)">
+    <div style="display:flex;align-items:center;gap:9px">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--violet)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>
+      <div><div class="t-txt">За час до урока</div><div class="t-sub">напоминание об уроке</div></div>
+    </div>
+    <div class="sw" id="sw_hour"></div>
+  </div>
+  <div class="toggle-line" style="padding:12px 0;border-bottom:1px solid var(--line)">
+    <div style="display:flex;align-items:center;gap:9px">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--violet)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+      <div><div class="t-txt">Утром в день урока</div><div class="t-sub">напоминание о занятии в 8:00</div></div>
+    </div>
+    <div class="sw" id="sw_day"></div>
+  </div>
+  <div class="toggle-line" style="padding:12px 0;border-bottom:1px solid var(--line)">
+    <div style="display:flex;align-items:center;gap:9px">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--violet)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+      <div><div class="t-txt">Домашнее задание</div><div class="t-sub">уведомление о новом дз</div></div>
+    </div>
+    <div class="sw" id="sw_homework"></div>
+  </div>
+  <div class="toggle-line" style="padding:12px 0;border-bottom:1px solid var(--line)">
+    <div style="display:flex;align-items:center;gap:9px">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--violet)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+      <div><div class="t-txt">Новые карточки</div><div class="t-sub">уведомления о новых карточках</div></div>
+    </div>
+    <div class="sw" id="sw_cards"></div>
+  </div>
+  <div class="toggle-line" style="padding:12px 0;margin-bottom:16px">
+    <div style="display:flex;align-items:center;gap:9px">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--violet)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      <div><div class="t-txt">Новые посты</div><div class="t-sub">посты от Миляны</div></div>
+    </div>
+    <div class="sw" id="sw_posts"></div>
+  </div>
+  <div class="toggle-line" style="padding:12px 0;margin-bottom:16px;cursor:pointer" onclick="openTzPickerFromSettings()">
+    <div style="display:flex;align-items:center;gap:9px">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--violet)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+      <div><div class="t-txt">Изменить часовой пояс</div><div class="t-sub" id="settTzInfo">—</div></div>
+    </div>
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+  </div>
+  <button class="sheet-btn" style="background:var(--violet);color:#fff" onclick="saveSettings()">Сохранить</button>
+  <button class="sheet-btn cancel" onclick="closeSettings()">Отмена</button>
+</div>
+
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <button class="lightbox-close" onclick="closeLightbox();event.stopPropagation()">✕</button>
+  <img id="lightboxImg" src="" alt="" onclick="event.stopPropagation()">
+</div>
+
+<!-- ПОЛНОЭКРАННЫЙ ПРОСМОТР КАРТОЧЕК-СТОРИС -->
+<div class="story-viewer" id="storyViewer">
+  <div class="story-progress-row" id="storyProgressRow"></div>
+  <div class="story-header">
+    <div class="story-title" id="storyTitle">—</div>
+    <div class="story-header-right">
+      <button class="story-restart-btn" id="storyRestartBtn" onclick="storyRestart()" title="В начало">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+      </button>
+      <div class="story-volume" id="storyVolumeWrap" style="display:none">
+        <span class="story-volume-icon" id="storyVolumeIcon">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3z"/><path d="M16 8a5 5 0 0 1 0 8" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+        </span>
+        <input type="range" id="storyVolumeSlider" min="0" max="100" value="100" oninput="setStoryVolume(this.value)">
+      </div>
+      <button class="story-close" onclick="closeStoryViewer()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+  </div>
+  <div class="story-body" id="storyBody">
+    <button class="story-nav-btn story-nav-left" id="storyNavLeft" onclick="event.stopPropagation();storyNav(-1)">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <button class="story-nav-btn story-nav-right" id="storyNavRight" onclick="event.stopPropagation();storyNav(1)">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+  </div>
+  <div class="story-controls">
+    <button class="story-audio-btn" id="storyAudioBtn" onclick="togglePlayPause()">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="#fff"><path id="storyAudioIcon" d="M6 4h4v16H6zM14 4h4v16h-4z"/></svg>
+    </button>
+    <button class="story-loop-btn" id="storyLoopBtn" onclick="toggleStoryLoop()" title="Повтор карточки">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+    </button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const tg = window.Telegram?.WebApp;
+if(tg) tg.expand();
+
+const MOCK = false;
+
+const API = 'https://bot-1781087941-4553-ruserb.bothost.tech';
+const INIT = tg?.initData || '';
+
+const MONTHS = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
+const WEEKDAYS = ['Воскресенье','Понедельник','Вторник','Среда','Четверг','Пятница','Суббота'];
+
+let studentData = null; // данные из /api/homework/student
+let homeworkGroups = []; // сгруппированные задания
+let currentGroup = null; // текущая группа для прохождения
+let curTaskIdx = 0, curCorrect = 0, answered = false;
+let toastT = null;
+
+function esc(s){ const d=document.createElement('div');d.textContent=s||'';return d.innerHTML; }
+function toast(m){ const el=document.getElementById('toast');el.textContent=m;el.classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>el.classList.remove('on'),2200); }
+
+async function apiReal(path, opts){
+  const r = await fetch(API+path, Object.assign({}, opts, {
+    headers: Object.assign({'Content-Type':'application/json','X-Init-Data':INIT}, (opts&&opts.headers)||{})
+  }));
+  if(!r.ok) throw new Error('api '+r.status);
+  return r.json();
+}
+
+// ---- ИНИЦИАЛИЗАЦИЯ ----
+async function init(){
+  const r = await api('/api/homework/student');
+  studentData = r;
+  const su = r.student || {};
+
+  // сначала показываем основной интерфейс — чтобы он был виден сквозь полупрозрачный экран приветствия
+  showMainApp(r);
+
+  // и поверх него — приветствие+часовой пояс, если ученик ещё их не проходил
+  if(!su.onboarding_done){
+    showTzGreeting(su);
+  }
+}
+
+let lastTzConfirmArgs = null; // для кнопки "назад" из ручного выбора
+
+function showTzGreeting(su){
+  const screen = document.getElementById('tzScreen');
+  const greetEl = document.getElementById('tzGreeting');
+  if(su.greeting_name){
+    greetEl.style.display='block';
+    greetEl.textContent = `Здравствуйте, ${su.greeting_name}!`;
+  }
+  screen.style.display='flex';
+  requestAnimationFrame(()=>screen.classList.add('on'));
+
+  // если учитель уже задал часовой пояс заранее — предлагаем его как подтверждение
+  if(su.preset_timezone){
+    lastTzConfirmArgs = [su.preset_timezone, true];
+    showTzConfirm(su.preset_timezone, true);
+    return;
+  }
+  // иначе пробуем определить автоматически через браузер
+  try{
+    const autoTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    if(autoTz) { lastTzConfirmArgs = [autoTz, false]; showTzConfirm(autoTz, false); return; }
+  }catch(e){}
+  // не получилось определить — сразу список с поиском
+  showTzSearch();
+}
+
+function showTzConfirmAgain(){
+  if(lastTzConfirmArgs){ showTzConfirm(...lastTzConfirmArgs); }
+  else { showTzSearch(); }
+}
+
+function showMainApp(r){
+  document.getElementById('mainApp').style.display='block';
+  renderNextLesson(r);
+  renderCardsStrip();
+  renderMessages();
+  renderHomework(r.homework || []);
+  startAutoRefresh();
+}
+
+// ---- АВТООБНОВЛЕНИЕ КАЖДУЮ МИНУТУ ----
+let autoRefreshTimer = null;
+function startAutoRefresh(){
+  if(autoRefreshTimer) return; // уже запущен
+  autoRefreshTimer = setInterval(refreshContent, 60000);
+}
+function stopAutoRefresh(){
+  if(autoRefreshTimer){ clearInterval(autoRefreshTimer); autoRefreshTimer=null; }
+}
+document.addEventListener('visibilitychange', ()=>{
+  if(document.hidden) stopAutoRefresh();
+  else { startAutoRefresh(); refreshContent(); } // сразу подтягиваем свежее при возврате
+});
+async function refreshContent(){
+  // не дёргаем список заданий пока ученик находится внутри прохождения — собьём его прогресс
+  const insideTask = document.getElementById('taskScreen')?.classList.contains('on');
+  try{
+    const r = await api('/api/homework/student');
+    studentData = r;
+    renderNextLesson(r);
+    renderCardsStrip();
+    renderMessages();
+    if(!insideTask) renderHomework(r.homework || []);
+  }catch(e){ /* тихо игнорируем сбой опроса, попробуем через минуту снова */ }
+}
+
+// ---- СООБЩЕНИЯ ОТ ПРЕПОДАВАТЕЛЯ (карусель) ----
+function openLightbox(url){
+  document.getElementById('lightboxImg').src = url;
+  document.getElementById('lightbox').classList.add('on');
+  if(tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+}
+function closeLightbox(){
+  document.getElementById('lightbox').classList.remove('on');
+}
+
+// ---- КАРТОЧКИ-СТОРИС ----
+let storyCurrentGroup=null, storyCurrentIdx=0, storyPaused=false, storyLoop=false;
+let storyCurrentAudio=null, storyVolume=1;
+let storyLastIdxByGroup={}; // group_id -> последняя позиция, чтобы продолжать с места остановки
+let storyFillTimer=null; // requestAnimationFrame-based таймер прогресса (с поддержкой паузы)
+let storyFillState={start:0,duration:4000,elapsed:0,raf:null};
+let storyAdvanceTimeout=null, storyAdvanceFireAt=0, storyAdvanceRemaining=0;
+
+let cardGroupsData = [];
+
+function cardTileProgress(g){
+  const lastIdx = storyLastIdxByGroup[g.group_id];
+  if(lastIdx === undefined){
+    return g.viewed ? 100 : 0;
+  }
+  const total = g.cards.length;
+  // lastIdx — это позиция, на которой остановились (ещё не пройдена целиком),
+  // значит реально пройдено ровно lastIdx карточек
+  if(lastIdx<=0) return 0; // остановились на первой — фактически ничего не пройдено
+  return Math.min(100, Math.round((lastIdx/total)*100));
+}
+
+async function renderCardsStrip(){
+  const wrap=document.getElementById('cardsStripWrap');
+  const strip=document.getElementById('cardsStrip');
+  try {
+    const r = await api('/api/student/cards');
+    cardGroupsData = r.groups || [];
+  } catch(e) { cardGroupsData = []; }
+  if(!cardGroupsData.length){ wrap.style.display='none'; return; }
+  wrap.style.display='block';
+  strip.innerHTML = cardGroupsData.map((g,i) => {
+    const cover = g.cover_photo || (g.cards[0]?.photo || '');
+    const prog = cardTileProgress(g);
+    const frameClass = prog===0 ? 'is-new' : (prog>=100 ? '' : 'has-progress');
+    const frameStyle = (prog>0 && prog<100) ? `style="--prog:${prog}%"` : '';
+    return `<div class="card-tile${g.viewed?' viewed':''}" id="cardTile${i}" onclick="openStoryViewer(${i},this)">
+      <div class="card-tile-frame ${frameClass}" ${frameStyle}>
+        <div class="card-tile-inner">${cover?`<img src="${cover}">`:`<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--violet-soft)" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>`}</div>
+      </div>
+      <div class="card-tile-name">${esc(g.group_name)}</div>
+    </div>`;
+  }).join('');
+}
+
+function openStoryViewer(groupIdx, originEl){
+  storyCurrentGroup = cardGroupsData[groupIdx];
+  const prog = cardTileProgress(storyCurrentGroup);
+  // если группа пройдена полностью — начинаем заново, иначе продолжаем с места остановки
+  if(prog>=100){
+    storyCurrentIdx = 0;
+  } else {
+    storyCurrentIdx = storyLastIdxByGroup[storyCurrentGroup.group_id] ?? 0;
+  }
+  if(storyCurrentIdx >= storyCurrentGroup.cards.length) storyCurrentIdx = 0;
+  storyPaused = false;
+  storyLoop = false;
+  document.getElementById('storyTitle').textContent = storyCurrentGroup.group_name;
+  renderStoryProgress();
+  renderStorySlide();
+
+  const viewer=document.getElementById('storyViewer');
+  if(originEl){
+    const r=originEl.getBoundingClientRect();
+    const cx=r.left+r.width/2, cy=r.top+r.height/2;
+    viewer.style.transformOrigin=`${cx}px ${cy}px`;
+  }
+  viewer.style.transform='scale(.85)';
+  viewer.classList.add('on');
+  requestAnimationFrame(()=>{ viewer.style.transition='opacity .25s ease, transform .3s cubic-bezier(.2,.8,.3,1)'; viewer.style.transform='scale(1)'; });
+
+  if(tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+}
+
+function closeStoryViewer(){
+  const viewer=document.getElementById('storyViewer');
+  stopStoryFill();
+  stopStoryAdvance();
+  if(storyCurrentAudio){ storyCurrentAudio.pause(); storyCurrentAudio=null; }
+  if(storyCurrentGroup){
+    storyLastIdxByGroup[storyCurrentGroup.group_id] = storyCurrentIdx;
+    if(!storyCurrentGroup.viewed){
+      storyCurrentGroup.viewed = true;
+      api('/api/cards/view',{method:'POST',body:JSON.stringify({group_id:storyCurrentGroup.group_id})}).catch(()=>{});
+    }
+    renderCardsStrip();
+  }
+  storyCurrentGroup = null;
+
+  // плавное схлопывание (симметрично открытию) — класс .on убираем только после анимации,
+  // т.к. display:none в CSS не анимируется
+  viewer.style.transition='opacity .22s ease, transform .26s cubic-bezier(.4,0,.6,1)';
+  viewer.style.opacity='0';
+  viewer.style.transform='scale(.85)';
+  setTimeout(()=>{
+    viewer.classList.remove('on');
+    viewer.style.transform='';
+    viewer.style.opacity='';
+    viewer.style.transition='';
+  }, 260);
+}
+
+function renderStoryProgress(){
+  const row=document.getElementById('storyProgressRow');
+  const n=storyCurrentGroup.cards.length;
+  row.innerHTML = Array.from({length:n}, (_,i) =>
+    `<div class="story-progress-bar"><div class="story-progress-fill${i<storyCurrentIdx?' done':''}" id="storyFill${i}"></div></div>`
+  ).join('');
+}
+
+function renderStorySlide(){
+  stopStoryFill();
+  stopStoryAdvance();
+  if(storyCurrentAudio){ storyCurrentAudio.pause(); storyCurrentAudio=null; }
+  storyPaused = false;
+  const card=storyCurrentGroup.cards[storyCurrentIdx];
+  const body=document.getElementById('storyBody');
+  body.querySelectorAll('.story-slide').forEach(el=>el.remove());
+  const slide=document.createElement('div');
+  slide.className='story-slide active';
+  slide.onclick=()=>storyNav(1);
+  slide.innerHTML = `
+    ${card.photo?`<img src="${card.photo}">`:`<div style="width:80%;aspect-ratio:9/16;background:linear-gradient(135deg,#2a2440,#3d3460);border-radius:16px;display:grid;place-items:center;color:rgba(255,255,255,.3);font-size:13px;font-weight:700">нет фото</div>`}
+    ${card.title?`<div class="story-caption">${esc(card.title)}</div>`:''}`;
+  body.insertBefore(slide, body.firstChild);
+
+  for(let i=0;i<storyCurrentGroup.cards.length;i++){
+    const fill=document.getElementById('storyFill'+i);
+    if(!fill) continue;
+    fill.style.transition='none';
+    fill.style.width = i<storyCurrentIdx?'100%':'0%';
+  }
+
+  updateStoryNavButtons();
+  updatePlayPauseIcon();
+
+  const volWrap=document.getElementById('storyVolumeWrap');
+  volWrap.style.display = card.audio_file_id ? 'flex' : 'none';
+
+  // карточка начинает идти сама сразу после открытия
+  startStoryCard(card);
+}
+
+// ---- единый запуск карточки: прогресс-бар + (опционально) звук, с учётом задержек 1с/2с ----
+async function startStoryCard(card){
+  const totalIdx=storyCurrentIdx;
+  if(card.audio_file_id){
+    let url='';
+    try{
+      if(!MOCK){
+        const r=await api(`/api/audio?file_id=${encodeURIComponent(card.audio_file_id)}`);
+        url=r.url;
+      }
+    }catch(e){}
+    if(storyCurrentIdx!==totalIdx) return; // уже перешли дальше, пока грузили
+    if(url){
+      const audio=new Audio(url);
+      audio.volume=storyVolume;
+      storyCurrentAudio=audio;
+      audio.addEventListener('loadedmetadata', ()=>{
+        if(storyCurrentAudio!==audio) return;
+        const durMs=(isFinite(audio.duration)?audio.duration:2)*1000;
+        beginStoryTimeline(1000, durMs, 2000, audio);
+      });
+      audio.addEventListener('error', ()=>{
+        if(storyCurrentAudio!==audio) return;
+        beginStoryTimeline(0, 0, 4000, null);
+      });
+    } else {
+      // мок без реального файла — условная длительность голосового 2с
+      beginStoryTimeline(1000, 2000, 2000, null);
+    }
+  } else {
+    beginStoryTimeline(0, 0, 4000, null);
+  }
+}
+
+// preDelay -> играем аудио durationMs -> postDelay, итоговый прогресс-бар идёт все три фазы
+function beginStoryTimeline(preDelayMs, audioDurMs, postDelayMs, audioEl){
+  const total = preDelayMs + audioDurMs + postDelayMs;
+  storyFillState = {phase:'pre', preDelayMs, audioDurMs, postDelayMs, total, audioEl, elapsedAtPause:0, phaseStart:performance.now()};
+  runStoryFillFrame();
+}
+
+function runStoryFillFrame(){
+  if(storyPaused) return;
+  const st=storyFillState;
+  const now=performance.now();
+  const elapsed = st.elapsedAtPause + (now - st.phaseStart);
+  const fill=document.getElementById('storyFill'+storyCurrentIdx);
+  if(fill){ fill.style.transition='none'; fill.style.width = Math.min(100,(elapsed/st.total)*100)+'%'; }
+
+  if(st.phase==='pre' && elapsed>=st.preDelayMs){
+    st.phase='audio'; st.elapsedAtPause=elapsed; st.phaseStart=now;
+    if(st.audioEl){ st.audioEl.play(); updatePlayPauseIcon(); }
+  }
+  if(st.phase==='audio' && st.audioDurMs>0 && elapsed>=st.preDelayMs+st.audioDurMs){
+    st.phase='post'; st.elapsedAtPause=elapsed; st.phaseStart=now;
+  }
+  if(elapsed>=st.total){
+    if(fill){ fill.style.width='100%'; }
+    onStoryCardEnded();
+    return;
+  }
+  storyFillState.raf = requestAnimationFrame(runStoryFillFrame);
+}
+
+function stopStoryFill(){
+  if(storyFillState.raf){ cancelAnimationFrame(storyFillState.raf); storyFillState.raf=null; }
+}
+
+function onStoryCardEnded(){
+  if(storyLoop){
+    // повтор текущей карточки
+    renderStorySlide();
+    return;
+  }
+  storyAdvanceTimeout = setTimeout(()=>{ storyNav(1); }, 150);
+}
+function stopStoryAdvance(){
+  if(storyAdvanceTimeout){ clearTimeout(storyAdvanceTimeout); storyAdvanceTimeout=null; }
+}
+
+function togglePlayPause(){
+  storyPaused = !storyPaused;
+  if(storyPaused){
+    if(storyCurrentAudio && !storyCurrentAudio.paused) storyCurrentAudio.pause();
+    stopStoryFill();
+    // фиксируем уже прошедшее время для возобновления
+    const st=storyFillState;
+    st.elapsedAtPause = st.elapsedAtPause + (performance.now()-st.phaseStart);
+  } else {
+    const st=storyFillState;
+    st.phaseStart = performance.now();
+    if(st.phase==='audio' && storyCurrentAudio && storyCurrentAudio.paused) storyCurrentAudio.play();
+    runStoryFillFrame();
+  }
+  updatePlayPauseIcon();
+  haptic_('light');
+}
+
+function updatePlayPauseIcon(){
+  const icon=document.getElementById('storyAudioIcon');
+  icon.setAttribute('d', storyPaused ? 'M8 5v14l11-7z' : 'M6 4h4v16H6zM14 4h4v16h-4z');
+}
+
+function toggleStoryLoop(){
+  storyLoop = !storyLoop;
+  document.getElementById('storyLoopBtn').classList.toggle('on', storyLoop);
+  haptic_('light');
+}
+
+function setStoryVolume(val){
+  storyVolume=val/100;
+  if(storyCurrentAudio) storyCurrentAudio.volume=storyVolume;
+  const icon=document.getElementById('storyVolumeIcon');
+  icon.style.opacity = val==0 ? '.45' : '1';
+}
+
+function updateStoryNavButtons(){
+  const left=document.getElementById('storyNavLeft');
+  left.classList.toggle('disabled', storyCurrentIdx<=0);
+}
+
+function storyNav(dir){
+  if(!storyCurrentGroup) return;
+  stopStoryAdvance();
+  const next=storyCurrentIdx+dir;
+  if(next<0) return;
+  if(next>=storyCurrentGroup.cards.length){
+    storyCurrentIdx = storyCurrentGroup.cards.length; // явно фиксируем "дошли до конца"
+    closeStoryViewer();
+    return;
+  }
+  storyCurrentIdx=next;
+  renderStorySlide();
+}
+
+// свайп вниз — закрыть просмотр
+let storyTouchStartY=0, storyTouchStartX=0;
+document.getElementById('storyBody').addEventListener('touchstart', (e)=>{
+  storyTouchStartY = e.touches[0].clientY;
+  storyTouchStartX = e.touches[0].clientX;
+}, {passive:true});
+document.getElementById('storyBody').addEventListener('touchend', (e)=>{
+  const dy = e.changedTouches[0].clientY - storyTouchStartY;
+  const dx = e.changedTouches[0].clientX - storyTouchStartX;
+  if(dy>80 && Math.abs(dx)<60){ closeStoryViewer(); }
+}, {passive:true});
+
+function storyRestart(){
+  if(!storyCurrentGroup) return;
+  storyCurrentIdx=0;
+  renderStorySlide();
+  haptic_('light');
+}
+
+function haptic_(type){ if(tg?.HapticFeedback) tg.HapticFeedback.impactOccurred(type); }
+
+async function renderMessages(){
+  const wrap = document.getElementById('msgCarouselWrap');
+  const track = document.getElementById('msgCarouselTrack');
+  const dotsBox = document.getElementById('msgCarouselDots');
+  let messages = [];
+  try {
+    const r = await api('/api/student/messages');
+    messages = r.messages || [];
+  } catch(e) { wrap.style.display='none'; return; }
+  if(!messages.length){ wrap.style.display='none'; return; }
+  wrap.style.display='block';
+  track.innerHTML = messages.map(m => {
+    const d = new Date(m.sent_at);
+    const timeStr = d.toLocaleString('ru-RU', {day:'numeric', month:'long', hour:'2-digit', minute:'2-digit'});
+    return `<div class="msg-card">
+      ${m.photo_url ? `<img src="${m.photo_url}" alt="" onclick="openLightbox('${m.photo_url.replace(/'/g,"\\'")}')">` : ''}
+      <div class="msg-card-body">
+        ${m.text ? `<div class="msg-card-text">${m.text}</div>` : ''}
+        <div class="msg-card-time">${timeStr}</div>
+      </div>
+    </div>`;
+  }).join('');
+  dotsBox.innerHTML = messages.map((_,i) => `<div class="msg-dot${i===0?' active':''}"></div>`).join('');
+  if(messages.length <= 1){ dotsBox.style.display='none'; } else { dotsBox.style.display='flex'; }
+  updateMsgArrows(0, messages.length);
+  // синхронизация точек и стрелок со скроллом
+  track.onscroll = () => {
+    const cardWidth = track.firstElementChild ? track.firstElementChild.offsetWidth + 10 : 1;
+    const idx = Math.round(track.scrollLeft / cardWidth);
+    [...dotsBox.children].forEach((dot,i) => dot.classList.toggle('active', i===idx));
+    updateMsgArrows(idx, messages.length);
+  };
+}
+
+function updateMsgArrows(idx, total){
+  const left = document.getElementById('msgArrowLeft');
+  const right = document.getElementById('msgArrowRight');
+  if(total <= 1){ left.style.display='none'; right.style.display='none'; return; }
+  left.style.display='grid'; right.style.display='grid';
+  left.classList.toggle('disabled', idx<=0);
+  right.classList.toggle('disabled', idx>=total-1);
+}
+
+function msgCarouselNav(dir){
+  const track = document.getElementById('msgCarouselTrack');
+  const cardWidth = track.firstElementChild ? track.firstElementChild.offsetWidth + 10 : 1;
+  track.scrollBy({left: dir*cardWidth, behavior:'smooth'});
+}
+
+// ---- СЛЕДУЮЩИЙ УРОК ----
+const MONTHS_GEN=['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
+
+async function renderNextLesson(r){
+  let lesson = null, studentTz = 'Europe/Moscow';
+  try {
+    const res = await api('/api/student/next_lesson');
+    lesson = res.lesson;
+    studentTz = res.timezone || 'Europe/Moscow';
+  } catch(e) { /* покажем "нет уроков" */ }
+
+  if(!lesson){
+    document.getElementById('nextLessonBlock').style.display='none';
+    document.getElementById('noLessonBlock').style.display='block';
+    return;
+  }
+
+  document.getElementById('noLessonBlock').style.display='none';
+  document.getElementById('nextLessonBlock').style.display='block';
+
+  const [y,m,d] = lesson.date.split('-').map(Number);
+  const lessonDate = new Date(y, m-1, d);
+  const today = new Date(); today.setHours(0,0,0,0);
+  const tomorrow = new Date(today); tomorrow.setDate(today.getDate()+1);
+  let dateLabel;
+  if(lessonDate.getTime() === today.getTime()) dateLabel = 'Сегодня';
+  else if(lessonDate.getTime() === tomorrow.getTime()) dateLabel = 'Завтра';
+  else dateLabel = `${d} ${MONTHS_GEN[m-1]}`;
+
+  document.getElementById('nextLessonDate').textContent = dateLabel;
+  document.getElementById('nextLessonTime').textContent = lesson.time;
+
+  // время уже пересчитано под пояс ученика на сервере — показываем подпись с городом/поясом
+  const tzCity = TZ_CITIES.find(c => c.tz === studentTz);
+  const tzEl = document.getElementById('nextLessonTz');
+  if(tzCity){
+    tzEl.style.display='inline';
+    tzEl.textContent = `по вашему времени (${tzCity.name})`;
+  } else {
+    tzEl.style.display='none';
+  }
+
+  if(lesson.lesson_number){
+    document.getElementById('nextLessonBadge').style.display='block';
+    document.getElementById('nextLessonBadge').textContent = `урок ${lesson.lesson_number}`;
+  } else {
+    document.getElementById('nextLessonBadge').style.display='none';
+  }
+}
+
+// ---- ДОМАШНИЕ ЗАДАНИЯ ----
+function renderHomework(hw){
+  const list = document.getElementById('hwList');
+  const empty = document.getElementById('hwEmpty');
+  if(!hw.length){ empty.style.display='block'; return; }
+
+  // группируем по group_id
+  const groups = {};
+  hw.forEach(t => {
+    if(!groups[t.group_id]) groups[t.group_id] = {id:t.group_id, name:t.group_name, tasks:[]};
+    groups[t.group_id].tasks.push(t);
+  });
+  homeworkGroups = Object.values(groups);
+
+  list.innerHTML='';
+  homeworkGroups.forEach(g => {
+    const total = g.tasks.length;
+    const done = g.tasks.filter(t => t.status === 'done').length;
+    const pct = Math.round((done/total)*100);
+    const isDone = done === total;
+    const card = document.createElement('div');
+    card.className='hw-card';
+    card.innerHTML=`
+      <div class="hw-inner">
+        <div class="hw-icon ${isDone?'done':'new'}">${isDone
+          ? `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`
+          : `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--violet)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>`}</div>
+        <div class="hw-body">
+          <div class="hw-name">${esc(g.name)}</div>
+          <div class="hw-sub">${total} заданий${done?` · выполнено ${done}`:''}  </div>
+          <div class="progress-bar"><div class="progress-fill" style="width:${pct}%;${isDone?'background:var(--green)':''}"></div></div>
+        </div>
+        <div class="hw-badge ${isDone?'done':'new'}">${isDone?'Готово':'Новое'}</div>
+      </div>`;
+    card.onclick = () => openTask(g);
+    list.appendChild(card);
+  });
+}
+
+// ---- ЗАДАНИЕ ----
+function openTask(group){
+  currentGroup = group;
+  curTaskIdx = 0; curCorrect = 0; answered = false;
+  // начинаем с первого незавершённого
+  const firstPending = group.tasks.findIndex(t => t.status !== 'done');
+  if(firstPending > -1) curTaskIdx = firstPending;
+  document.getElementById('taskTitle').textContent = group.name;
+  const scr = document.getElementById('taskScreen');
+  void scr.offsetWidth; scr.classList.add('on');
+  renderExercise();
+}
+
+function closeTask(){
+  document.getElementById('taskScreen').classList.remove('on');
+  // обновляем список
+  api('/api/homework/student').then(r => renderHomework(r.homework||[])).catch(()=>{});
+}
+
+function restartTask(){
+  if(!currentGroup) return;
+  curTaskIdx = 0; curCorrect = 0; answered = false;
+  renderExercise();
+  haptic_('light');
+}
+
+function renderExercise(){
+  const tasks = currentGroup.tasks;
+  const t = tasks[curTaskIdx];
+  if(!t){ showResult(); return; }
+  const total = tasks.length;
+  const pct = Math.round((curTaskIdx/total)*100);
+  const container = document.getElementById('exerciseContainer');
+  answered = false;
+
+  if(t.type === 'choice'){
+    const choices = t.choices ? t.choices.split('|') : [];
+    container.innerHTML=`
+      <div class="ex-progress"><div class="ex-fill" style="width:${pct}%"></div></div>
+      <div class="ex-counter">${curTaskIdx+1} / ${total}</div>
+      <div class="ex-word">${esc(t.word)}</div>
+      <div class="ex-hint">Что это значит по-русски?</div>
+      <div class="choices" id="choices">
+        ${choices.map((c,i)=>`<div class="choice" onclick="pickChoice(${i},${t.correct},'${esc(t.id)}','${esc(t.id)}')">${esc(c)}</div>`).join('')}
+      </div>
+      <div id="exComment"></div>
+      <button class="next-btn" id="nextBtn" onclick="nextTask()">
+        ${curTaskIdx+1<total?'Следующее →':'Завершить'}
+      </button>`;
+  } else if(t.type === 'input'){
+    container.innerHTML=`
+      <div class="ex-progress"><div class="ex-fill" style="width:${pct}%"></div></div>
+      <div class="ex-counter">${curTaskIdx+1} / ${total}</div>
+      <div class="ex-word">${esc(t.word)}</div>
+      <div class="ex-hint">Введи перевод по-русски</div>
+      <div class="input-wrap">
+        <input id="inputAns" placeholder="Введи ответ…" autocomplete="off" onkeydown="if(event.key==='Enter')checkInput()">
+      </div>
+      <div id="exComment"></div>
+      <button class="check-btn on" id="checkBtn" onclick="checkInput()">Проверить</button>
+      <button class="next-btn" id="nextBtn" onclick="nextTask()">
+        ${curTaskIdx+1<total?'Следующее →':'Завершить'}
+      </button>`;
+    setTimeout(()=>document.getElementById('inputAns')?.focus(), 300);
+  } else if(t.type === 'audio'){
+    container.innerHTML=`
+      <div class="ex-progress"><div class="ex-fill" style="width:${pct}%"></div></div>
+      <div class="ex-counter">${curTaskIdx+1} / ${total}</div>
+      <div class="ex-hint" style="margin-bottom:20px">Послушай и запомни</div>
+      <div class="audio-wrap">
+        <div class="audio-btn" id="audioBtn" onclick="playAudio('${esc(t.audio_file_id)}')">
+          <svg viewBox="0 0 24 24" fill="var(--violet)"><path d="M8 5v14l11-7z"/></svg>
+        </div>
+        <div class="audio-hint">нажми чтобы послушать</div>
+      </div>
+      <div class="ex-word">${esc(t.word)}</div>
+      <div style="font-size:16px;color:var(--muted);font-weight:600;margin:6px 0 24px">${esc(t.translation)}</div>
+      <button class="next-btn on" id="nextBtn" onclick="nextTask()">
+        ${curTaskIdx+1<total?'Следующее →':'Завершить'}
+      </button>`;
+  } else if(t.type === 'photo'){
+    renderPhotoExercise(t, pct, total);
+  }
+}
+
+let photoSubMode = null; // 'choice' | 'input' — какой из под-режимов сейчас отвечаем (если оба заданы)
+
+function parsePhotoSub(raw){
+  if(!raw) return null;
+  if(typeof raw === 'object') return raw; // уже распарсено (мок может хранить как объект)
+  try{ return JSON.parse(raw); }catch(e){ return null; }
+}
+
+function renderPhotoExercise(t, pct, total){
+  const container = document.getElementById('exerciseContainer');
+  const photoChoice = parsePhotoSub(t.photo_choice);
+  const photoInput = parsePhotoSub(t.photo_input);
+  const sub = photoChoice || photoInput;
+  photoSubMode = photoChoice ? 'choice' : (photoInput ? 'input' : null);
+  const caption = sub?.caption || '';
+
+  let bodyHtml = '';
+  if(photoSubMode === 'choice'){
+    const choices = photoChoice.choices || [];
+    bodyHtml = `
+      ${caption ? `<div class="ex-hint" style="margin-bottom:14px">${esc(caption)}</div>` : ''}
+      <div class="choices" id="choices">
+        ${choices.map((c,i)=>`<div class="choice" onclick="pickPhotoChoice(${i})">${esc(c)}</div>`).join('')}
+      </div>
+      <div id="exComment"></div>
+      <button class="next-btn" id="nextBtn" onclick="nextTask()">
+        ${curTaskIdx+1<total?'Следующее →':'Завершить'}
+      </button>`;
+  } else if(photoSubMode === 'input'){
+    bodyHtml = `
+      ${caption ? `<div class="ex-hint" style="margin-bottom:14px">${esc(caption)}</div>` : ''}
+      <div class="input-wrap">
+        <input id="inputAns" placeholder="Введи ответ…" autocomplete="off" onkeydown="if(event.key==='Enter')checkPhotoInput()">
+      </div>
+      <div id="exComment"></div>
+      <button class="check-btn on" id="checkBtn" onclick="checkPhotoInput()">Проверить</button>
+      <button class="next-btn" id="nextBtn" onclick="nextTask()">
+        ${curTaskIdx+1<total?'Следующее →':'Завершить'}
+      </button>`;
+  } else {
+    // ни один режим не задан — просто показать фото и кнопку дальше
+    bodyHtml = `
+      <button class="next-btn on" id="nextBtn" onclick="nextTask()">
+        ${curTaskIdx+1<total?'Следующее →':'Завершить'}
+      </button>`;
+  }
+
+  container.innerHTML = `
+    <div class="ex-progress"><div class="ex-fill" style="width:${pct}%"></div></div>
+    <div class="ex-counter">${curTaskIdx+1} / ${total}</div>
+    ${t.photo ? `<img src="${t.photo}" style="width:100%;max-width:340px;display:block;margin:0 auto 18px;border-radius:16px;box-shadow:var(--shadow-soft)">` : ''}
+    ${bodyHtml}`;
+
+  if(photoSubMode === 'input'){
+    setTimeout(()=>document.getElementById('inputAns')?.focus(), 300);
+  }
+}
+
+async function pickPhotoChoice(idx){
+  if(answered) return;
+  answered = true;
+  const t = currentGroup.tasks[curTaskIdx];
+  const pc = parsePhotoSub(t.photo_choice);
+  const isCorrect = idx === pc.correct;
+  if(isCorrect) curCorrect++;
+  const choices = document.querySelectorAll('.choice');
+  choices.forEach((c,i)=>{
+    c.classList.add('disabled');
+    if(i===pc.correct) c.classList.add('correct');
+    else if(i===idx && !isCorrect) c.classList.add('wrong');
+  });
+  document.getElementById('nextBtn').classList.add('on');
+  const commentBox = document.getElementById('exComment');
+  let commentText = '';
+  if(isCorrect){
+    commentText = pc.correct_comment || '';
+  } else {
+    commentText = (pc.choice_comments && pc.choice_comments[idx]) || '';
+  }
+  if(commentText){
+    commentBox.innerHTML = `<div class="ex-comment ${isCorrect?'correct':'wrong'}">${esc(commentText)}</div>`;
+  }
+  saveProgress(t.id, t.id, isCorrect);
+  if(tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred(isCorrect?'success':'error');
+}
+
+function checkPhotoInput(){
+  if(answered) return;
+  const input = document.getElementById('inputAns');
+  const val = input.value.trim();
+  if(!val) return;
+  const t = currentGroup.tasks[curTaskIdx];
+  const pi = parsePhotoSub(t.photo_input);
+  const isCorrect = val.toLowerCase() === (pi.answer||'').toLowerCase();
+  if(tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred(isCorrect?'success':'error');
+
+  if(isCorrect){
+    answered = true;
+    curCorrect++;
+    input.classList.remove('wrong');
+    input.classList.add('correct');
+    document.getElementById('checkBtn').style.display='none';
+    document.getElementById('nextBtn').classList.add('on');
+    if(pi.correct_comment){
+      document.getElementById('exComment').innerHTML = `<div class="ex-comment correct">${esc(pi.correct_comment)}</div>`;
+    }
+    saveProgress(t.id, t.id, true, val);
+  } else {
+    input.classList.remove('correct');
+    input.classList.add('wrong');
+    input.classList.remove('shake'); void input.offsetWidth; input.classList.add('shake');
+    // показываем первый подходящий комментарий к неверным вариантам, если есть
+    if(pi.wrong_comments && pi.wrong_comments.length){
+      document.getElementById('exComment').innerHTML = `<div class="ex-comment wrong">${esc(pi.wrong_comments[0])}</div>`;
+    }
+    saveProgress(t.id, t.id, false, val);
+    setTimeout(()=>{ input.classList.remove('shake'); }, 400);
+  }
+}
+
+async function pickChoice(idx, correct, taskId, assignedId){
+  if(answered) return;
+  answered = true;
+  const isCorrect = idx === correct;
+  if(isCorrect) curCorrect++;
+  const choices = document.querySelectorAll('.choice');
+  choices.forEach((c,i)=>{
+    c.classList.add('disabled');
+    if(i===correct) c.classList.add('correct');
+    else if(i===idx&&!isCorrect) c.classList.add('wrong');
+  });
+  document.getElementById('nextBtn').classList.add('on');
+
+  // показываем комментарий: к правильному варианту, либо к конкретному выбранному неверному
+  const t = currentGroup.tasks[curTaskIdx];
+  const commentBox = document.getElementById('exComment');
+  let commentText = '';
+  if(isCorrect){
+    commentText = t.translation || ''; // у choice-заданий "translation" хранит общий комментарий к правильному ответу
+  } else {
+    let choiceComments = [];
+    try{ choiceComments = JSON.parse(t.choice_comments || '[]'); }catch(e){}
+    commentText = choiceComments[idx] || '';
+  }
+  if(commentText){
+    commentBox.innerHTML = `<div class="ex-comment ${isCorrect?'correct':'wrong'}">${esc(commentText)}</div>`;
+  }
+
+  // сохраняем прогресс
+  saveProgress(taskId, assignedId, isCorrect);
+  if(tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred(isCorrect?'success':'error');
+}
+
+function checkInput(){
+  if(answered) return;
+  const input = document.getElementById('inputAns');
+  const val = input.value.trim();
+  if(!val) return;
+  const t = currentGroup.tasks[curTaskIdx];
+  const isCorrect = val.toLowerCase() === (t.translation||'').toLowerCase();
+  if(tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred(isCorrect?'success':'error');
+
+  if(isCorrect){
+    answered = true;
+    curCorrect++;
+    input.classList.remove('wrong');
+    input.classList.add('correct');
+    document.getElementById('checkBtn').style.display='none';
+    document.getElementById('nextBtn').classList.add('on');
+    // комментарий к правильному ответу
+    if(t.word_comment){
+      document.getElementById('exComment').innerHTML = `<div class="ex-comment correct">${esc(t.word_comment)}</div>`;
+    }
+    saveProgress(t.id, t.id, true, val);
+  } else {
+    // неверно — поле краснеет и трясётся, попытка не засчитывается как финальная, можно вводить заново
+    input.classList.remove('correct');
+    input.classList.add('wrong');
+    input.classList.remove('shake'); void input.offsetWidth; input.classList.add('shake');
+    saveProgress(t.id, t.id, false, val);
+    setTimeout(()=>{ input.classList.remove('shake'); }, 400);
+  }
+}
+
+async function playAudio(fileId){
+  if(!fileId){ toast('Аудио недоступно'); return; }
+  try {
+    const r = await api(`/api/audio?file_id=${encodeURIComponent(fileId)}`);
+    const audio = new Audio(r.url);
+    audio.play();
+  } catch(e){ toast('Ошибка воспроизведения'); }
+}
+
+async function saveProgress(taskId, assignedId, isCorrect, inputValue=''){
+  try {
+    const t = currentGroup.tasks[curTaskIdx];
+    await api('/api/homework/progress', {method:'POST', body:JSON.stringify({
+      task_id: taskId,
+      assigned_id: t.id, // используем id из assigned_tasks
+      group_id: currentGroup.id,
+      is_correct: isCorrect,
+      input_value: inputValue
+    })});
+  } catch(e) { /* не критично */ }
+}
+
+function nextTask(){
+  curTaskIdx++;
+  if(curTaskIdx >= currentGroup.tasks.length){ showResult(); return; }
+  renderExercise();
+}
+
+function showResult(){
+  const total = currentGroup.tasks.length;
+  const pct = Math.round((curCorrect/total)*100);
+  const emoji = pct===100?'🎉':pct>=70?'👍':'💪';
+  const msg = pct===100?'Отлично, всё верно!':pct>=70?'Хороший результат!':'Стоит повторить';
+  const score = Math.round((curCorrect/total)*10);
+  document.getElementById('exerciseContainer').innerHTML=`
+    <div class="result">
+      <div class="result-emoji">${emoji}</div>
+      <div class="result-title">${msg}</div>
+      <div class="result-sub">${curCorrect} из ${total} правильно</div>
+      <div class="result-score">⭐ ${score} / 10</div>
+      <button class="done-btn" onclick="closeTask()">Готово</button>
+    </div>`;
+}
+
+// ---- ЧАСОВОЙ ПОЯС ----
+const TZ_CITIES = [
+  {name:'Москва',tz:'Europe/Moscow',utc:'UTC+3'},
+  {name:'Калининград',tz:'Europe/Kaliningrad',utc:'UTC+2'},
+  {name:'Самара',tz:'Europe/Samara',utc:'UTC+4'},
+  {name:'Екатеринбург',tz:'Asia/Yekaterinburg',utc:'UTC+5'},
+  {name:'Омск',tz:'Asia/Omsk',utc:'UTC+6'},
+  {name:'Новосибирск',tz:'Asia/Novosibirsk',utc:'UTC+7'},
+  {name:'Красноярск',tz:'Asia/Krasnoyarsk',utc:'UTC+7'},
+  {name:'Иркутск',tz:'Asia/Irkutsk',utc:'UTC+8'},
+  {name:'Якутск',tz:'Asia/Yakutsk',utc:'UTC+9'},
+  {name:'Владивосток',tz:'Asia/Vladivostok',utc:'UTC+10'},
+  {name:'Магадан',tz:'Asia/Magadan',utc:'UTC+11'},
+  {name:'Камчатка',tz:'Asia/Kamchatka',utc:'UTC+12'},
+  {name:'Белград',tz:'Europe/Belgrade',utc:'UTC+2'},
+  {name:'Лондон',tz:'Europe/London',utc:'UTC+0/+1'},
+];
+
+function showTzConfirm(autoTz, isPreset){
+  const city = TZ_CITIES.find(c => c.tz === autoTz);
+  const name = city ? `${city.name} <span style="opacity:.75;font-weight:600">${city.utc}</span>` : autoTz.split('/').pop().replace('_',' ');
+  const label = isPreset
+    ? `Чтобы уведомления приходили в правильное время, я указала ваш часовой пояс:<br><b style="font-size:18px">${name}</b>`
+    : `Определили автоматически:<br><b style="font-size:18px">${name}</b>`;
+  document.getElementById('tzBackBtn').style.display='none';
+  document.getElementById('tzSearch').style.display='none';
+  document.getElementById('tzList').style.display='none';
+  document.getElementById('tzDetected').style.display='block';
+  document.getElementById('tzDetected').innerHTML=`
+    <div style="font-size:15px;font-weight:700;margin-bottom:18px;line-height:1.6;color:#fff;text-shadow:0 1px 8px rgba(0,0,0,.2)">${label}</div>
+    <button class="tz-btn primary" onclick="confirmTz('${autoTz}')">Да, верно</button>
+    <button class="tz-btn" onclick="showTzSearch()">Выбрать другой</button>`;
+}
+
+let tzPickFromSettings = false; // true = открыли шторку из настроек, не из первого входа
+
+async function confirmTz(tzVal){
+  await api('/api/student/notif', {method:'POST', body:JSON.stringify({timezone:tzVal})}).catch(()=>{});
+  const screen = document.getElementById('tzScreen');
+  screen.classList.remove('on');
+
+  if(tzPickFromSettings){
+    tzPickFromSettings = false;
+    currentStudentTz = tzVal;
+    const city = TZ_CITIES.find(c => c.tz === tzVal);
+    document.getElementById('settTzInfo').textContent = city ? `${city.name} · ${city.utc}` : tzVal;
+    setTimeout(()=>{ screen.style.display='none'; }, 280);
+    renderNextLesson(studentData); // время урока сразу пересчитается под новый пояс
+    return;
+  }
+
+  await api('/api/student/onboarding_done', {method:'POST'}).catch(()=>{});
+  setTimeout(()=>{
+    screen.style.display='none';
+    showMainApp(studentData);
+  }, 280);
+}
+
+function openTzPickerFromSettings(){
+  tzPickFromSettings = true;
+  document.getElementById('tzGreeting').style.display='none';
+  document.getElementById('tzBackBtn').style.display='none';
+  const screen = document.getElementById('tzScreen');
+  screen.style.display='flex';
+  requestAnimationFrame(()=>screen.classList.add('on'));
+  showTzSearch();
+}
+
+function onTzScreenBgClick(){
+  // закрыть тапом вне окна можно только если пояс открыт из настроек (не при обязательном первом входе)
+  if(!tzPickFromSettings) return;
+  const screen = document.getElementById('tzScreen');
+  screen.classList.remove('on');
+  setTimeout(()=>{ screen.style.display='none'; tzPickFromSettings=false; }, 280);
+}
+
+function showTzSearch(){
+  document.getElementById('tzDetected').style.display='none';
+  document.getElementById('tzBackBtn').style.display = (lastTzConfirmArgs && !tzPickFromSettings) ? 'flex' : 'none';
+  document.getElementById('tzSearch').style.display='block';
+  document.getElementById('tzList').style.display='block';
+  renderTzList('');
+}
+
+function searchTz(){ renderTzList(document.getElementById('tzSearch').value.trim().toLowerCase()); }
+
+function renderTzList(q){
+  const filtered = q ? TZ_CITIES.filter(c => c.name.toLowerCase().includes(q)) : TZ_CITIES;
+  document.getElementById('tzList').innerHTML = filtered.map(c =>
+    `<button class="tz-btn" onclick="confirmTz('${c.tz}')">${c.name} <span style="color:var(--muted);font-size:13px">${c.utc}</span></button>`
+  ).join('');
+}
+
+// ---- НАСТРОЙКИ ----
+const NOTIF_TOGGLE_IDS = ['sw_homework','sw_hour','sw_day','sw_cards','sw_posts'];
+
+let currentStudentTz = 'Europe/Moscow'; // для шторки выбора пояса из настроек
+
+async function openSettings(){
+  try {
+    const n = await api('/api/student/notif');
+    const sw = (id, on) => { document.getElementById(id).classList.toggle('on', on); };
+    sw('sw_homework', n.notif_homework !== false);
+    sw('sw_hour', n.notif_hour !== false);
+    sw('sw_day', !!n.notif_day);
+    sw('sw_cards', n.notif_cards !== false);
+    sw('sw_posts', n.notif_posts !== false);
+    updateAllToggleState();
+    currentStudentTz = n.timezone || 'Europe/Moscow';
+    const city = TZ_CITIES.find(c => c.tz === currentStudentTz);
+    document.getElementById('settTzInfo').textContent = city ? `${city.name} · ${city.utc}` : currentStudentTz;
+  } catch(e){}
+  NOTIF_TOGGLE_IDS.forEach(id => {
+    const el = document.getElementById(id);
+    el.onclick = () => { el.classList.toggle('on'); updateAllToggleState(); };
+  });
+  document.getElementById('settDim').classList.add('on');
+  document.getElementById('settSheet').classList.add('on');
+}
+
+function updateAllToggleState(){
+  const allOn = NOTIF_TOGGLE_IDS.every(id => document.getElementById(id).classList.contains('on'));
+  document.getElementById('sw_all').classList.toggle('on', allOn);
+}
+
+function toggleAllNotif(){
+  const allOn = document.getElementById('sw_all').classList.contains('on');
+  const turnOn = !allOn;
+  NOTIF_TOGGLE_IDS.forEach(id => document.getElementById(id).classList.toggle('on', turnOn));
+  document.getElementById('sw_all').classList.toggle('on', turnOn);
+  if(tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+}
+
+function closeSettings(){
+  document.getElementById('settDim').classList.remove('on');
+  document.getElementById('settSheet').classList.remove('on');
+}
+
+async function saveSettings(){
+  const on = id => document.getElementById(id).classList.contains('on');
+  await api('/api/student/notif', {method:'POST', body:JSON.stringify({
+    homework: on('sw_homework'), hour: on('sw_hour'), day: on('sw_day'),
+    cards: on('sw_cards'), posts: on('sw_posts')
+  })}).catch(()=>{});
+  closeSettings();
+  toast('Настройки сохранены');
+}
+
+function openHelp(){
+  const scr = document.getElementById('helpScreen');
+  void scr.offsetWidth; scr.classList.add('on');
+}
+function closeHelp(){
+  document.getElementById('helpScreen').classList.remove('on');
+}
+function switchHelpTab(tab){
+  document.querySelectorAll('.help-tab').forEach(b=>b.classList.remove('on'));
+  document.querySelectorAll('.help-panel').forEach(p=>p.classList.remove('on'));
+  document.querySelectorAll('.help-tab')[['android','ios','windows','mac'].indexOf(tab)].classList.add('on');
+  document.getElementById('helpPanel-'+tab).classList.add('on');
+}
+
+// ---- СКРЫТИЕ ШАПКИ ПРИ СКРОЛЛЕ ----
+let lastScrollY = 0;
+window.addEventListener('scroll', () => {
+  const header = document.querySelector('.header');
+  if(!header) return;
+  const y = window.scrollY;
+  if(y > lastScrollY && y > 60){
+    header.classList.add('hidden');
+  } else {
+    header.classList.remove('hidden');
+  }
+  lastScrollY = y;
+}, {passive:true});
+
+async function api(path, opts){
+  return apiReal(path, opts);
+}
+// ---- СТАРТ ----
+init();
+</script>
+</body>
+</html>

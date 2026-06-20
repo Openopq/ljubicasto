@@ -128,6 +128,29 @@ html,body{background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,'Seg
   cursor:pointer;margin-bottom:10px;font-family:inherit;width:100%}
 .add-task-btn:active{opacity:.8}
 
+/* кнопка-аккордеон комментария */
+.note-btn{display:inline-flex;align-items:center;gap:5px;border:none;background:none;
+  color:var(--violet);font-weight:700;font-size:12px;cursor:pointer;font-family:inherit;
+  padding:5px 0;transition:opacity .12s}
+.note-btn:active{opacity:.7}
+.note-btn.on{color:var(--violet-deep)}
+.note-btn svg{flex:none;transition:transform .15s}
+.note-btn.on svg{transform:rotate(45deg)}
+.note-box{margin-top:6px;animation:noteBoxIn .15s ease}
+@keyframes noteBoxIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+
+/* крупная кнопка-переключатель режима внутри блока "С картинкой" — отличить от мелких note-btn */
+.photo-sub-toggle{display:flex;align-items:center;gap:8px;width:100%;padding:11px 14px;
+  border:1.5px solid var(--line);border-radius:12px;background:var(--surface);
+  color:var(--ink);font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;
+  transition:border-color .15s,background .15s,color .15s}
+.photo-sub-toggle:active{transform:scale(.99)}
+.photo-sub-toggle svg{flex:none;transition:transform .15s;color:var(--violet)}
+.photo-sub-toggle.on{border-color:var(--violet);background:var(--violet-tint);color:var(--violet-deep)}
+.photo-sub-toggle.on svg{transform:rotate(45deg)}
+.photo-sub-body{margin-top:10px;padding:12px 14px;border:1.5px solid var(--violet-soft);border-radius:12px;
+  background:var(--violet-tint);animation:noteBoxIn .15s ease}
+
 /* блок доп задания */
 .extra-task{background:var(--surface);border:1.5px solid var(--violet-soft);border-radius:var(--r);
   padding:14px;margin-bottom:10px;position:relative}
@@ -220,7 +243,8 @@ html,body{background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,'Seg
 
 <div class="tabs">
   <button class="tab on" onclick="switchTab('library')">Библиотека</button>
-  <button class="tab" onclick="switchTab('new')">Новое задание</button>
+  <button class="tab" onclick="initNewForm(null,null,'new');switchTab('new')">Новое задание</button>
+  <button class="tab" onclick="openNewCardTab()">Новая карточка</button>
 </div>
 
 <div class="main">
@@ -261,7 +285,51 @@ html,body{background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,'Seg
 
     <button class="add-task-btn" onclick="addTaskBlock()">+ Добавить задание</button>
 
-    <button class="save-btn" onclick="saveGroup()">Сохранить группу</button>
+    <button class="save-btn" id="saveGroupBtn" onclick="saveGroup()">Сохранить группу</button>
+  </div>
+
+  <!-- НОВАЯ КАРТОЧКА -->
+  <div class="panel" id="panel-card">
+    <div class="form-card">
+      <div class="field">
+        <label>Группа карточек</label>
+        <select id="cardGroupSel">
+          <option value="">— выбери группу —</option>
+        </select>
+        <button type="button" onclick="openAddCardGroupFromTab()" style="margin-top:8px;width:100%;padding:9px;border:1.5px dashed var(--violet-soft);border-radius:10px;background:var(--violet-tint);color:var(--violet);font-size:12px;font-weight:700;font-family:inherit;cursor:pointer">+ Новая группа карточек</button>
+      </div>
+    </div>
+
+    <div class="form-card">
+      <div class="field">
+        <label>Фото</label>
+        <div id="cardPhotoPreviewWrap" style="display:none;margin-bottom:8px;position:relative;max-width:220px;margin-left:auto;margin-right:auto">
+          <img id="cardPhotoPreview" style="width:100%;aspect-ratio:9/16;object-fit:cover;border-radius:16px;display:block">
+          <button onclick="removeCardPhoto()" style="position:absolute;top:8px;right:8px;width:28px;height:28px;border:none;border-radius:50%;background:rgba(43,36,68,.65);color:#fff;font-size:15px;cursor:pointer;display:grid;place-items:center">✕</button>
+        </div>
+        <div style="font-size:11px;color:var(--muted);text-align:center;margin-bottom:8px;font-weight:600">📱 вертикальный формат, как в сторис (9:16)</div>
+        <button type="button" onclick="document.getElementById('cardPhotoInput').click()" id="cardPhotoBtn"
+          style="width:100%;padding:14px;border:2px dashed var(--violet-soft);border-radius:13px;background:var(--violet-tint);
+          color:var(--violet);font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/>
+          </svg>
+          Загрузить фото
+        </button>
+        <input type="file" id="cardPhotoInput" accept="image/*" style="display:none" onchange="onCardPhotoSelected(this)">
+      </div>
+      <div class="field">
+        <label>Название (отразится у ученика)</label>
+        <input id="cardTitle" placeholder="нпр. Хоботница" autocomplete="off">
+      </div>
+      <div class="field">
+        <label>Аудио file_id <span style="font-weight:600;color:var(--muted);font-size:10px">— необязательно</span></label>
+        <input id="cardAudioInp" placeholder="Telegram file_id" autocomplete="off">
+        <div style="margin-top:6px;font-size:12px;color:var(--muted);line-height:1.5">💡 Отправь голосовое прямо боту — он пришлёт file_id, вставь его сюда</div>
+      </div>
+    </div>
+
+    <button class="save-btn" id="saveCardBtn" onclick="saveCardFromTab()">Сохранить карточку</button>
   </div>
 
 </div>
@@ -283,6 +351,14 @@ html,body{background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,'Seg
   <div class="field"><label>Название</label><input id="groupName" placeholder="нпр. Семья" autocomplete="off"></div>
   <div class="field"><label>Уровень</label><select id="groupLevelSel"></select></div>
   <button class="sheet-btn primary" onclick="saveGroupSheet()">Сохранить</button>
+  <button class="sheet-btn cancel" onclick="closeSheet()">Отмена</button>
+</div>
+
+<!-- Группа карточек -->
+<div class="sheet" id="cardGroupSheet">
+  <h3 id="cardGroupSheetTitle">Группа карточек</h3>
+  <div class="field"><label>Название</label><input id="cardGroupName" placeholder="нпр. Морские животные" autocomplete="off"></div>
+  <button class="sheet-btn primary" onclick="saveCardGroupSheet()">Сохранить</button>
   <button class="sheet-btn cancel" onclick="closeSheet()">Отмена</button>
 </div>
 
@@ -315,6 +391,9 @@ html,body{background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,'Seg
   <h3 id="taskEditTitle">Задание</h3>
   <div id="taskEditBody"></div>
 </div>
+
+<!-- Карточка (фото + название + аудио) -->
+<!-- ШТОРКА группы карточек остаётся для inline-создания -->
 
 <!-- Экран сортировки заданий -->
 <div class="screen" id="reorderScreen" style="visibility:hidden">
@@ -355,7 +434,9 @@ if(!accessOk()){
   document.body.innerHTML='<div style="text-align:center;padding:80px 20px;color:#9088A8;font-family:sans-serif">Нет доступа.</div>';
 }
 
-async function api(path,opts){
+// ---- mock data ----
+
+async function apiReal(path,opts){
   const API='https://bot-1781087941-4553-ruserb.bothost.tech';
   const INIT=(tg&&tg.initData)||'';
   const r=await fetch(API+path,Object.assign({},opts,{headers:Object.assign({'Content-Type':'application/json','X-Init-Data':INIT},(opts&&opts.headers)||{})}));
@@ -363,8 +444,13 @@ async function api(path,opts){
   return r.json();
 }
 
+async function api(path,opts){
+  return apiReal(path,opts);
+}
+
 // ---- state ----
 let levels=[],groups=[],tasks=[];
+let cardItems=[]; // карточки {id,group_id,title,photo,audio_file_id,sort,created}
 let openLevels=new Set(),openGroups=new Set();
 let editingLevel=null,editingGroup=null,dupGroupId=null,movingTaskId=null;
 let activeSheet=null;
@@ -379,8 +465,8 @@ function esc(s){const d=document.createElement('div');d.textContent=s||'';return
 
 // ---- загрузка ----
 async function loadAll(){
-  const[ld,gd,td]=await Promise.all([api('/api/levels'),api('/api/groups'),api('/api/tasks')]);
-  levels=ld.levels||[];groups=gd.groups||[];tasks=td.tasks||[];
+  const[ld,gd,td,cd]=await Promise.all([api('/api/levels'),api('/api/groups'),api('/api/tasks'),api('/api/cards')]);
+  levels=ld.levels||[];groups=gd.groups||[];tasks=td.tasks||[];cardItems=cd.cards||[];
 }
 
 async function init(){
@@ -392,6 +478,10 @@ async function init(){
       await api('/api/levels',{method:'POST',body:JSON.stringify(lv)});
       levels.push(lv);
     }
+    // отдельный уровень для карточек — особый тип, в самом конце
+    const cardsLevel={id:uid(),name:'Карточки',sort:defaults.length,created:Date.now()+defaults.length,is_cards:true};
+    await api('/api/levels',{method:'POST',body:JSON.stringify(cardsLevel)});
+    levels.push(cardsLevel);
   }
   renderAll();
 }
@@ -402,7 +492,7 @@ function renderAll(){renderLibrary();renderNewFormSelects();}
 function switchTab(t){
   document.querySelectorAll('.tab').forEach(b=>b.classList.remove('on'));
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('on'));
-  document.querySelectorAll('.tab')[['library','new'].indexOf(t)].classList.add('on');
+  document.querySelectorAll('.tab')[['library','new','card'].indexOf(t)].classList.add('on');
   document.getElementById('panel-'+t).classList.add('on');
 }
 
@@ -412,8 +502,26 @@ function renderLibrary(){
   if(!levels.length){box.innerHTML='<div class="empty"><div class="empty-icon">📂</div><div class="empty-txt">Уровней пока нет</div></div>';return;}
   box.innerHTML=levels.map(lv=>{
     const lvGroups=groups.filter(g=>g.level_id===lv.id);
-    const lvTasks=tasks.filter(t=>t.level_id===lv.id);
     const isOpen=openLevels.has(lv.id);
+    if(lv.is_cards){
+      const groupsHtml=lvGroups.map(g=>renderCardGroupCard(g)).join('');
+      const cardsCount=cardItems.filter(c=>lvGroups.some(g=>g.id===c.group_id)).length;
+      return`<div class="card" style="margin-bottom:10px;border-color:var(--gold-soft)">
+        <div class="level-header" onclick="toggleLevel('${esc(lv.id)}')">
+          <div class="level-icon" style="background:var(--gold-tint)">🖼</div>
+          <div class="level-body">
+            <div class="level-name">${esc(lv.name)}</div>
+            <div class="level-sub">${lvGroups.length} групп · ${cardsCount} карточек</div>
+          </div>
+          <div class="chevron${isOpen?' open':''}">›</div>
+        </div>
+        <div class="level-groups${isOpen?' open':''}">
+          ${groupsHtml}
+          <div class="add-group-row" onclick="openAddCardGroup('${esc(lv.id)}')">+ Добавить группу карточек</div>
+        </div>
+      </div>`;
+    }
+    const lvTasks=tasks.filter(t=>t.level_id===lv.id);
     const groupsHtml=lvGroups.map(g=>renderGroupCard(g)).join('');
     return`<div class="card" style="margin-bottom:10px">
       <div class="level-header" onclick="toggleLevel('${esc(lv.id)}')">
@@ -436,11 +544,48 @@ function renderLibrary(){
   }).join('');
 }
 
+function renderCardGroupCard(g){
+  const gCards=cardItems.filter(c=>c.group_id===g.id).sort((a,b)=>a.sort-b.sort);
+  const isOpen=openGroups.has(g.id);
+  const cardsHtml=gCards.map((c,idx)=>`
+    <div class="task-item" id="ci-${esc(c.id)}">
+      <div style="width:27px;height:48px;border-radius:7px;overflow:hidden;flex:none;background:var(--bg)">
+        ${c.photo?`<img src="${c.photo}" style="width:100%;height:100%;object-fit:cover">`:''}
+      </div>
+      <div class="task-word">
+        <div class="task-w">${esc(c.title)}</div>
+        <div class="task-t">${c.audio_file_id?'🔊 есть озвучка':'без озвучки'}</div>
+      </div>
+      <div class="task-btns">
+        <button class="task-btn" onclick="editCard('${esc(c.id)}')" title="Редактировать">✎</button>
+        <button class="task-btn danger" onclick="confirmDeleteCard('${esc(c.id)}')" title="Удалить">✕</button>
+      </div>
+    </div>`).join('');
+  return`<div class="group-card">
+    <div class="group-header" onclick="toggleGroup('${esc(g.id)}')">
+      <div class="group-icon" style="background:var(--gold-tint)">🖼</div>
+      <div class="task-word">
+        <div class="group-name">${esc(g.name)}</div>
+        <div class="group-sub">${gCards.length} карточек</div>
+      </div>
+      <div class="task-btns" onclick="event.stopPropagation()">
+        <button class="task-btn" onclick="openRenameCardGroup('${esc(g.id)}')" title="Переименовать">Аа</button>
+        <button class="task-btn danger" onclick="confirmDeleteCardGroup('${esc(g.id)}')" title="Удалить">✕</button>
+      </div>
+      <div class="group-chevron${isOpen?' open':''}">›</div>
+    </div>
+    <div class="group-tasks${isOpen?' open':''}">
+      ${cardsHtml}
+      <div class="group-add-task" onclick="openCardFormForGroup('${esc(g.id)}')">+ Добавить карточку</div>
+    </div>
+  </div>`;
+}
+
 function renderGroupCard(g){
   const lv=levels.find(l=>l.id===g.level_id);
   const gTasks=tasks.filter(t=>t.group_id===g.id).sort((a,b)=>a.sort-b.sort);
   const isOpen=openGroups.has(g.id);
-  const typeLabel={choice:'Выбор',audio:'Произн.',input:'Ввод'};
+  const typeLabel={choice:'Выбор',audio:'Произн.',input:'Ввод',photo:'Фото'};
   const tasksHtml=gTasks.map((t,idx)=>`
     <div class="task-item" id="ti-${esc(t.id)}">
       <div class="reorder-btns">
@@ -448,8 +593,9 @@ function renderGroupCard(g){
         <button class="reorder-btn" onclick="reorderTask('${esc(g.id)}','${esc(t.id)}',1)" ${idx===gTasks.length-1?'style="opacity:.3;pointer-events:none"':''}>▼</button>
       </div>
       <div class="task-word">
-        <div class="task-w">${esc(t.word)}</div>
-        <div class="task-t">${esc(t.translation)}</div>
+        ${t.type==='photo'
+          ? `<div class="task-w">${t.photo?'🖼 фото':'без фото'}</div><div class="task-t">${[t.photo_choice&&'выбор варианта', t.photo_input&&'ввод слова'].filter(Boolean).join(' + ')||'режим не выбран'}</div>`
+          : `<div class="task-w">${esc(t.word)}</div><div class="task-t">${esc(t.translation)}</div>`}
       </div>
       <div class="task-type">${typeLabel[t.type]||t.type}</div>
       <div class="task-btns">
@@ -492,8 +638,13 @@ function renderNewFormSelects(){
 }
 
 // инициализация блоков заданий
-function initNewForm(prefillGroupId,prefillLevelId){
+// formMode: 'new' (создать с нуля), 'append' (добавить в существующую группу), 'replace' (пересобрать всю группу через ✎)
+let formMode='new';
+
+function initNewForm(prefillGroupId,prefillLevelId,mode){
   editingGroupId=prefillGroupId||null;
+  editingTaskId=null;
+  formMode=mode||'new';
   addingToExisting=false;
   document.getElementById('groupExistsHint').style.display='none';
   document.getElementById('f_groupName').value='';
@@ -528,26 +679,53 @@ function addTaskBlock(prefill){
       <div class="type-row">
         <button class="type-btn on" onclick="setBlockType('${id}','choice',this)">Выбор варианта</button>
         <button class="type-btn" onclick="setBlockType('${id}','input',this)">Ввод слова</button>
-        <button class="type-btn" onclick="setBlockType('${id}','audio',this)">Произношение</button>
+        <button class="type-btn" onclick="setBlockType('${id}','photo',this)">С картинкой</button>
       </div>
     </div>
-    <div class="field">
+    <div class="field tb-word-wrap">
       <label>Слово / фраза (сербский)</label>
       <input class="tb-word" placeholder="нпр. уцак" autocomplete="off">
     </div>
-    <div class="field">
-      <label>Перевод (русский)</label>
-      <input class="tb-trans" placeholder="нпр. дядя" autocomplete="off">
+
+    <!-- ввод слова: правильный ответ + комментарий-аккордеон -->
+    <div class="tb-input-answer-wrap field" style="display:none">
+      <label>Правильный ответ <span style="font-weight:600;color:var(--muted);font-size:10px">— что должен ввести ученик</span></label>
+      <input class="tb-input-answer" placeholder="нпр. дядя" autocomplete="off">
+    </div>
+    <div class="tb-input-comment-wrap field" style="display:none">
+      <button type="button" class="note-btn" onclick="toggleCommentBox('${id}','tb-word-comment-box')">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Комментарий к правильному ответу
+      </button>
+      <div class="tb-word-comment-box note-box" style="display:none;margin-top:6px">
+        <textarea class="tb-word-comment" placeholder="Покажется ученику после правильного ответа (необязательно)" maxlength="4096"
+          style="width:100%;min-height:60px;resize:vertical;border:1.5px solid var(--line);background:var(--surface-2);border-radius:11px;padding:9px 11px;font-size:13px;font-family:inherit;color:var(--ink);outline:none"></textarea>
+      </div>
+    </div>
+
+    <!-- выбор варианта: комментарий к правильному + варианты -->
+    <div class="tb-choices field">
+      <label>Комментарий к правильному варианту <span style="font-weight:600;color:var(--muted);font-size:10px">— необязательно</span></label>
+      <input class="tb-trans" placeholder="нпр. краткое пояснение, факт, контекст…" autocomplete="off">
     </div>
     <div class="tb-choices field">
       <label>Варианты ответа <span style="font-weight:600;color:var(--muted);font-size:10px">— отметь верный ✓</span></label>
       <div class="choices-grid">
-        <div class="choice-row"><input placeholder="Вариант 1" autocomplete="off" data-idx="0"><div class="choice-check on" data-idx="0" onclick="setBlockCorrect('${id}',0)">✓</div></div>
-        <div class="choice-row"><input placeholder="Вариант 2" autocomplete="off" data-idx="1"><div class="choice-check" data-idx="1" onclick="setBlockCorrect('${id}',1)">✓</div></div>
-        <div class="choice-row"><input placeholder="Вариант 3" autocomplete="off" data-idx="2"><div class="choice-check" data-idx="2" onclick="setBlockCorrect('${id}',2)">✓</div></div>
-        <div class="choice-row"><input placeholder="Вариант 4" autocomplete="off" data-idx="3"><div class="choice-check" data-idx="3" onclick="setBlockCorrect('${id}',3)">✓</div></div>
+        ${[0,1,2,3].map(i=>`
+        <div>
+          <div class="choice-row"><input placeholder="Вариант ${i+1}" autocomplete="off" data-idx="${i}"><div class="choice-check${i===0?' on':''}" data-idx="${i}" onclick="setBlockCorrect('${id}',${i})">✓</div></div>
+          <button type="button" class="note-btn" style="font-size:10.5px;margin-top:2px" onclick="toggleCommentBox('${id}','tb-choice-comment-${i}')">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Комментарий к ответу
+          </button>
+          <div class="tb-choice-comment-${i} note-box" style="display:none;margin-top:4px">
+            <textarea class="tb-choice-comment" data-idx="${i}" placeholder="Покажется, если ученик выберет этот вариант (необязательно)" maxlength="4096"
+              style="width:100%;min-height:46px;resize:vertical;border:1.5px solid var(--line);background:var(--surface-2);border-radius:9px;padding:7px 9px;font-size:12px;font-family:inherit;color:var(--ink);outline:none"></textarea>
+          </div>
+        </div>`).join('')}
       </div>
     </div>
+
     <div class="tb-audio field" style="display:none">
       <label>Аудио file_id</label>
       <input class="tb-audio-inp" placeholder="Telegram file_id (загрузим позже)" autocomplete="off">
@@ -555,16 +733,145 @@ function addTaskBlock(prefill){
     </div>
     <div class="tb-input-hint field" style="display:none">
       <div style="background:var(--violet-tint);border-radius:11px;padding:11px 13px;font-size:13px;color:var(--violet);font-weight:600;line-height:1.5">
-        Ученик будет вводить перевод с клавиатуры.
+        Ученик будет вводить ответ с клавиатуры. Регистр не учитывается.
+      </div>
+    </div>
+
+    <!-- задание с картинкой -->
+    <div class="tb-photo field" style="display:none">
+      <label>Фото</label>
+      <div class="tb-photo-preview-wrap" style="display:none;margin-bottom:8px;position:relative">
+        <img class="tb-photo-preview" style="width:100%;max-width:340px;display:block;border-radius:16px">
+        <button type="button" onclick="removeTbPhoto('${id}')" style="position:absolute;top:8px;right:8px;width:28px;height:28px;border:none;border-radius:50%;background:rgba(43,36,68,.65);color:#fff;font-size:15px;cursor:pointer;display:grid;place-items:center">✕</button>
+      </div>
+      <button type="button" onclick="document.getElementById('tbPhotoInput-${id}').click()"
+        style="width:100%;padding:14px;border:2px dashed var(--violet-soft);border-radius:13px;background:var(--violet-tint);
+        color:var(--violet);font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/>
+        </svg>
+        Загрузить фото
+      </button>
+      <input type="file" id="tbPhotoInput-${id}" accept="image/*" style="display:none" onchange="onTbPhotoSelected('${id}',this)">
+
+      <!-- переключатель: выбор варианта -->
+      <div style="margin-top:14px">
+        <button type="button" class="photo-sub-toggle" onclick="toggleTbPhotoSub('${id}','choice')">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Выбор варианта
+        </button>
+        <div class="tb-photo-sub-choice photo-sub-body" style="display:none">
+          <div class="field" style="margin-bottom:10px">
+            <label>Текст под картинкой</label>
+            <input class="tb-pc-caption" placeholder="нпр. Кто это?" autocomplete="off">
+          </div>
+          <div class="field" style="margin-bottom:10px">
+            <label>Комментарий к правильному варианту <span style="font-weight:600;color:var(--muted);font-size:10px">— необязательно</span></label>
+            <input class="tb-pc-correct-comment" placeholder="нпр. краткое пояснение, факт…" autocomplete="off">
+          </div>
+          <div class="field">
+            <label>Варианты ответа <span style="font-weight:600;color:var(--muted);font-size:10px">— отметь верный ✓</span></label>
+            <div class="choices-grid">
+              ${[0,1,2,3].map(i=>`
+              <div>
+                <div class="choice-row"><input class="tb-pc-choice" placeholder="Вариант ${i+1}" autocomplete="off" data-idx="${i}"><div class="tb-pc-check choice-check${i===0?' on':''}" data-idx="${i}" onclick="setTbPhotoCorrect('${id}',${i})">✓</div></div>
+                <button type="button" class="note-btn" style="font-size:10.5px;margin-top:2px" onclick="toggleCommentBox('${id}','tb-pc-comment-${i}')">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                  Комментарий к ответу
+                </button>
+                <div class="tb-pc-comment-${i} note-box" style="display:none;margin-top:4px">
+                  <textarea class="tb-pc-comment" data-idx="${i}" placeholder="Покажется, если ученик выберет этот вариант (необязательно)" maxlength="4096"
+                    style="width:100%;min-height:46px;resize:vertical;border:1.5px solid var(--line);background:var(--surface-2);border-radius:9px;padding:7px 9px;font-size:12px;font-family:inherit;color:var(--ink);outline:none"></textarea>
+                </div>
+              </div>`).join('')}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- переключатель: ввод слова -->
+      <div style="margin-top:10px">
+        <button type="button" class="photo-sub-toggle" onclick="toggleTbPhotoSub('${id}','input')">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Ввод слова
+        </button>
+        <div class="tb-photo-sub-input photo-sub-body" style="display:none">
+          <div class="field" style="margin-bottom:10px">
+            <label>Текст под картинкой</label>
+            <input class="tb-pi-caption" placeholder="нпр. Напиши, что на фото" autocomplete="off">
+          </div>
+          <div class="field" style="margin-bottom:10px">
+            <label>Правильный ответ <span style="font-weight:600;color:var(--muted);font-size:10px">— что должен ввести ученик</span></label>
+            <input class="tb-pi-answer" placeholder="нпр. жаба" autocomplete="off">
+          </div>
+          <div class="field" style="margin-bottom:10px">
+            <label>Комментарий к правильному ответу <span style="font-weight:600;color:var(--muted);font-size:10px">— необязательно</span></label>
+            <input class="tb-pi-correct-comment" placeholder="нпр. краткое пояснение, факт…" autocomplete="off">
+          </div>
+          <div class="field">
+            <label>Комментарии к неверным ответам <span style="font-weight:600;color:var(--muted);font-size:10px">— необязательно, можно несколько</span></label>
+            <div class="tb-pi-wrong-list"></div>
+            <button type="button" onclick="addTbPhotoWrongComment('${id}')" style="margin-top:6px;width:100%;padding:8px;border:1.5px dashed var(--violet-soft);border-radius:9px;background:var(--violet-tint);color:var(--violet);font-size:12px;font-weight:700;font-family:inherit;cursor:pointer">+ Добавить комментарий</button>
+          </div>
+        </div>
       </div>
     </div>`;
   document.getElementById('tasksContainer').appendChild(div);
 
   if(prefill){
+    if(prefill.type==='photo'){
+      setBlockType(id,'photo',div.querySelectorAll('.type-btn')[2]);
+      if(prefill.photo){
+        tbPhotoData[id]=prefill.photo;
+        div.querySelector('.tb-photo-preview').src=prefill.photo;
+        div.querySelector('.tb-photo-preview-wrap').style.display='block';
+      }
+      if(prefill.photo_choice){
+        let pc=null; try{ pc=JSON.parse(prefill.photo_choice); }catch(e){}
+        if(pc){
+          toggleTbPhotoSub(id,'choice');
+          div.querySelector('.tb-pc-caption').value=pc.caption||'';
+          div.querySelector('.tb-pc-correct-comment').value=pc.correct_comment||'';
+          (pc.choices||[]).forEach((c,i)=>{
+            const inp=div.querySelector(`.tb-pc-choice[data-idx="${i}"]`);
+            if(inp) inp.value=c;
+          });
+          if(typeof pc.correct==='number') setTbPhotoCorrect(id, pc.correct);
+          (pc.choice_comments||[]).forEach((c,i)=>{
+            if(!c) return;
+            const ta=div.querySelector(`.tb-pc-comment[data-idx="${i}"]`);
+            if(ta){
+              ta.value=c;
+              const box=div.querySelector(`.tb-pc-comment-${i}`);
+              box.style.display='block';
+              box.previousElementSibling.classList.add('on');
+            }
+          });
+        }
+      }
+      if(prefill.photo_input){
+        let pi=null; try{ pi=JSON.parse(prefill.photo_input); }catch(e){}
+        if(pi){
+          toggleTbPhotoSub(id,'input');
+          div.querySelector('.tb-pi-caption').value=pi.caption||'';
+          div.querySelector('.tb-pi-answer').value=pi.answer||'';
+          div.querySelector('.tb-pi-correct-comment').value=pi.correct_comment||'';
+          (pi.wrong_comments||[]).forEach(c=>{
+            addTbPhotoWrongComment(id);
+            const list=div.querySelector('.tb-pi-wrong-list');
+            const last=list.lastElementChild.querySelector('.tb-pi-wrong-comment');
+            if(last) last.value=c;
+          });
+        }
+      }
+      return;
+    }
     div.querySelector('.tb-word').value=prefill.word||'';
-    div.querySelector('.tb-trans').value=prefill.translation||'';
-    if(prefill.type&&prefill.type!=='choice'){
-      setBlockType(id,prefill.type,div.querySelectorAll('.type-btn')[prefill.type==='input'?1:2]);
+    if(prefill.type==='input'){
+      setBlockType(id,'input',div.querySelectorAll('.type-btn')[1]);
+      div.querySelector('.tb-input-answer').value=prefill.translation||'';
+    } else {
+      div.querySelector('.tb-trans').value=prefill.translation||'';
     }
     if(prefill.choices){
       const ch=prefill.choices.split('|');
@@ -572,7 +879,88 @@ function addTaskBlock(prefill){
     }
     if(prefill.correct){setBlockCorrect(id,prefill.correct);}
     if(prefill.audio_file_id)div.querySelector('.tb-audio-inp').value=prefill.audio_file_id||'';
+    // восстанавливаем комментарии
+    if(prefill.word_comment){
+      div.querySelector('.tb-word-comment').value=prefill.word_comment;
+      div.querySelector('.tb-input-comment-wrap').style.display = prefill.type==='input' ? 'block' : 'none';
+      const box=div.querySelector('.tb-word-comment-box'); box.style.display='block';
+      div.querySelector('.tb-input-comment-wrap .note-btn').classList.add('on');
+    }
+    if(prefill.choice_comments){
+      let cc=[]; try{ cc=JSON.parse(prefill.choice_comments); }catch(e){}
+      cc.forEach((c,i)=>{
+        if(!c) return;
+        const ta=div.querySelector(`.tb-choice-comment[data-idx="${i}"]`);
+        if(ta){
+          ta.value=c;
+          const box=div.querySelector(`.tb-choice-comment-${i}`);
+          box.style.display='block';
+          box.previousElementSibling.classList.add('on');
+        }
+      });
+    }
   }
+}
+
+function toggleCommentBox(blockId, boxClass){
+  const div=document.getElementById(blockId);
+  const box=div.querySelector('.'+boxClass);
+  const btn=[...div.querySelectorAll('.note-btn')].find(b=>b.getAttribute('onclick').includes(boxClass));
+  const open=box.style.display==='none';
+  box.style.display=open?'block':'none';
+  if(btn) btn.classList.toggle('on',open);
+}
+
+// ---- блок "С картинкой" ----
+let tbPhotoData={}; // blockId -> base64 фото
+
+function toggleTbPhotoSub(blockId, sub){
+  const div=document.getElementById(blockId);
+  const box=div.querySelector('.tb-photo-sub-'+sub);
+  const btn=[...div.querySelectorAll('.photo-sub-toggle')].find(b=>b.getAttribute('onclick')&&b.getAttribute('onclick').includes(`toggleTbPhotoSub('${blockId}','${sub}')`));
+  const open=box.style.display==='none';
+  box.style.display=open?'block':'none';
+  if(btn) btn.classList.toggle('on',open);
+}
+
+function onTbPhotoSelected(blockId, input){
+  const file=input.files && input.files[0];
+  if(!file) return;
+  if(file.size>8*1024*1024){toast('Файл слишком большой (максимум 8 МБ)');input.value='';return;}
+  const reader=new FileReader();
+  reader.onload=(e)=>{
+    tbPhotoData[blockId]=e.target.result;
+    const div=document.getElementById(blockId);
+    const img=div.querySelector('.tb-photo-preview');
+    img.src=e.target.result;
+    div.querySelector('.tb-photo-preview-wrap').style.display='block';
+  };
+  reader.readAsDataURL(file);
+  input.value='';
+}
+
+function removeTbPhoto(blockId){
+  delete tbPhotoData[blockId];
+  const div=document.getElementById(blockId);
+  div.querySelector('.tb-photo-preview-wrap').style.display='none';
+  div.querySelector('.tb-photo-preview').src='';
+}
+
+function setTbPhotoCorrect(blockId, idx){
+  const div=document.getElementById(blockId);
+  div.querySelectorAll('.tb-pc-check').forEach((c,i)=>c.classList.toggle('on', i===idx));
+}
+
+function addTbPhotoWrongComment(blockId){
+  const div=document.getElementById(blockId);
+  const list=div.querySelector('.tb-pi-wrong-list');
+  const row=document.createElement('div');
+  row.style.cssText='display:flex;gap:6px;margin-top:6px';
+  row.innerHTML=`
+    <textarea class="tb-pi-wrong-comment" placeholder="Комментарий к неверному ответу" maxlength="4096"
+      style="flex:1;min-height:42px;resize:vertical;border:1.5px solid var(--line);background:var(--surface-2);border-radius:9px;padding:7px 9px;font-size:12px;font-family:inherit;color:var(--ink);outline:none"></textarea>
+    <button type="button" onclick="this.parentElement.remove()" style="flex:none;width:30px;height:30px;border:none;border-radius:8px;background:var(--danger-tint);color:var(--danger);font-size:14px;cursor:pointer">✕</button>`;
+  list.appendChild(row);
 }
 
 // ---- экран сортировки заданий ----
@@ -705,9 +1093,13 @@ function setBlockType(blockId,type,el){
   const div=document.getElementById(blockId);
   div.querySelectorAll('.type-btn').forEach(btn=>btn.classList.remove('on'));
   el.classList.add('on');
-  div.querySelector('.tb-choices').style.display=type==='choice'?'block':'none';
-  div.querySelector('.tb-audio').style.display=type==='audio'?'block':'none';
+  div.querySelectorAll('.tb-choices').forEach(elm=>elm.style.display=type==='choice'?'block':'none');
+  div.querySelector('.tb-audio').style.display='none'; // произношение скрыто
   div.querySelector('.tb-input-hint').style.display=type==='input'?'block':'none';
+  div.querySelector('.tb-input-answer-wrap').style.display=type==='input'?'block':'none';
+  div.querySelector('.tb-input-comment-wrap').style.display=type==='input'?'block':'none';
+  div.querySelector('.tb-word-wrap').style.display=type==='photo'?'none':'block';
+  div.querySelector('.tb-photo').style.display=type==='photo'?'block':'none';
 }
 
 function setBlockCorrect(blockId,idx){
@@ -716,7 +1108,9 @@ function setBlockCorrect(blockId,idx){
   div.querySelectorAll('.choice-check').forEach((c,i)=>c.classList.toggle('on',i===idx));
 }
 
+let savingGroup=false;
 async function saveGroup(){
+  if(savingGroup) return;
   const groupName=document.getElementById('f_groupName').value.trim();
   if(!groupName){toast('Введи название группы');return;}
   const levelId=document.getElementById('f_level').value;
@@ -725,37 +1119,104 @@ async function saveGroup(){
   const collected=[];
   for(const b of taskBlocks){
     const div=document.getElementById(b.id);if(!div)continue;
+
+    if(b.type==='photo'){
+      const photoChoiceBox=div.querySelector('.tb-photo-sub-choice');
+      const photoInputBox=div.querySelector('.tb-photo-sub-input');
+      const choiceOpen=photoChoiceBox.style.display!=='none';
+      const inputOpen=photoInputBox.style.display!=='none';
+      if(!choiceOpen && !inputOpen){toast('Открой хотя бы один режим проверки («Выбор варианта» или «Ввод слова»)');return;}
+
+      let photoChoice=null, photoInput=null;
+      if(choiceOpen){
+        const caption=div.querySelector('.tb-pc-caption').value.trim();
+        const choices=[...div.querySelectorAll('.tb-pc-choice')].map(i=>i.value.trim());
+        const filled=choices.filter(c=>c).length;
+        if(filled<2){toast('Заполни хотя бы 2 варианта ответа в блоке «Выбор варианта»');return;}
+        const correctIdx=[...div.querySelectorAll('.tb-pc-check')].findIndex(c=>c.classList.contains('on'));
+        const correctComment=div.querySelector('.tb-pc-correct-comment').value.trim();
+        const choiceComments=[...div.querySelectorAll('.tb-pc-comment')].map(ta=>ta.value.trim());
+        photoChoice={caption, choices, correct:correctIdx<0?0:correctIdx, correct_comment:correctComment, choice_comments:choiceComments};
+      }
+      if(inputOpen){
+        const caption=div.querySelector('.tb-pi-caption').value.trim();
+        const answer=div.querySelector('.tb-pi-answer').value.trim();
+        if(!answer){toast('Заполни правильный ответ в блоке «Ввод слова»');return;}
+        const correctComment=div.querySelector('.tb-pi-correct-comment').value.trim();
+        const wrongComments=[...div.querySelectorAll('.tb-pi-wrong-comment')].map(ta=>ta.value.trim()).filter(t=>t);
+        photoInput={caption, answer, correct_comment:correctComment, wrong_comments:wrongComments};
+      }
+
+      collected.push({
+        type:'photo', word:'', translation:'', choices:'', correct:0, audio_file_id:'',
+        word_comment:'', choice_comments:'[]',
+        photo: tbPhotoData[b.id] || '',
+        photo_choice: photoChoice ? JSON.stringify(photoChoice) : '',
+        photo_input: photoInput ? JSON.stringify(photoInput) : ''
+      });
+      continue;
+    }
+
     const word=div.querySelector('.tb-word').value.trim();
-    const trans=div.querySelector('.tb-trans').value.trim();
-    if(!word||!trans){toast('Заполни слово и перевод в каждом задании');return;}
+    if(!word){toast('Заполни слово в каждом задании');return;}
     const choices=b.type==='choice'?[...div.querySelectorAll('.choices-grid input')].map(i=>i.value.trim()).join('|'):'';
-    const audio=b.type==='audio'?(div.querySelector('.tb-audio-inp').value.trim()||''):'';
-    collected.push({type:b.type,word,translation:trans,choices,correct:b.correct||0,audio_file_id:audio});
+    if(b.type==='choice'){
+      const filled=choices.split('|').filter(c=>c.trim()).length;
+      if(filled<2){toast('Заполни хотя бы 2 варианта ответа');return;}
+    }
+    let trans='';
+    if(b.type==='choice'){
+      trans=div.querySelector('.tb-trans').value.trim();
+    } else if(b.type==='input'){
+      trans=div.querySelector('.tb-input-answer').value.trim();
+      if(!trans){toast('Заполни правильный ответ для задания на ввод слова');return;}
+    }
+    const wordComment=b.type==='input'?(div.querySelector('.tb-word-comment').value.trim()):'';
+    const choiceComments=b.type==='choice'?[...div.querySelectorAll('.tb-choice-comment')].map(ta=>ta.value.trim()):[];
+    collected.push({
+      type:b.type, word, translation:trans, choices, correct:b.correct||0,
+      audio_file_id:'', word_comment:wordComment,
+      choice_comments:JSON.stringify(choiceComments)
+    });
   }
   if(!collected.length){toast('Добавь хотя бы одно задание');return;}
+  savingGroup=true;
+  const btn=document.getElementById('saveGroupBtn');
+  if(btn){ btn.disabled=true; btn.style.opacity='.6'; btn.textContent='Сохраняю…'; }
+  try{
   // сохраняем группу
   const gid=editingGroupId||uid();
   const g={id:gid,name:groupName,level_id:levelId,sort:groups.length,created:Date.now()};
   await api('/api/groups',{method:'POST',body:JSON.stringify(g)});
   if(editingGroupId){const i=groups.findIndex(x=>x.id===gid);if(i>=0)groups[i]=g;}
   else groups.push(g);
-  // при редактировании (не добавлении в существующую) удаляем старые задания группы
-  if(editingGroupId && !addingToExisting){
-    const oldTasks=tasks.filter(t=>t.group_id===gid);
-    for(const ot of oldTasks){
-      await api('/api/tasks/delete',{method:'POST',body:JSON.stringify({id:ot.id})});
-    }
-    tasks=tasks.filter(t=>t.group_id!==gid);
-  }
-  // сохраняем задания
-  let sortIdx=addingToExisting?tasks.filter(t=>t.group_id===gid).length:0;
-  for(const c of collected){
-    const t={id:uid(),group_id:gid,level_id:levelId,sort:sortIdx++,created:Date.now(),...c};
+  // если редактируем одно конкретное задание — заменяем его, остальные не трогаем
+  if(editingTaskId && collected.length===1){
+    const t={id:editingTaskId,group_id:gid,level_id:levelId,
+      sort:(tasks.find(x=>x.id===editingTaskId)||{}).sort||0,
+      created:Date.now(), ...collected[0]};
     await api('/api/tasks',{method:'POST',body:JSON.stringify(t)});
-    tasks.push(t);
+    const i=tasks.findIndex(x=>x.id===editingTaskId);
+    if(i>=0) tasks[i]=t; else tasks.push(t);
+  } else {
+    // удаляем старые задания только при полной пересборке группы (через ✎ editGroup)
+    if(formMode==='replace'){
+      const oldTasks=tasks.filter(t=>t.group_id===gid);
+      for(const ot of oldTasks){
+        await api('/api/tasks/delete',{method:'POST',body:JSON.stringify({id:ot.id})});
+      }
+      tasks=tasks.filter(t=>t.group_id!==gid);
+    }
+    // сохраняем задания — новые всегда добавляются в конец имеющихся
+    let sortIdx=tasks.filter(t=>t.group_id===gid).length;
+    for(const c of collected){
+      const t={id:uid(),group_id:gid,level_id:levelId,sort:sortIdx++,created:Date.now(),...c};
+      await api('/api/tasks',{method:'POST',body:JSON.stringify(t)});
+      tasks.push(t);
+    }
   }
   // сброс формы
-  editingGroupId=null; addingToExisting=false; taskBlocks=[];
+  editingGroupId=null; editingTaskId=null; addingToExisting=false; formMode='new'; taskBlocks=[];
   document.getElementById('tasksContainer').innerHTML='';
   document.getElementById('f_groupName').value='';
   addTaskBlock();
@@ -764,11 +1225,15 @@ async function saveGroup(){
   renderAll();
   toast('Группа сохранена');
   switchTab('library');
+  } finally {
+    savingGroup=false;
+    if(btn){ btn.disabled=false; btn.style.opacity=''; btn.textContent='Сохранить группу'; }
+  }
 }
 
 // переход из библиотеки к добавлению задания в группу
 function addTaskToGroup(groupId,levelId){
-  initNewForm(groupId,levelId);
+  initNewForm(groupId,levelId,'append');
   switchTab('new');
 }
 
@@ -797,6 +1262,7 @@ function confirmAddToExisting(){
   // переключаемся в режим добавления в существующую группу
   editingGroupId=exists.id;
   addingToExisting=true;
+  formMode='append';
   document.getElementById('groupExistsHint').style.display='none';
   document.getElementById('f_groupName').value=exists.name;
   document.getElementById('f_level').value=exists.level_id;
@@ -851,6 +1317,227 @@ function openRenameGroup(id){
   openSheet('groupSheet');
 }
 
+// ---- КАРТОЧКИ ----
+let editingCardGroupId=null, editingCardId=null, cardPhotoData=null;
+let editingCardGroupForRename=null;
+
+function openAddCardGroup(levelId){
+  editingCardGroupForRename=null;
+  document.getElementById('cardGroupName').value='';
+  document.getElementById('cardGroupSheetTitle').textContent='Группа карточек';
+  cardGroupLevelForNew=levelId;
+  cardGroupCreatedCallback=null;
+  openSheet('cardGroupSheet');
+}
+let cardGroupLevelForNew=null;
+
+function openRenameCardGroup(id){
+  const g=groups.find(x=>x.id===id); if(!g) return;
+  editingCardGroupForRename=id;
+  document.getElementById('cardGroupName').value=g.name;
+  document.getElementById('cardGroupSheetTitle').textContent='Переименовать группу';
+  cardGroupCreatedCallback=null;
+  openSheet('cardGroupSheet');
+}
+
+let savingCardGroupSheet=false;
+async function saveCardGroupSheet(){
+  if(savingCardGroupSheet) return;
+  const name=document.getElementById('cardGroupName').value.trim();
+  if(!name){toast('Введи название');return;}
+  savingCardGroupSheet=true;
+  try{
+    const cardsLevel=levels.find(l=>l.is_cards);
+    const level_id=cardsLevel?cardsLevel.id:(cardGroupLevelForNew||'');
+    const isNew=!editingCardGroupForRename;
+    const g={id:editingCardGroupForRename||uid(),name,level_id,sort:groups.length,created:Date.now()};
+    await api('/api/groups',{method:'POST',body:JSON.stringify(g)});
+    if(editingCardGroupForRename){const i=groups.findIndex(x=>x.id===editingCardGroupForRename);if(i>=0)groups[i]=g;}
+    else groups.push(g);
+    editingCardGroupForRename=null;closeSheet();renderAll();toast('Группа сохранена');
+    if(cardsLevel) openLevels.add(cardsLevel.id);
+    if(isNew && cardGroupCreatedCallback){ cardGroupCreatedCallback(g.id); cardGroupCreatedCallback=null; }
+  } finally {
+    savingCardGroupSheet=false;
+  }
+}
+
+function confirmDeleteCardGroup(id){
+  const g=groups.find(x=>x.id===id);if(!g)return;
+  const cnt=cardItems.filter(c=>c.group_id===id).length;
+  if(cnt>0){
+    document.getElementById('confirmTitle').textContent=`В группе «${g.name}» есть карточки`;
+    document.getElementById('confirmMsg').textContent=`В группе ${cnt} карточек — удалятся вместе с группой. Продолжить?`;
+    document.getElementById('confirmYesBtn').onclick=()=>doDeleteCardGroup(id,true);
+  }else{
+    document.getElementById('confirmTitle').textContent=`Удалить группу «${g.name}»?`;
+    document.getElementById('confirmMsg').textContent='Группа будет удалена.';
+    document.getElementById('confirmYesBtn').onclick=()=>doDeleteCardGroup(id,false);
+  }
+  openSheet('confirmSheet');
+}
+
+async function doDeleteCardGroup(id,force){
+  await api('/api/groups/delete',{method:'POST',body:JSON.stringify({id,force})});
+  groups=groups.filter(g=>g.id!==id);
+  if(force) cardItems=cardItems.filter(c=>c.group_id!==id);
+  closeSheet();renderAll();toast('Группа удалена');
+}
+
+function openCardFormForGroup(groupId){
+  editingCardGroupId=groupId;
+  editingCardId=null;
+  cardPhotoData=null;
+  document.getElementById('cardTitle').value='';
+  document.getElementById('cardAudioInp').value='';
+  document.getElementById('cardPhotoPreviewWrap').style.display='none';
+  document.getElementById('cardPhotoPreview').src='';
+  renderCardGroupSelect();
+  document.getElementById('cardGroupSel').value=groupId;
+  switchTab('card');
+}
+
+function openNewCardTab(){
+  editingCardGroupId=null;
+  editingCardId=null;
+  cardPhotoData=null;
+  document.getElementById('cardTitle').value='';
+  document.getElementById('cardAudioInp').value='';
+  document.getElementById('cardPhotoPreviewWrap').style.display='none';
+  document.getElementById('cardPhotoPreview').src='';
+  renderCardGroupSelect();
+  switchTab('card');
+}
+
+function renderCardGroupSelect(){
+  const sel=document.getElementById('cardGroupSel');
+  const cardsLevel=levels.find(l=>l.is_cards);
+  const cardGroups=cardsLevel?groups.filter(g=>g.level_id===cardsLevel.id):[];
+  const v=editingCardGroupId||sel.value;
+  sel.innerHTML='<option value="">— выбери группу —</option>'+cardGroups.map(g=>`<option value="${esc(g.id)}">${esc(g.name)}</option>`).join('');
+  sel.value=v||'';
+}
+
+function openAddCardGroupFromTab(){
+  editingCardGroupForRename=null;
+  document.getElementById('cardGroupName').value='';
+  document.getElementById('cardGroupSheetTitle').textContent='Группа карточек';
+  cardGroupLevelForNew=(levels.find(l=>l.is_cards)||{}).id||null;
+  cardGroupCreatedCallback=(newGroupId)=>{
+    renderCardGroupSelect();
+    document.getElementById('cardGroupSel').value=newGroupId;
+    editingCardGroupId=newGroupId;
+  };
+  openSheet('cardGroupSheet');
+}
+let cardGroupCreatedCallback=null;
+
+let savingCard=false;
+async function saveCardFromTab(){
+  if(savingCard) return;
+  const groupId=document.getElementById('cardGroupSel').value;
+  if(!groupId){toast('Выбери группу карточек');return;}
+  savingCard=true;
+  const btn=document.getElementById('saveCardBtn');
+  if(btn){ btn.disabled=true; btn.style.opacity='.6'; btn.textContent='Сохраняю…'; }
+  try{
+    editingCardGroupId=groupId;
+    await saveCard();
+    // после сохранения остаёмся на вкладке для следующей карточки этой же группы, чистим поля
+    document.getElementById('cardTitle').value='';
+    document.getElementById('cardAudioInp').value='';
+    document.getElementById('cardPhotoPreviewWrap').style.display='none';
+    document.getElementById('cardPhotoPreview').src='';
+    cardPhotoData=null; editingCardId=null;
+    document.getElementById('cardGroupSel').value=groupId; // оставляем ту же группу выбранной
+    editingCardGroupId=groupId;
+  } finally {
+    savingCard=false;
+    if(btn){ btn.disabled=false; btn.style.opacity=''; btn.textContent='Сохранить карточку'; }
+  }
+}
+
+function editCard(id){
+  const c=cardItems.find(x=>x.id===id); if(!c) return;
+  editingCardGroupId=c.group_id;
+  editingCardId=id;
+  cardPhotoData=c.photo||null;
+  document.getElementById('cardTitle').value=c.title||'';
+  document.getElementById('cardAudioInp').value=c.audio_file_id||'';
+  if(c.photo){
+    document.getElementById('cardPhotoPreview').src=c.photo;
+    document.getElementById('cardPhotoPreviewWrap').style.display='block';
+  }else{
+    document.getElementById('cardPhotoPreviewWrap').style.display='none';
+  }
+  renderCardGroupSelect();
+  switchTab('card');
+}
+
+function onCardPhotoSelected(input){
+  const file=input.files && input.files[0];
+  if(!file) return;
+  if(file.size>8*1024*1024){toast('Файл слишком большой (максимум 8 МБ)');input.value='';return;}
+  const reader=new FileReader();
+  reader.onload=(e)=>{
+    cardPhotoData=e.target.result;
+    document.getElementById('cardPhotoPreview').src=cardPhotoData;
+    document.getElementById('cardPhotoPreviewWrap').style.display='block';
+  };
+  reader.readAsDataURL(file);
+  input.value='';
+}
+
+function removeCardPhoto(){
+  cardPhotoData=null;
+  document.getElementById('cardPhotoPreviewWrap').style.display='none';
+  document.getElementById('cardPhotoPreview').src='';
+}
+
+async function saveCard(){
+  const title=document.getElementById('cardTitle').value.trim();
+  if(!title){toast('Введи название карточки');return;}
+  if(!cardPhotoData && !editingCardId){toast('Загрузи фото');return;}
+  const audio=document.getElementById('cardAudioInp').value.trim();
+  let photoFileId='', photoForMock=cardPhotoData||'';
+  // если фото новое (data:base64) — грузим на сервер чтобы получить file_id
+  if(cardPhotoData && cardPhotoData.startsWith('data:')){
+    if(!MOCK){
+      try{
+        const up=await api('/api/upload_photo',{method:'POST',body:JSON.stringify({photo:cardPhotoData})});
+        photoFileId=up.photo_file_id||'';
+      }catch(e){ toast('Не удалось загрузить фото'); return; }
+    }
+  }else if(editingCardId){
+    // фото не менялось — оставляем как было
+    const existing=cardItems.find(x=>x.id===editingCardId);
+    photoFileId=existing?existing.photo_file_id||'':'';
+  }
+  const c={
+    id:editingCardId||uid(), group_id:editingCardGroupId, title,
+    photo_file_id:photoFileId, photo:photoForMock, audio_file_id:audio,
+    sort:editingCardId?(cardItems.find(x=>x.id===editingCardId)||{}).sort||0:cardItems.filter(x=>x.group_id===editingCardGroupId).length,
+    created:Date.now()
+  };
+  await api('/api/cards',{method:'POST',body:JSON.stringify(c)});
+  if(editingCardId){const i=cardItems.findIndex(x=>x.id===editingCardId);if(i>=0)cardItems[i]=c;}
+  else cardItems.push(c);
+  editingCardId=null; editingCardGroupId=null; cardPhotoData=null;
+  closeSheet();renderAll();toast('Карточка сохранена');
+}
+
+function confirmDeleteCard(id){
+  const c=cardItems.find(x=>x.id===id); if(!c) return;
+  document.getElementById('confirmTitle').textContent='Удалить карточку?';
+  document.getElementById('confirmMsg').textContent=`«${c.title}»`;
+  document.getElementById('confirmYesBtn').onclick=async()=>{
+    await api('/api/cards/delete',{method:'POST',body:JSON.stringify({id})});
+    cardItems=cardItems.filter(x=>x.id!==id);
+    closeSheet();renderAll();toast('Карточка удалена');
+  };
+  openSheet('confirmSheet');
+}
+
 function openAddGroup(levelId){
   editingGroup=null;
   document.getElementById('groupName').value='';
@@ -863,6 +1550,7 @@ function openAddGroup(levelId){
 function editGroup(id){
   const g=groups.find(x=>x.id===id); if(!g) return;
   editingGroupId=id;
+  formMode='replace';
   document.getElementById('f_groupName').value=g.name;
   document.getElementById('f_level').value=g.level_id;
   // загружаем все задания группы как блоки
@@ -874,15 +1562,22 @@ function editGroup(id){
   switchTab('new');
 }
 
+let savingGroupSheet=false;
 async function saveGroupSheet(){
-  const name=document.getElementById('groupName').value.trim();
-  if(!name){toast('Введи название');return;}
-  const level_id=document.getElementById('groupLevelSel').value;
-  const g={id:editingGroup||uid(),name,level_id,sort:editingGroup?groups.find(x=>x.id===editingGroup)?.sort||groups.length:groups.length,created:Date.now()};
-  await api('/api/groups',{method:'POST',body:JSON.stringify(g)});
-  if(editingGroup){const i=groups.findIndex(x=>x.id===editingGroup);if(i>=0)groups[i]=g;}
-  else groups.push(g);
-  editingGroup=null;closeSheet();renderAll();toast('Группа сохранена');
+  if(savingGroupSheet) return;
+  savingGroupSheet=true;
+  try{
+    const name=document.getElementById('groupName').value.trim();
+    if(!name){toast('Введи название');return;}
+    const level_id=document.getElementById('groupLevelSel').value;
+    const g={id:editingGroup||uid(),name,level_id,sort:editingGroup?groups.find(x=>x.id===editingGroup)?.sort||groups.length:groups.length,created:Date.now()};
+    await api('/api/groups',{method:'POST',body:JSON.stringify(g)});
+    if(editingGroup){const i=groups.findIndex(x=>x.id===editingGroup);if(i>=0)groups[i]=g;}
+    else groups.push(g);
+    editingGroup=null;closeSheet();renderAll();toast('Группа сохранена');
+  } finally {
+    savingGroupSheet=false;
+  }
 }
 
 function confirmDeleteGroup(id){
@@ -939,12 +1634,11 @@ async function doDupGroup(){
 function editTask(id){
   const t=tasks.find(x=>x.id===id);if(!t)return;
   const g=groups.find(g=>g.id===t.group_id);
-  // переходим на форму, предзаполняем
-  initNewForm(t.group_id,t.level_id);
+  // переходим на форму в режиме "добавить" — но реально заменяем одно задание через editingTaskId
+  initNewForm(t.group_id,t.level_id,'append');
   // удаляем пустой блок и добавляем с данными
   taskBlocks=[];document.getElementById('tasksContainer').innerHTML='';
   addTaskBlock(t);
-  editingGroupId=t.group_id;
   editingTaskId=id;
   switchTab('new');
   closeSheet();

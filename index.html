@@ -205,8 +205,8 @@
 
   .toggle-line{
     display:flex;align-items:center;justify-content:space-between;
-    padding:14px 16px;background:var(--surface);border-radius:13px;border:1.5px solid var(--line);
-    margin-bottom:14px;cursor:pointer;
+    padding:14px 18px;background:var(--surface);border-radius:13px;border:1.5px solid var(--line);
+    margin-bottom:14px;cursor:pointer;gap:14px;
   }
   .toggle-line .t-txt{font-weight:700;font-size:14px}
   .toggle-line .t-sub{font-size:11px;color:var(--muted);font-weight:600;margin-top:2px}
@@ -480,6 +480,13 @@
   .settings-sub{font-size:12px;color:var(--muted);font-weight:600;margin-top:1px}
   .settings-divider{height:1px;background:var(--line);margin:4px 0}
   .settings-item:active .settings-label{color:var(--violet)}
+  /* карточка предпросмотра поста — точная копия из student.html */
+  .msg-card{background:var(--surface);border:1.5px solid var(--line);border-radius:16px;box-shadow:var(--shadow-soft);overflow:hidden}
+  .msg-card img{width:100%;max-height:240px;object-fit:cover;display:block}
+  .msg-card-body{padding:16px 18px}
+  .msg-card-text{font-size:15px;line-height:1.55;color:var(--ink);word-break:break-word}
+  .msg-card-text b{font-weight:800}
+  .msg-card-time{font-size:11px;color:var(--muted-2);font-weight:600;margin-top:10px}
 </style>
 </head>
 <body>
@@ -618,12 +625,12 @@
     </div>
 
     <div class="rep-box" id="transferBox">
-      <button class="daysbtn" id="openTransferDay">📅 Выбрать день</button>
+      <button class="daysbtn" id="openTransferDay"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px;margin-right:5px"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Выбрать день</button>
       <div id="transferDayRow"></div>
     </div>
   </div>
   <div class="savebar">
-    <button class="save" id="saveBtn">✓ Сохранить занятие</button>
+    <button class="save" id="saveBtn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;margin-right:5px"><polyline points="20 6 9 17 4 12"/></svg>Сохранить занятие</button>
     <button class="save del" id="delBtn" style="display:none">Удалить занятие</button>
   </div>
 </div>
@@ -655,19 +662,19 @@
     <div class="vc-note" id="v_noteWrap" style="display:none">
       <div class="lab" style="display:flex;align-items:center;justify-content:space-between">
         ДЕТАЛИ УРОКА
-        <button id="editNoteBtn" style="border:none;background:none;color:var(--violet);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;padding:0">✎ Изменить</button>
+        <button id="editNoteBtn" style="border:none;background:none;color:var(--violet);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;padding:0"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-1px;margin-right:3px"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>Изменить</button>
       </div>
       <div id="v_note"></div>
       <div id="v_noteEdit" style="display:none;margin-top:8px">
-        <textarea id="v_noteInput" class="note-box" maxlength="2000" oninput="updateNoteCounter('v_noteInput','v_noteCounter')" style="width:100%;border:1.5px solid var(--line);background:var(--surface-2);border-radius:11px;padding:10px 12px;font-size:14px;font-family:inherit;color:var(--ink);min-height:64px;resize:vertical;outline:none"></textarea>
-        <div style="text-align:right;font-size:11px;color:var(--muted-2);font-weight:600;margin-top:3px" id="v_noteCounter">0 / 2000</div>
+        <textarea id="v_noteInput" class="note-box" maxlength="4096" oninput="updateNoteCounter('v_noteInput','v_noteCounter')" style="width:100%;border:1.5px solid var(--line);background:var(--surface-2);border-radius:11px;padding:10px 12px;font-size:14px;font-family:inherit;color:var(--ink);min-height:64px;resize:vertical;outline:none"></textarea>
+        <div style="text-align:right;font-size:11px;color:var(--muted-2);font-weight:600;margin-top:3px" id="v_noteCounter">0 / 4096</div>
         <button id="saveNoteBtn" style="margin-top:8px;width:100%;padding:12px;background:var(--violet);color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">Сохранить</button>
       </div>
     </div>
-    <button id="addNoteBtn" class="note-btn" style="display:none">✒ Детали урока</button>
+    <button id="addNoteBtn" class="note-btn" style="display:none"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;margin-right:4px"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>Детали урока</button>
     <div id="addNoteBox" class="note-box" style="display:none">
-      <textarea id="addNoteInput" placeholder="Что по этому уроку…" maxlength="2000" oninput="updateNoteCounter('addNoteInput','addNoteCounter')" style="width:100%;border:1.5px solid var(--line);background:var(--surface-2);border-radius:11px;padding:10px 12px;font-size:14px;font-family:inherit;color:var(--ink);min-height:64px;resize:vertical;outline:none"></textarea>
-      <div style="text-align:right;font-size:11px;color:var(--muted-2);font-weight:600;margin-top:3px" id="addNoteCounter">0 / 2000</div>
+      <textarea id="addNoteInput" placeholder="Что по этому уроку…" maxlength="4096" oninput="updateNoteCounter('addNoteInput','addNoteCounter')" style="width:100%;border:1.5px solid var(--line);background:var(--surface-2);border-radius:11px;padding:10px 12px;font-size:14px;font-family:inherit;color:var(--ink);min-height:64px;resize:vertical;outline:none"></textarea>
+      <div style="text-align:right;font-size:11px;color:var(--muted-2);font-weight:600;margin-top:3px" id="addNoteCounter">0 / 4096</div>
       <button id="addNoteSave" style="margin-top:8px;width:100%;padding:12px;background:var(--violet);color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">Сохранить</button>
     </div>
 
@@ -686,11 +693,11 @@
       <div class="sw" id="v_transferSw"></div>
     </div>
     <div class="rep-box" id="v_transferBox">
-      <button class="daysbtn" id="v_openTransferDay">📅 Выбрать день</button>
+      <button class="daysbtn" id="v_openTransferDay"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px;margin-right:5px"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Выбрать день</button>
       <div id="v_transferDayRow"></div>
     </div>
 
-    <div class="vc-trial" id="v_trial" style="display:none">🌱 Пробный урок</div>
+    <div class="vc-trial" id="v_trial" style="display:none"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;margin-right:5px"><path d="M12 22v-9"/><path d="M9 8a3 3 0 0 1 3-3 3 3 0 0 1 3 3c0 2-3 5-3 5s-3-3-3-5z"/><path d="M5 13a4 4 0 0 0 7 2.5A4 4 0 0 0 19 13"/></svg>Пробный урок</div>
 
     <div class="paid-toggle" id="paidToggle">
       <div class="pt-txt" id="paidTxt">Отметить оплату</div>
@@ -742,12 +749,23 @@
     <div class="field about"><label>Об ученике</label>
       <textarea id="s_about" placeholder="Основная информация" autocomplete="off"></textarea>
     </div>
-    <div class="field"><label>Город ученика</label>
-      <input id="s_city" placeholder="нпр. Владивосток (для часового пояса)" autocomplete="off">
+    <div class="field"><label>Как обращаться</label>
+      <input id="s_greetingName" placeholder="Здравствуйте, Андрей!" autocomplete="off">
+    </div>
+    <div class="field">
+      <label>Часовой пояс ученика</label>
+      <button type="button" id="s_tzBtn" onclick="openStudentTzPicker()"
+        style="width:100%;text-align:left;padding:11px 13px;border:1.5px solid var(--line);border-radius:11px;
+        background:var(--surface-2);color:var(--ink);font-size:14px;font-family:inherit;cursor:pointer;
+        display:flex;align-items:center;justify-content:space-between">
+        <span id="s_tzBtnLabel" style="color:var(--muted)">Не задан — ученик выберет сам</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+      <input type="hidden" id="s_timezone" value="">
     </div>
   </div>
   <div class="savebar">
-    <button class="save" id="stuSaveBtn">✓ Сохранить ученика</button>
+    <button class="save" id="stuSaveBtn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;margin-right:5px"><polyline points="20 6 9 17 4 12"/></svg>Сохранить ученика</button>
   </div>
 </div>
 
@@ -756,7 +774,7 @@
   <div class="scr-head">
     <button class="back" id="stuProfBack">‹</button>
     <div class="ttl">Профиль</div>
-    <button class="pencil" id="stuEditBtn">✎</button>
+    <button class="pencil" id="stuEditBtn" style="display:grid;place-items:center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg></button>
   </div>
   <div class="view-card">
     <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px">
@@ -789,7 +807,7 @@
         <div class="vc-about" style="position:relative">
           <div class="lab" style="display:flex;align-items:center;justify-content:space-between">
             ЗАМЕТКИ
-            <button id="p_notesEditBtn" style="border:none;background:none;color:var(--violet);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;padding:0">✎ Изменить</button>
+            <button id="p_notesEditBtn" style="border:none;background:none;color:var(--violet);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;padding:0"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-1px;margin-right:3px"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>Изменить</button>
           </div>
           <div id="p_notesText" style="font-size:14px;line-height:1.6;white-space:pre-wrap;word-break:break-word;max-height:200px;overflow-y:auto"></div>
         </div>
@@ -797,24 +815,24 @@
       <div id="p_notesEdit" style="display:none;margin-top:0">
         <div style="background:var(--violet-tint);border-radius:14px;padding:14px 16px">
           <div class="lab" style="font-size:11px;font-weight:800;color:var(--violet);margin-bottom:8px;letter-spacing:.04em">ЗАМЕТКИ</div>
-          <textarea id="p_notesInput" maxlength="2000" oninput="updateNoteCounter('p_notesInput','p_notesCounter')"
+          <textarea id="p_notesInput" maxlength="4096" oninput="updateNoteCounter('p_notesInput','p_notesCounter')"
             placeholder="Заметки о ученике — что сейчас проходим, что нужно не забыть…"
             style="width:100%;min-height:100px;resize:vertical;border:1.5px solid var(--violet-soft);background:var(--surface);border-radius:11px;padding:10px 12px;font-size:14px;font-family:inherit;color:var(--ink);outline:none;line-height:1.5"></textarea>
           <div style="display:flex;align-items:center;justify-content:space-between;margin-top:4px">
-            <div style="font-size:11px;color:var(--muted);font-weight:600" id="p_notesCounter">0 / 2000</div>
+            <div style="font-size:11px;color:var(--muted);font-weight:600" id="p_notesCounter">0 / 4096</div>
           </div>
           <button id="p_notesSaveBtn" style="margin-top:8px;width:100%;padding:11px;background:var(--violet);color:#fff;border:none;border-radius:11px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit" onclick="saveStudentNotes()">Сохранить</button>
         </div>
       </div>
-      <button id="p_notesAddBtn" class="note-btn" style="margin-top:10px">✒ Заметки</button>
+      <button id="p_notesAddBtn" class="note-btn" style="margin-top:10px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;margin-right:4px"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>Заметки</button>
       <div id="p_notesAddBox" style="display:none;margin-top:6px">
         <div style="background:var(--violet-tint);border-radius:14px;padding:14px 16px">
           <div class="lab" style="font-size:11px;font-weight:800;color:var(--violet);margin-bottom:8px;letter-spacing:.04em">ЗАМЕТКИ</div>
-          <textarea id="p_notesAddInput" maxlength="2000" oninput="updateNoteCounter('p_notesAddInput','p_notesAddCounter')"
+          <textarea id="p_notesAddInput" maxlength="4096" oninput="updateNoteCounter('p_notesAddInput','p_notesAddCounter')"
             placeholder="Заметки о ученике…"
             style="width:100%;min-height:100px;resize:vertical;border:1.5px solid var(--violet-soft);background:var(--surface);border-radius:11px;padding:10px 12px;font-size:14px;font-family:inherit;color:var(--ink);outline:none;line-height:1.5"></textarea>
           <div style="display:flex;align-items:center;justify-content:space-between;margin-top:4px">
-            <div style="font-size:11px;color:var(--muted);font-weight:600" id="p_notesAddCounter">0 / 2000</div>
+            <div style="font-size:11px;color:var(--muted);font-weight:600" id="p_notesAddCounter">0 / 4096</div>
           </div>
           <button style="margin-top:8px;width:100%;padding:11px;background:var(--violet);color:#fff;border:none;border-radius:11px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit" onclick="saveStudentNotes(true)">Сохранить</button>
         </div>
@@ -827,12 +845,19 @@
     </div>
 
     <button class="save" id="assignBtn" style="margin-top:18px">Назначить урок</button>
-    <button class="save" id="homeworkBtn" style="margin-top:10px;background:var(--violet-tint);color:var(--violet);border:1.5px solid var(--violet-soft)" onclick="openHomeworkAssign()">📚 Домашнее задание</button>
 
     <div class="rep-box" id="assignBox" style="margin-top:14px">
-      <button class="daysbtn" id="openAssignDays">📅 Выбрать дни</button>
+      <button class="daysbtn" id="openAssignDays">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px;margin-right:5px"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        Выбрать дни
+      </button>
       <div id="assignDayList"></div>
     </div>
+
+    <button class="save" id="homeworkBtn" style="margin-top:14px;background:var(--violet-tint);color:var(--violet);border:1.5px solid var(--violet-soft)" onclick="openHomeworkAssign()">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px;margin-right:6px"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+      Домашнее задание
+    </button>
 
     <button class="save del" id="stuDelBtn" style="margin-top:14px;width:100%;padding:14px;border:none;border-radius:14px;background:none;color:var(--danger);font-weight:700;font-size:14px;cursor:pointer;font-family:inherit">Удалить ученика</button>
   </div>
@@ -889,20 +914,58 @@
 <div class="picker" id="stuNotifSheet">
   <h3>Уведомления ученика</h3>
   <p style="font-size:13px;color:var(--muted);font-weight:600;margin-bottom:16px" id="stuNotifName">—</p>
-  <div class="toggle-line" style="padding:12px 0;border-bottom:1px solid var(--line)">
-    <div><div class="t-txt">📚 Домашнее задание</div><div class="t-sub">уведомление о новом дз</div></div>
+  <div class="toggle-line">
+    <div style="display:flex;align-items:center;gap:9px">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--violet)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+      <div><div class="t-txt">Домашнее задание</div><div class="t-sub">уведомление о новом дз</div></div>
+    </div>
     <div class="sw" id="sn_homework"></div>
   </div>
-  <div class="toggle-line" style="padding:12px 0;border-bottom:1px solid var(--line)">
-    <div><div class="t-txt">⏰ За час до урока</div><div class="t-sub">напоминание об уроке</div></div>
+  <div class="toggle-line">
+    <div style="display:flex;align-items:center;gap:9px">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--violet)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>
+      <div><div class="t-txt">За час до урока</div><div class="t-sub">напоминание об уроке</div></div>
+    </div>
     <div class="sw" id="sn_hour"></div>
   </div>
-  <div class="toggle-line" style="padding:12px 0">
-    <div><div class="t-txt">🌅 Утром в день урока</div><div class="t-sub">напоминание о занятии</div></div>
+  <div class="toggle-line">
+    <div style="display:flex;align-items:center;gap:9px">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--violet)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+      <div><div class="t-txt">Утром в день урока</div><div class="t-sub">напоминание о занятии</div></div>
+    </div>
     <div class="sw" id="sn_day"></div>
+  </div>
+  <div class="toggle-line">
+    <div style="display:flex;align-items:center;gap:9px">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--violet)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+      <div><div class="t-txt">Новые карточки</div><div class="t-sub">уведомление о новых карточках</div></div>
+    </div>
+    <div class="sw" id="sn_cards"></div>
+  </div>
+  <div class="toggle-line" style="margin-bottom:0">
+    <div style="display:flex;align-items:center;gap:9px">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--violet)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      <div><div class="t-txt">Новые посты</div><div class="t-sub">посты от вас</div></div>
+    </div>
+    <div class="sw" id="sn_posts"></div>
   </div>
   <div style="margin-top:16px;font-size:12px;color:var(--muted-2);font-weight:600" id="stuNotifTz"></div>
   <button class="save" id="stuNotifSave" style="margin-top:16px">Сохранить</button>
+</div>
+
+<!-- TIMEZONE PICKER (профиль ученика) -->
+<div class="dim" id="stuTzDim" onclick="closeStudentTzPicker()"></div>
+<div class="picker" id="stuTzSheet">
+  <h3>Часовой пояс ученика</h3>
+  <p style="font-size:13px;color:var(--muted);font-weight:600;margin-bottom:14px">При первом подключении бот предложит этот часовой пояс — ученику останется только подтвердить.</p>
+  <input class="field-search" id="stuTzSearch" placeholder="Поиск города…" oninput="renderStuTzList(this.value)"
+    style="width:100%;padding:11px 13px;border:1.5px solid var(--line);border-radius:11px;background:var(--surface-2);
+    color:var(--ink);font-size:14px;font-family:inherit;outline:none;margin-bottom:10px">
+  <div id="stuTzList" style="max-height:340px;overflow-y:auto"></div>
+  <button onclick="clearStudentTz()" style="width:100%;padding:13px;margin-top:10px;border:1.5px solid var(--line);border-radius:13px;background:var(--bg);color:var(--muted);font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;transition:background .12s">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    Не задавать — пусть выберет сам
+  </button>
 </div>
 
 <!-- HOMEWORK RESULT STATS SHEET -->
@@ -933,7 +996,7 @@
         </button>
       </div>
       <!-- история сохранённых -->
-      <div id="broadcastHistoryList" style="display:none;margin-bottom:10px;max-height:200px;overflow-y:auto;border:1.5px solid var(--line);border-radius:10px"></div>
+      <div id="broadcastHistoryList" style="display:none;margin-bottom:14px;max-height:340px;overflow-y:auto;padding:2px"></div>
 
       <!-- панель форматирования -->
       <div style="display:flex;gap:6px;margin-bottom:8px">
@@ -943,6 +1006,38 @@
           style="width:34px;height:34px;border:1.5px solid var(--line);border-radius:9px;background:var(--bg);color:var(--ink);font-style:italic;font-weight:700;font-size:15px;cursor:pointer;font-family:inherit">К</button>
         <button type="button" onmousedown="event.preventDefault()" onclick="formatText('underline')" title="Подчёркнутый"
           style="width:34px;height:34px;border:1.5px solid var(--line);border-radius:9px;background:var(--bg);color:var(--ink);text-decoration:underline;font-weight:700;font-size:15px;cursor:pointer;font-family:inherit">П</button>
+        <button type="button" onclick="document.getElementById('broadcastPhotoInput').click()" title="Прикрепить фото"
+          style="width:34px;height:34px;border:1.5px solid var(--line);border-radius:9px;background:var(--bg);color:var(--violet);cursor:pointer;display:grid;place-items:center;margin-left:auto">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2"/>
+            <circle cx="8.5" cy="8.5" r="1.5"/>
+            <path d="M21 15l-5-5L5 21"/>
+          </svg>
+        </button>
+        <input type="file" id="broadcastPhotoInput" accept="image/*" style="display:none" onchange="onBroadcastPhotoSelected(this)">
+        <button type="button" id="broadcastTtlBtn" onclick="openTtlPicker()" title="Срок жизни поста"
+          style="height:34px;padding:0 10px;border:1.5px solid var(--line);border-radius:9px;background:var(--bg);color:var(--muted);cursor:pointer;display:flex;align-items:center;gap:5px;font-size:12px;font-weight:700;font-family:inherit;white-space:nowrap">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/>
+          </svg>
+          <span id="broadcastTtlLabel">Неделя</span>
+        </button>
+      </div>
+
+      <button type="button" onclick="openBroadcastPreview()"
+        style="width:100%;padding:9px;margin-bottom:10px;border:1.5px solid var(--violet-soft);border-radius:10px;
+        background:var(--violet-tint);color:var(--violet);cursor:pointer;display:flex;align-items:center;
+        justify-content:center;gap:7px;font-size:13px;font-weight:700;font-family:inherit">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+        </svg>
+        Предпросмотр
+      </button>
+
+      <!-- превью прикреплённого фото -->
+      <div id="broadcastPhotoPreview" style="display:none;margin-bottom:8px;position:relative">
+        <img id="broadcastPhotoImg" style="width:100%;max-height:180px;object-fit:cover;border-radius:11px;display:block">
+        <button onclick="removeBroadcastPhoto()" style="position:absolute;top:8px;right:8px;width:28px;height:28px;border:none;border-radius:50%;background:rgba(43,36,68,.65);color:#fff;font-size:15px;cursor:pointer;display:grid;place-items:center"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
       </div>
 
       <div id="broadcastText" contenteditable="true" data-placeholder="Введи сообщение для учеников…"
@@ -953,7 +1048,10 @@
         <div style="font-size:11px;color:var(--muted-2);font-weight:600" id="broadcastCounter">0 / 4096</div>
       </div>
       <div style="display:flex;gap:8px;margin-top:8px">
-        <button id="broadcastSaveBtn" onclick="saveBroadcastDraft()" style="flex:1;padding:10px;border:1.5px solid var(--line);border-radius:10px;background:var(--bg);color:var(--muted-2);font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;transition:all .15s" disabled>💾 Сохранить</button>
+        <button id="broadcastSaveBtn" onclick="saveBroadcastDraft()" style="flex:1;padding:10px;border:1.5px solid var(--line);border-radius:10px;background:var(--bg);color:var(--muted-2);font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:6px" disabled>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+          Сохранить
+        </button>
       </div>
     </div>
 
@@ -975,12 +1073,34 @@
   </div>
 </div>
 
+<!-- BROADCAST PREVIEW SHEET (точная копия карточки из ученического интерфейса) -->
+<div class="dim" id="broadcastPreviewDim"></div>
+<div class="picker" id="broadcastPreviewSheet" style="background:var(--bg)">
+  <h3 style="display:flex;align-items:center;gap:8px">
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--violet)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+    Так увидит ученик
+  </h3>
+  <div style="background:var(--surface);border-radius:18px;padding:14px;border:1.5px solid var(--line)">
+    <div id="bpMsgCard" class="msg-card" style="width:100%"></div>
+  </div>
+  <button onclick="closeBroadcastPreview()" style="width:100%;padding:13px;margin-top:14px;border:none;border-radius:12px;background:var(--bg);color:var(--muted);font-size:15px;font-weight:700;font-family:inherit;cursor:pointer">Закрыть</button>
+</div>
+
+<!-- TTL PICKER SHEET -->
+<div class="dim" id="ttlDim"></div>
+<div class="picker" id="ttlSheet">
+  <h3>Срок жизни поста</h3>
+  <p style="font-size:13px;color:var(--muted);font-weight:600;margin-bottom:14px">Через сколько пост исчезнет из приложения ученика</p>
+  <div id="ttlOptions" style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px"></div>
+</div>
+
 <!-- CONFIRM BROADCAST SHEET -->
 <div class="dim" id="broadcastConfirmDim"></div>
 <div class="picker" id="broadcastConfirmSheet">
   <h3>Подтверждение рассылки</h3>
   <p style="font-size:13px;color:var(--muted);font-weight:600;margin-bottom:12px">Сообщение будет отправлено:</p>
-  <div id="broadcastConfirmNames" style="margin-bottom:20px;display:flex;flex-direction:column;gap:6px"></div>
+  <div id="broadcastConfirmNames" style="margin-bottom:12px;display:flex;flex-direction:column;gap:6px"></div>
+  <div id="broadcastConfirmTtl" style="font-size:12px;color:var(--muted);font-weight:600;margin-bottom:20px"></div>
   <button class="save" onclick="sendBroadcast()" style="margin-bottom:10px">Да, отправить</button>
   <button onclick="cancelBroadcastConfirm()" style="width:100%;padding:13px;border:none;border-radius:12px;background:var(--bg);color:var(--muted);font-size:15px;font-weight:700;font-family:inherit;cursor:pointer">Нет, назад</button>
 </div>
@@ -1002,7 +1122,7 @@
       <div id="notifHwList"></div>
     </div>
     <div id="notifEmpty" class="empty-note" style="display:none;padding-top:60px;text-align:center">
-      <div style="font-size:42px;margin-bottom:12px">🔔</div>
+      <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="var(--violet-soft)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:12px"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
       <div style="color:var(--muted);font-weight:600">Новых уведомлений нет</div>
     </div>
   </div>
@@ -1019,19 +1139,31 @@
     <div class="section-head" style="margin-bottom:10px">Напоминания</div>
     <div class="vc-block" style="margin-bottom:16px">
       <div class="toggle-line" style="padding:14px 16px;border-bottom:1px solid var(--line)">
-        <div><div class="t-txt">⏰ Напоминание за час</div><div class="t-sub">до начала урока</div></div>
+        <div style="display:flex;align-items:center;gap:9px">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--violet)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>
+          <div><div class="t-txt">Напоминание за час</div><div class="t-sub">до начала урока</div></div>
+        </div>
         <div class="sw" id="settHourSw"></div>
       </div>
       <div class="toggle-line" style="padding:14px 16px;border-bottom:1px solid var(--line)">
-        <div><div class="t-txt">🌅 Утренние напоминания</div><div class="t-sub">расписание на день в 8:00</div></div>
+        <div style="display:flex;align-items:center;gap:9px">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--violet)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M17 18a5 5 0 0 0-10 0"/><line x1="12" y1="2" x2="12" y2="9"/><line x1="4.22" y1="10.22" x2="5.64" y2="11.64"/><line x1="1" y1="18" x2="3" y2="18"/><line x1="21" y1="18" x2="23" y2="18"/><line x1="18.36" y1="11.64" x2="19.78" y2="10.22"/><line x1="1" y1="22" x2="23" y2="22"/></svg>
+          <div><div class="t-txt">Утренние напоминания</div><div class="t-sub">расписание на день в 8:00</div></div>
+        </div>
         <div class="sw" id="settMorningSw"></div>
       </div>
       <div class="toggle-line" style="padding:14px 16px;border-bottom:1px solid var(--line)">
-        <div><div class="t-txt">🌆 Вечерние напоминания</div><div class="t-sub">расписание на завтра в 20:00</div></div>
+        <div style="display:flex;align-items:center;gap:9px">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--violet)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          <div><div class="t-txt">Вечерние напоминания</div><div class="t-sub">расписание на завтра в 20:00</div></div>
+        </div>
         <div class="sw" id="settEveningSw"></div>
       </div>
       <div class="toggle-line" style="padding:14px 16px">
-        <div><div class="t-txt">📚 Уведомления о дз</div><div class="t-sub">когда ученик выполнил задание</div></div>
+        <div style="display:flex;align-items:center;gap:9px">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--violet)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+          <div><div class="t-txt">Уведомления о дз</div><div class="t-sub">когда ученик выполнил задание</div></div>
+        </div>
         <div class="sw" id="settHwResultsSw"></div>
       </div>
     </div>
@@ -1039,11 +1171,17 @@
     <div class="section-head" style="margin-bottom:10px">Данные</div>
     <div class="vc-block" style="margin-bottom:16px">
       <div class="toggle-line" style="padding:14px 16px;border-bottom:1px solid var(--line)">
-        <div><div class="t-txt">📖 Режим истории</div><div class="t-sub">назначать уроки в прошлое</div></div>
+        <div style="display:flex;align-items:center;gap:9px">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--violet)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+          <div><div class="t-txt">Режим истории</div><div class="t-sub">назначать уроки в прошлое</div></div>
+        </div>
         <div class="sw" id="settHistorySw"></div>
       </div>
       <div class="settings-item" id="settStatsBtn" style="padding:14px 16px;cursor:pointer;border-bottom:none">
-        <div class="settings-body"><div class="settings-label">📊 Статистика</div><div class="settings-sub">уроки, ученики, доходы</div></div>
+        <div class="settings-body" style="display:flex;align-items:center;gap:9px">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--violet)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          <div><div class="settings-label">Статистика</div><div class="settings-sub">уроки, ученики, доходы</div></div>
+        </div>
         <div style="color:var(--muted-2)">›</div>
       </div>
     </div>
@@ -1126,7 +1264,69 @@ function keyToDate(key){ const p=key.split('_'); return `${p[1]}-${p[2]}-${p[3]}
 
 
 
+const INIT_DATA_PRESENT = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData);
+const MOCK = !INIT_DATA_PRESENT;
+const _mockTodayD = new Date();
+const _mockYest = new Date(_mockTodayD); _mockYest.setDate(_mockTodayD.getDate()-1);
+const _mockTom  = new Date(_mockTodayD); _mockTom.setDate(_mockTodayD.getDate()+1);
+const _fmtKey = d => `d_${d.getFullYear()}_${String(d.getMonth()+1).padStart(2,'0')}_${String(d.getDate()).padStart(2,'0')}`;
+let mockStudents=[
+  {id:'s1',name:'Кристина',phone:'+79991112233',contacts:'@kristina_s',price:'1200',duration:'60',level:'Шимпанзе',about:'Живёт в Белграде',trialUsed:1,created:1700000000000,archived:0},
+  {id:'s2',name:'Никита и Диана',phone:'+79998887766',contacts:'@nikita_d',price:'1600',duration:'60',level:'С нуля',about:'Пара, занимаются вместе',trialUsed:1,created:1700000100000,archived:0},
+  {id:'s3',name:'Анна Поворознюк',phone:'+79991234567',contacts:'@anna_p',price:'1700',duration:'45',level:'С нуля',about:'Готовится к переезду',trialUsed:0,created:1700000200000,archived:0},
+  {id:'s4',name:'Тестовый ученик',phone:'',contacts:'',price:'1000',duration:'60',level:'С нуля',about:'',trialUsed:0,created:1700000300000,archived:1},
+];
+let mockLessons={};
+(function(){
+  const fmt=d=>`d_${d.getFullYear()}_${String(d.getMonth()+1).padStart(2,'0')}_${String(d.getDate()).padStart(2,'0')}`;
+  mockLessons[fmt(_mockYest)]=[
+    {id:'l1',time:'11:00',name:'Кристина',price:'1200',level:'Шимпанзе',paid:false,trial:false,studentId:'s1',color:'',note:''},
+    {id:'l2',time:'14:00',name:'Никита и Диана',price:'1600',level:'С нуля',paid:true,trial:false,studentId:'s2',color:'',note:''},
+  ];
+  mockLessons[fmt(_mockTodayD)]=[
+    {id:'l3',time:'10:00',name:'Анна Поворознюк',price:'Пробный',level:'С нуля',paid:false,trial:true,studentId:'s3',color:'',note:'Первый урок — познакомиться с программой'},
+    {id:'l4',time:'13:00',name:'Кристина',price:'1200',level:'Шимпанзе',paid:false,trial:false,studentId:'s1',color:'',note:''},
+  ];
+  mockLessons[fmt(_mockTom)]=[
+    {id:'l5',time:'15:00',name:'Никита и Диана',price:'1600',level:'С нуля',paid:false,trial:false,studentId:'s2',color:'',note:''},
+  ];
+})();
+async function mockApi(path, opts){
+  opts=opts||{};
+  const method=(opts.method||'GET').toUpperCase();
+  const p=path.split('?')[0];
+  if(p==='/api/students' && method==='GET') return {students:mockStudents};
+  if(p==='/api/students' && method==='POST'){
+    const s=JSON.parse(opts.body); const i=mockStudents.findIndex(x=>x.id===s.id);
+    if(i>=0) mockStudents[i]=s; else mockStudents.push(s); return {ok:true};
+  }
+  if(p==='/api/students/delete-forever'){
+    const b=JSON.parse(opts.body); mockStudents=mockStudents.filter(x=>x.id!==b.id); return {ok:true};
+  }
+  if(p==='/api/students/delete'){
+    const b=JSON.parse(opts.body); const st=mockStudents.find(x=>x.id===b.id); if(st) st.archived=1; return {ok:true};
+  }
+  if(p==='/api/keys') return {keys:Object.keys(mockLessons)};
+  if(p==='/api/day'){
+    if(method==='POST'){ const b=JSON.parse(opts.body); const k='d_'+b.d.replace(/-/g,'_'); mockLessons[k]=b.lessons||[]; return {ok:true}; }
+    const d=path.split('d=')[1]||''; const k='d_'+d.replace(/-/g,'_'); return {lessons:mockLessons[k]||[]};
+  }
+  if(p==='/api/move_lesson'){
+    const b=JSON.parse(opts.body);
+    const ko='d_'+b.old_date.replace(/-/g,'_'); const kn='d_'+b.new_date.replace(/-/g,'_');
+    const arr=mockLessons[ko]||[]; const i=arr.findIndex(x=>x.id===b.id);
+    if(i>=0){ const L={...arr[i],time:b.new_time}; arr.splice(i,1); mockLessons[ko]=arr; (mockLessons[kn]=mockLessons[kn]||[]).push(L); }
+    return {ok:true};
+  }
+  if(p==='/api/history') return {history:window._mockHistory===true};
+  if(p==='/api/students/connected') return {connected:['s1','s2']}; // Кристина и Никита&Диана
+  if(p==='/api/broadcast'){ console.log('BROADCAST:', b.text, b.student_ids); return {ok:true,sent:b.student_ids.length,failed:0}; }
+  return {ok:true};
+}
+window._mockHistory=false;
+
 async function apiFetch(path, opts){
+  if(MOCK) return mockApi(path, opts);
   const r = await fetch(API_BASE+path, Object.assign({}, opts, {
     headers: Object.assign({'Content-Type':'application/json','X-Init-Data':INIT}, (opts&&opts.headers)||{})
   }));
@@ -1447,11 +1647,11 @@ async function openForm(hour,id){
       const s=studentById(L.studentId);
       setFormPersonalVisible(false);
       linkedBox.style.display='block';
-      const cs=[]; if(s.phone) cs.push({ic:'☎',k:'Телефон',v:esc(s.phone)});
-      (s.contacts||'').split('|').filter(Boolean).forEach(ct=>cs.push({ic:ct.startsWith('@')?'✈':'◆',k:'Контакт',v:esc(ct)}));
+      const cs=[]; if(s.phone) cs.push({ic:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.362 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.338 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>',k:'Телефон',v:esc(s.phone)});
+      (s.contacts||'').split('|').filter(Boolean).forEach(ct=>cs.push({ic:ct.startsWith('@')?'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2L15 22l-4-9-9-4 20-7z"/></svg>':'◆',k:'Контакт',v:esc(ct)}));
       if(s.price) cs.push({ic:'₽',k:'Стоимость',v:esc(s.price)+' ₽'});
       if(s.level) cs.push({ic:'◐',k:'Уровень',v:esc(s.level)});
-      linkedBox.innerHTML=`<div class="vc-item"><div class="ic">👤</div>`+
+      linkedBox.innerHTML=`<div class="vc-item"><div class="ic"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>`+
         `<div><div class="k">Ученик</div><div class="v">${esc(s.name)}</div></div></div>`+
         cs.map(it=>`<div class="vc-item"><div class="ic">${it.ic}</div><div><div class="k">${it.k}</div><div class="v">${it.v}</div></div></div>`).join('')+
         `<div style="padding:10px 0 4px"><button class="daysbtn" id="f_openProf">Открыть профиль</button></div>`;
@@ -1718,14 +1918,14 @@ async function openView(id){
   }
   const block=document.getElementById('v_block'); block.innerHTML='';
   const items=[];
-  if(phone) items.push({ic:'☎',k:'Телефон',v:`<a href="tel:${esc(phone)}">${esc(phone)}</a>`});
+  if(phone) items.push({ic:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.362 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.338 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>',k:'Телефон',v:`<a href="tel:${esc(phone)}">${esc(phone)}</a>`});
   if(s){
     (contacts||'').split('|').filter(Boolean).forEach(ct=>{
       const isTg=ct.startsWith('@');
-      items.push({ic:isTg?'✈':'◆',k:'Контакт',v:isTg?`<a href="https://t.me/${esc(ct.replace('@',''))}">${esc(ct)}</a>`:esc(ct)});
+      items.push({ic:isTg?'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2L15 22l-4-9-9-4 20-7z"/></svg>':'◆',k:'Контакт',v:isTg?`<a href="https://t.me/${esc(ct.replace('@',''))}">${esc(ct)}</a>`:esc(ct)});
     });
   }else if(tg){
-    items.push({ic:'✈',k:'Telegram',v:`<a href="https://t.me/${esc(tg.replace('@',''))}">${esc(tg)}</a>`});
+    items.push({ic:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2L15 22l-4-9-9-4 20-7z"/></svg>',k:'Telegram',v:`<a href="https://t.me/${esc(tg.replace('@',''))}">${esc(tg)}</a>`});
     (contacts||'').split('|').filter(Boolean).filter(c=>c!==tg).forEach(ct=>{
       items.push({ic:'◆',k:'Контакт',v:esc(ct)});
     });
@@ -1860,21 +2060,25 @@ document.getElementById('paidToggle').onclick=async()=>{
   const pt=document.getElementById('paidToggle');
   pt.classList.toggle('ispaid',arr[i].paid); setSw('paidSw',arr[i].paid);
   document.getElementById('paidTxt').textContent=arr[i].paid?'Оплачено':'Отметить оплату';
+  await renderMonth(); // обновляем кружок-индикатор в сетке месяца сразу
+  await refreshUnpaid(); // обновляем счётчик и список неоплаченных
   haptic('light');
 };
-document.getElementById('viewDelBtn').onclick=async()=>{
-  const k=keyOf(cur.y,cur.m,cur.d); let arr=await Store.get(k);
-  arr=arr.filter(x=>x.id!==viewId); await Store.set(k,arr);
-  viewScreen.classList.remove('on'); await renderHours(); await renderMonth();
-  const ds=document.getElementById('dayScreen'); if(ds) ds.scrollTop=0;
-  toast('Удалено'); haptic('warning');
+document.getElementById('viewDelBtn').onclick=()=>{
+  showConfirm('Удалить занятие?', async()=>{
+    const k=keyOf(cur.y,cur.m,cur.d); let arr=await Store.get(k);
+    arr=arr.filter(x=>x.id!==viewId); await Store.set(k,arr);
+    viewScreen.classList.remove('on'); await renderHours(); await renderMonth();
+    const ds=document.getElementById('dayScreen'); if(ds) ds.scrollTop=0;
+    toast('Удалено'); haptic('warning');
+  });
 };
 
 // детали урока в окне просмотра
 function updateNoteCounter(inputId, counterId){
   const el = document.getElementById(inputId);
   const cnt = document.getElementById(counterId);
-  if(el && cnt) cnt.textContent = `${el.value.length} / 2000`;
+  if(el && cnt) cnt.textContent = `${el.value.length} / 4096`;
 }
 
 function openNoteEditor(){
@@ -1957,8 +2161,10 @@ async function openStudentForm(id){
   await loadStudents();
   editingStudent=id;
   document.getElementById('stuFormTitle').textContent = id?'Редактировать ученика':'Новый ученик';
-  ['s_name','s_phone','s_price','s_about'].forEach(i=>document.getElementById(i).value='');
+  ['s_name','s_phone','s_price','s_about','s_greetingName'].forEach(i=>document.getElementById(i).value='');
   document.getElementById('s_level').value='С нуля';
+  document.getElementById('s_timezone').value='';
+  updateStuTzBtnLabel('');
   document.getElementById('contactsBox').innerHTML='';
   formDuration='60'; setDurSeg('60');
   if(id){
@@ -1968,6 +2174,9 @@ async function openStudentForm(id){
     document.getElementById('s_price').value=s.price||'';
     document.getElementById('s_level').value=s.level||'С нуля';
     document.getElementById('s_about').value=s.about||'';
+    document.getElementById('s_greetingName').value=s.greeting_name||'';
+    document.getElementById('s_timezone').value=s.timezone||'';
+    updateStuTzBtnLabel(s.timezone||'');
     formColor=s.color||pickFreeColor();
     formDuration=s.duration||'60'; setDurSeg(formDuration);
     const cs=(s.contacts||'').split('|').filter(Boolean);
@@ -1996,6 +2205,8 @@ document.getElementById('stuSaveBtn').onclick=async()=>{
     contacts, price:document.getElementById('s_price').value.trim(),
     duration:formDuration, level:document.getElementById('s_level').value,
     about:document.getElementById('s_about').value.trim(),
+    greeting_name:document.getElementById('s_greetingName').value.trim(),
+    timezone:document.getElementById('s_timezone').value,
     color:formColor||'', trialUsed: old?old.trialUsed:0, created: old?old.created:Date.now(),
     archived: old?(old.archived||0):0
   };
@@ -2029,10 +2240,10 @@ async function openProfile(id){
   badge.style.display=isConnected(id)?'inline-flex':'none';
   const block=document.getElementById('p_block'); block.innerHTML='';
   const items=[];
-  if(s.phone) items.push({ic:'☎',k:'Телефон',v:`<a href="tel:${esc(s.phone)}">${esc(s.phone)}</a>`});
+  if(s.phone) items.push({ic:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.362 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.338 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>',k:'Телефон',v:`<a href="tel:${esc(s.phone)}">${esc(s.phone)}</a>`});
   (s.contacts||'').split('|').filter(Boolean).forEach(ct=>{
     const isTg=ct.startsWith('@'); 
-    items.push({ic:isTg?'✈':'◆',k:'Контакт',v:isTg?`<a href="https://t.me/${esc(ct.replace('@',''))}">${esc(ct)}</a>`:esc(ct)});
+    items.push({ic:isTg?'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2L15 22l-4-9-9-4 20-7z"/></svg>':'◆',k:'Контакт',v:isTg?`<a href="https://t.me/${esc(ct.replace('@',''))}">${esc(ct)}</a>`:esc(ct)});
   });
   if(s.price) items.push({ic:'₽',k:'Стоимость',v:esc(s.price)+' ₽'});
   // count this student's lessons (past vs future)
@@ -2048,7 +2259,7 @@ async function openProfile(id){
       if(end<=now) done++; else planned++;
     });
   }
-  items.push({ic:'✓',k:'Занятия',v:`Проведено ${done} · запланировано ${planned}`});
+  items.push({ic:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',k:'Занятия',v:`Проведено ${done} · запланировано ${planned}`});
   if(!items.length){ block.style.display='none'; }else{ block.style.display='block';
     items.forEach(it=>block.innerHTML+=`<div class="vc-item"><div class="ic">${it.ic}</div><div><div class="k">${it.k}</div><div class="v">${it.v}</div></div></div>`);
   }
@@ -2214,11 +2425,11 @@ async function renderAssignList(){
         </div>
         <div class="dr-right">
           <input class="dr-time" placeholder="08:00" maxlength="5" inputmode="numeric" value="${esc(assignTimes.get(k))}">
-          ${pastTimes.length?`<button class="dr-same time-mem" title="Прошлое время">🕑</button>`:''}
+          ${pastTimes.length?`<button class="dr-same time-mem" title="Прошлое время" style="display:grid;place-items:center"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg></button>`:''}
         </div>
       </div>
-      ${showTrial?`<div class="trial-row"><button class="trial-pill${assignTrial.has(k)?' on':''}">🌱 Пробный урок</button></div>`:''}
-      <button class="note-btn${assignNoteOpen.has(k)?' on':''}">✒ Детали урока</button>
+      ${showTrial?`<div class="trial-row"><button class="trial-pill${assignTrial.has(k)?' on':''}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;margin-right:4px"><path d="M12 22v-9"/><path d="M9 8a3 3 0 0 1 3-3 3 3 0 0 1 3 3c0 2-3 5-3 5s-3-3-3-5z"/><path d="M5 13a4 4 0 0 0 7 2.5A4 4 0 0 0 19 13"/></svg>Пробный урок</button></div>`:''}
+      <button class="note-btn${assignNoteOpen.has(k)?' on':''}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;margin-right:4px"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>Детали урока</button>
       <div class="note-box" style="display:${assignNoteOpen.has(k)?'block':'none'}">
         <textarea placeholder="Что по этому уроку…" autocomplete="off">${esc(assignNotes.get(k)||'')}</textarea>
       </div>`;
@@ -2228,7 +2439,7 @@ async function renderAssignList(){
       // подсказка, если на этот день уже есть занятие в это же время
       const existing=dataCache[k]||[];
       if(existing.some(L=>L.time===inp.value)){
-        toast('⚠ В это время уже есть занятие');
+        toast('<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;margin-right:4px"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>В это время уже есть занятие');
       }
     });
     const tp=row.querySelector('.trial-pill');
@@ -2248,7 +2459,8 @@ async function renderAssignList(){
     box.appendChild(row);
   });
   const btn=document.createElement('button'); btn.className='save'; btn.style.marginTop='12px';
-  btn.textContent='✓ Сохранить'; btn.onclick=saveAssigned;
+  btn.innerHTML='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;margin-right:5px"><polyline points="20 6 9 17 4 12"/></svg>Сохранить';
+  btn.onclick=saveAssigned;
   box.appendChild(btn);
 }
 
@@ -2343,6 +2555,15 @@ document.getElementById('confirmYes').onclick=()=>{
 const broadcastScreen = document.getElementById('broadcastScreen');
 let broadcastDrafts = JSON.parse(localStorage.getItem('broadcastDrafts') || '[]');
 let broadcastSelectedIds = new Set();
+let broadcastPhotoData = null; // base64
+let broadcastTtlDays = 7; // по умолчанию неделя
+const TTL_OPTIONS = [
+  {days:1, label:'1 день'},
+  {days:3, label:'3 дня'},
+  {days:7, label:'Неделя'},
+  {days:30, label:'Месяц'},
+  {days:null, label:'Бессрочно'},
+];
 let broadcastConnectedStudents = []; // [{id, name}]
 
 document.getElementById('broadcastBack').onclick = () => broadcastScreen.classList.remove('on');
@@ -2357,18 +2578,26 @@ function updateBroadcastCounter(el){
   const len = el.textContent.length;
   const max = 4096;
   document.getElementById('broadcastCounter').textContent = `${len} / ${max}`;
+  const hasContent = len > 0 || !!broadcastPhotoData;
   el.style.borderColor = len > 0 ? 'var(--violet-soft)' : '';
   const saveBtn = document.getElementById('broadcastSaveBtn');
-  if(len > 0){
+  const ttlBtn = document.getElementById('broadcastTtlBtn');
+  if(hasContent){
     saveBtn.disabled = false;
     saveBtn.style.background = 'var(--violet)';
     saveBtn.style.color = '#fff';
     saveBtn.style.borderColor = 'var(--violet)';
+    ttlBtn.style.background = 'var(--violet-tint)';
+    ttlBtn.style.color = 'var(--violet)';
+    ttlBtn.style.borderColor = 'var(--violet-soft)';
   } else {
     saveBtn.disabled = true;
     saveBtn.style.background = 'var(--bg)';
     saveBtn.style.color = 'var(--muted-2)';
     saveBtn.style.borderColor = 'var(--line)';
+    ttlBtn.style.background = 'var(--bg)';
+    ttlBtn.style.color = 'var(--muted)';
+    ttlBtn.style.borderColor = 'var(--line)';
   }
 }
 
@@ -2395,8 +2624,92 @@ function htmlToTelegramHtml(html){
   return walk(div).replace(/\n{3,}/g,'\n\n').trim();
 }
 
+function openBroadcastPreview(){
+  const el = document.getElementById('broadcastText');
+  const text = el.innerHTML.trim();
+  const hasText = el.textContent.trim().length > 0;
+  if(!hasText && !broadcastPhotoData){ toast('Сначала введи текст или прикрепи фото'); return; }
+  const card = document.getElementById('bpMsgCard');
+  const now = new Date();
+  const timeStr = now.toLocaleString('ru-RU', {day:'numeric', month:'long', hour:'2-digit', minute:'2-digit'});
+  card.innerHTML = `
+    ${broadcastPhotoData ? `<img src="${broadcastPhotoData}" alt="">` : ''}
+    <div class="msg-card-body">
+      ${hasText ? `<div class="msg-card-text">${text}</div>` : ''}
+      <div class="msg-card-time">${timeStr}</div>
+    </div>`;
+  document.getElementById('broadcastPreviewDim').classList.add('on');
+  document.getElementById('broadcastPreviewSheet').classList.add('on');
+}
+
+function closeBroadcastPreview(){
+  document.getElementById('broadcastPreviewDim').classList.remove('on');
+  document.getElementById('broadcastPreviewSheet').classList.remove('on');
+}
+document.getElementById('broadcastPreviewDim').onclick = closeBroadcastPreview;
+
+function openTtlPicker(){
+  const box = document.getElementById('ttlOptions');
+  box.innerHTML = TTL_OPTIONS.map(o => {
+    const sel = o.days === broadcastTtlDays;
+    return `<button onclick="selectTtl(${o.days})" style="display:flex;align-items:center;justify-content:space-between;
+      width:100%;padding:13px 16px;border:1.5px solid ${sel?'var(--violet)':'var(--line)'};border-radius:12px;
+      background:${sel?'var(--violet-tint)':'var(--surface)'};color:${sel?'var(--violet)':'var(--ink)'};
+      font-size:15px;font-weight:700;font-family:inherit;cursor:pointer">
+      ${o.label}
+      ${sel?'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>':''}
+    </button>`;
+  }).join('');
+  document.getElementById('ttlDim').classList.add('on');
+  document.getElementById('ttlSheet').classList.add('on');
+}
+
+function selectTtl(days){
+  broadcastTtlDays = days;
+  const opt = TTL_OPTIONS.find(o => o.days === days);
+  document.getElementById('broadcastTtlLabel').textContent = opt.label;
+  closeTtlPicker();
+  haptic('light');
+}
+
+function closeTtlPicker(){
+  document.getElementById('ttlDim').classList.remove('on');
+  document.getElementById('ttlSheet').classList.remove('on');
+}
+document.getElementById('ttlDim').onclick = closeTtlPicker;
+
+function onBroadcastPhotoSelected(input){
+  const file = input.files && input.files[0];
+  if(!file) return;
+  if(file.size > 8*1024*1024){ toast('Файл слишком большой (максимум 8 МБ)'); input.value=''; return; }
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    broadcastPhotoData = e.target.result; // data:image/...;base64,...
+    document.getElementById('broadcastPhotoImg').src = broadcastPhotoData;
+    document.getElementById('broadcastPhotoPreview').style.display = 'block';
+    updateBroadcastCounter(document.getElementById('broadcastText'));
+  };
+  reader.readAsDataURL(file);
+  input.value = '';
+}
+
+function removeBroadcastPhoto(){
+  broadcastPhotoData = null;
+  document.getElementById('broadcastPhotoPreview').style.display = 'none';
+  document.getElementById('broadcastPhotoImg').src = '';
+  const ta = document.getElementById('broadcastText');
+  if(ta) updateBroadcastCounter(ta);
+}
+
 async function openBroadcast(){
   broadcastSelectedIds.clear();
+  removeBroadcastPhoto();
+  broadcastTtlDays = 7;
+  document.getElementById('broadcastTtlLabel').textContent = 'Неделя';
+  const ttlBtn = document.getElementById('broadcastTtlBtn');
+  ttlBtn.style.background = 'var(--bg)';
+  ttlBtn.style.color = 'var(--muted)';
+  ttlBtn.style.borderColor = 'var(--line)';
   const ta = document.getElementById('broadcastText');
   ta.innerHTML = '';
   ta.style.borderColor = '';
@@ -2474,22 +2787,44 @@ function toggleBroadcastHistory(){
 function renderBroadcastHistory(){
   const list = document.getElementById('broadcastHistoryList');
   if(!broadcastDrafts.length){
-    list.innerHTML='<div style="padding:12px;text-align:center;color:var(--muted);font-size:13px;font-weight:600">Нет сохранённых текстов</div>';
+    list.innerHTML='<div style="padding:28px 16px;text-align:center;color:var(--muted);font-size:14px;font-weight:600">Нет сохранённых постов</div>';
     return;
   }
   list.innerHTML = broadcastDrafts.map((d,i) => {
     const plain = d.text || '';
-    const preview = plain.length > 60 ? plain.slice(0,60)+'…' : plain;
-    return `<div style="display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line);cursor:pointer" onclick="loadDraft(${i})">
-      <div style="flex:1;font-size:13px;font-weight:600;color:var(--ink)">${esc(preview)||'<i>пусто</i>'}</div>
-      <button onclick="deleteDraft(${i});event.stopPropagation()" style="border:none;background:none;color:var(--danger);font-size:16px;cursor:pointer;padding:2px 4px;flex:none">✕</button>
+    const preview = plain.length > 110 ? plain.slice(0,110)+'…' : plain;
+    const thumb = d.photo ? `<img src="${d.photo}" style="width:56px;height:56px;border-radius:12px;object-fit:cover;flex:none;box-shadow:var(--shadow-soft)">` :
+      `<div style="width:56px;height:56px;border-radius:12px;background:var(--violet-tint);display:grid;place-items:center;flex:none">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--violet)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="17" y1="10" x2="3" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="17" y1="18" x2="3" y2="18"/></svg>
+      </div>`;
+    return `<div style="display:flex;align-items:center;gap:14px;padding:16px;border-radius:16px;
+      background:var(--surface);border:1.5px solid var(--line);cursor:pointer;margin-bottom:10px;
+      box-shadow:var(--shadow-soft);transition:border-color .12s" onclick="loadDraft(${i})"
+      onmouseenter="this.style.borderColor='var(--violet-soft)'" onmouseleave="this.style.borderColor='var(--line)'">
+      ${thumb}
+      <div style="flex:1;min-width:0">
+        <div style="font-size:14px;font-weight:700;color:var(--ink);line-height:1.45;
+          display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${esc(preview)||'<i style="color:var(--muted)">без текста, только фото</i>'}</div>
+      </div>
+      <button onclick="deleteDraft(${i});event.stopPropagation()" style="border:none;background:var(--danger-tint);color:var(--danger);
+        cursor:pointer;width:34px;height:34px;border-radius:10px;flex:none;display:grid;place-items:center">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
     </div>`;
   }).join('');
 }
 
 function loadDraft(idx){
-  document.getElementById('broadcastText').innerHTML = broadcastDrafts[idx].html || '';
+  const d = broadcastDrafts[idx];
+  document.getElementById('broadcastText').innerHTML = d.html || '';
   updateBroadcastCounter(document.getElementById('broadcastText'));
+  if(d.photo){
+    broadcastPhotoData = d.photo;
+    document.getElementById('broadcastPhotoImg').src = d.photo;
+    document.getElementById('broadcastPhotoPreview').style.display = 'block';
+  }else{
+    removeBroadcastPhoto();
+  }
   document.getElementById('broadcastHistoryList').style.display = 'none';
   haptic('light');
 }
@@ -2503,20 +2838,26 @@ function deleteDraft(idx){
 function saveBroadcastDraft(){
   const el = document.getElementById('broadcastText');
   const text = el.textContent.trim();
-  if(!text){ toast('Введи текст'); return; }
+  if(!text && !broadcastPhotoData){ toast('Введи текст или прикрепи фото'); return; }
   const html = el.innerHTML;
-  if(broadcastDrafts.some(d => d.text === text)){ toast('Уже сохранён'); return; }
-  broadcastDrafts.unshift({text, html});
+  if(broadcastDrafts.some(d => d.text === text && d.photo === broadcastPhotoData)){ toast('Уже сохранён'); return; }
+  broadcastDrafts.unshift({text, html, photo: broadcastPhotoData || null});
   if(broadcastDrafts.length > 20) broadcastDrafts.pop();
-  localStorage.setItem('broadcastDrafts', JSON.stringify(broadcastDrafts));
-  toast('Текст сохранён'); haptic('success');
+  try{
+    localStorage.setItem('broadcastDrafts', JSON.stringify(broadcastDrafts));
+  }catch(e){
+    // localStorage переполнен (фото в base64 тяжёлые) — убираем самый старый и пробуем снова
+    broadcastDrafts.pop();
+    try{ localStorage.setItem('broadcastDrafts', JSON.stringify(broadcastDrafts)); }catch(e2){}
+  }
+  toast('Сохранено'); haptic('success');
 }
 
 // подтверждение и отправка
 function confirmBroadcast(){
   const el = document.getElementById('broadcastText');
   const text = el.textContent.trim();
-  if(!text){ toast('Введи текст сообщения'); return; }
+  if(!text && !broadcastPhotoData){ toast('Введи текст или прикрепи фото'); return; }
   if(!broadcastSelectedIds.size){ toast('Выбери хотя бы одного ученика'); return; }
   const selected = broadcastConnectedStudents.filter(s => broadcastSelectedIds.has(s.id));
   const namesEl = document.getElementById('broadcastConfirmNames');
@@ -2526,6 +2867,10 @@ function confirmBroadcast(){
       <div style="font-size:14px;font-weight:700">${esc(s.name)}</div>
     </div>`
   ).join('');
+  const ttlOpt = TTL_OPTIONS.find(o => o.days === broadcastTtlDays);
+  document.getElementById('broadcastConfirmTtl').textContent = ttlOpt.days===null
+    ? 'Пост останется в приложении бессрочно'
+    : `Пост исчезнет из приложения через: ${ttlOpt.label.toLowerCase()}`;
   document.getElementById('broadcastConfirmDim').classList.add('on');
   document.getElementById('broadcastConfirmSheet').classList.add('on');
 }
@@ -2537,7 +2882,10 @@ async function sendBroadcast(){
   document.getElementById('broadcastConfirmDim').classList.remove('on');
   document.getElementById('broadcastConfirmSheet').classList.remove('on');
   try {
-    await apiFetch('/api/broadcast', {method:'POST', body:JSON.stringify({text: telegramHtml, student_ids: studentIds, html: true})});
+    await apiFetch('/api/broadcast', {method:'POST', body:JSON.stringify({
+      text: telegramHtml, student_ids: studentIds, html: true,
+      photo: broadcastPhotoData || null, ttl_days: broadcastTtlDays
+    })});
     broadcastScreen.classList.remove('on');
     toast('Сообщение отправлено'); haptic('success');
   } catch(e) { toast('Ошибка отправки'); }
@@ -2657,6 +3005,64 @@ async function sendHomework(){
 let stuNotifStudentId = null;
 let stuNotifInitial = {};
 
+// ---- ЧАСОВОЙ ПОЯС УЧЕНИКА (в карточке) ----
+const TZ_CITIES_STU = [
+  {name:'Москва',tz:'Europe/Moscow',utc:'UTC+3'},
+  {name:'Калининград',tz:'Europe/Kaliningrad',utc:'UTC+2'},
+  {name:'Самара',tz:'Europe/Samara',utc:'UTC+4'},
+  {name:'Екатеринбург',tz:'Asia/Yekaterinburg',utc:'UTC+5'},
+  {name:'Омск',tz:'Asia/Omsk',utc:'UTC+6'},
+  {name:'Новосибирск',tz:'Asia/Novosibirsk',utc:'UTC+7'},
+  {name:'Красноярск',tz:'Asia/Krasnoyarsk',utc:'UTC+7'},
+  {name:'Иркутск',tz:'Asia/Irkutsk',utc:'UTC+8'},
+  {name:'Якутск',tz:'Asia/Yakutsk',utc:'UTC+9'},
+  {name:'Владивосток',tz:'Asia/Vladivostok',utc:'UTC+10'},
+  {name:'Магадан',tz:'Asia/Magadan',utc:'UTC+11'},
+  {name:'Камчатка',tz:'Asia/Kamchatka',utc:'UTC+12'},
+  {name:'Белград',tz:'Europe/Belgrade',utc:'UTC+2'},
+  {name:'Лондон',tz:'Europe/London',utc:'UTC+0/+1'},
+];
+
+function openStudentTzPicker(){
+  document.getElementById('stuTzDim').classList.add('on');
+  document.getElementById('stuTzSheet').classList.add('on');
+  document.getElementById('stuTzSearch').value='';
+  renderStuTzList('');
+}
+function closeStudentTzPicker(){
+  document.getElementById('stuTzDim').classList.remove('on');
+  document.getElementById('stuTzSheet').classList.remove('on');
+}
+function renderStuTzList(q){
+  q=(q||'').trim().toLowerCase();
+  const filtered = q ? TZ_CITIES_STU.filter(c=>c.name.toLowerCase().includes(q)) : TZ_CITIES_STU;
+  document.getElementById('stuTzList').innerHTML = filtered.map(c=>
+    `<button class="tz-btn" onclick="selectStuTz('${c.tz}','${c.name.replace(/'/g,"\\'")}')"
+      style="width:100%;text-align:left;padding:12px 14px;border:1.5px solid var(--line);border-radius:11px;
+      background:var(--surface);font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;margin-bottom:8px;color:var(--ink)">
+      ${c.name} <span style="color:var(--muted);font-size:12px;font-weight:600">${c.utc}</span>
+    </button>`
+  ).join('') || `<div style="text-align:center;color:var(--muted);font-size:13px;font-weight:600;padding:20px 0">Город не найден</div>`;
+}
+function selectStuTz(tz,name){
+  document.getElementById('s_timezone').value=tz;
+  updateStuTzBtnLabel(tz);
+  closeStudentTzPicker();
+  haptic('light');
+}
+function clearStudentTz(){
+  document.getElementById('s_timezone').value='';
+  updateStuTzBtnLabel('');
+  closeStudentTzPicker();
+}
+function updateStuTzBtnLabel(tz){
+  const label=document.getElementById('s_tzBtnLabel');
+  if(!tz){ label.textContent='Не задан — ученик выберет сам'; label.style.color='var(--muted)'; return; }
+  const city=TZ_CITIES_STU.find(c=>c.tz===tz);
+  label.textContent = city ? `${city.name} (${city.utc})` : tz;
+  label.style.color='var(--ink)';
+}
+
 async function openStudentNotifSettings(){
   stuNotifStudentId = profId;
   const su = await apiFetch('/api/student/notif?student_id=' + profId).catch(() => null);
@@ -2667,12 +3073,14 @@ async function openStudentNotifSettings(){
   setSw('sn_homework', su.notif_homework !== false);
   setSw('sn_hour', su.notif_hour !== false);
   setSw('sn_day', !!su.notif_day);
-  stuNotifInitial = {homework: !!su.notif_homework, hour: !!su.notif_hour, day: !!su.notif_day};
+  setSw('sn_cards', su.notif_cards !== false);
+  setSw('sn_posts', su.notif_posts !== false);
+  stuNotifInitial = {homework: !!su.notif_homework, hour: !!su.notif_hour, day: !!su.notif_day, cards: su.notif_cards !== false, posts: su.notif_posts !== false};
   document.getElementById('stuNotifDim').classList.add('on');
   document.getElementById('stuNotifSheet').classList.add('on');
 }
 
-['sn_homework','sn_hour','sn_day'].forEach(id => {
+['sn_homework','sn_hour','sn_day','sn_cards','sn_posts'].forEach(id => {
   document.getElementById(id).onclick = () => {
     const on = !document.getElementById(id).classList.contains('on');
     setSw(id, on); haptic('light');
@@ -2688,8 +3096,10 @@ document.getElementById('stuNotifSave').onclick = async () => {
   const homework = document.getElementById('sn_homework').classList.contains('on');
   const hour = document.getElementById('sn_hour').classList.contains('on');
   const day = document.getElementById('sn_day').classList.contains('on');
+  const cards = document.getElementById('sn_cards').classList.contains('on');
+  const posts = document.getElementById('sn_posts').classList.contains('on');
   await apiFetch('/api/student/notif', {method:'POST', body:JSON.stringify({
-    student_id: stuNotifStudentId, homework, hour, day
+    student_id: stuNotifStudentId, homework, hour, day, cards, posts
   })});
   document.getElementById('stuNotifDim').classList.remove('on');
   document.getElementById('stuNotifSheet').classList.remove('on');
@@ -2758,7 +3168,7 @@ async function showHwStats(resultId, studentId, groupId, studentName, groupName)
         </div>
         <div style="text-align:right">
           <div style="font-size:13px;font-weight:700;color:${s.attempts===1&&s.correct_count===1?'var(--green)':'var(--danger)'}">
-            ${s.attempts} ${s.attempts===1?'попытка':'попытки'} · ${s.correct_count?'✓':'✗'}
+            ${s.attempts} ${s.attempts===1?'попытка':'попытки'} · ${s.correct_count?'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-1px"><polyline points="20 6 9 17 4 12"/></svg>':'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-1px"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>'}
           </div>
           ${wrongs.length?`<div style="font-size:11px;color:var(--muted);margin-top:2px">Вводил: ${wrongs.map(w=>`«${esc(w)}»`).join(', ')}</div>`:''}
         </div>
@@ -3026,7 +3436,7 @@ function openStatDetail(id,st){
       `<div style="flex:1"><div class="v">${esc(s.name)}</div></div>`+
       (arch?`<div style="display:flex;gap:6px;flex:none">
         <button class="restore-btn" data-restore="${s.id}">Восстановить</button>
-        <button class="delete-forever-btn" data-delete="${s.id}" title="Удалить навсегда">🗑</button>
+        <button class="delete-forever-btn" data-delete="${s.id}" title="Удалить навсегда" style="display:grid;place-items:center"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
       </div>`:'')+
       `</div>`;
     const html=active.map(s=>rowS(s,false)).join('')+archived.map(s=>rowS(s,true)).join('');
@@ -3073,9 +3483,9 @@ function openStatDetail(id,st){
       const sorted=[...st.paidSums].sort((a,b)=>b.n-a.n);
       const max=sorted[0], min=sorted[sorted.length-1];
       b.innerHTML=
-        `<div class="vc-item"><div class="ic">↑</div><div><div class="v">${max.n} ₽</div><div class="k">макс — ${esc(nameOf(max.rec.L))}</div></div></div>`+
+        `<div class="vc-item"><div class="ic"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg></div><div><div class="v">${max.n} ₽</div><div class="k">макс — ${esc(nameOf(max.rec.L))}</div></div></div>`+
         `<div class="vc-item"><div class="ic">~</div><div><div class="v">${st.avg} ₽</div><div class="k">средний чек</div></div></div>`+
-        `<div class="vc-item"><div class="ic">↓</div><div><div class="v">${min.n} ₽</div><div class="k">мин — ${esc(nameOf(min.rec.L))}</div></div></div>`+
+        `<div class="vc-item"><div class="ic"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg></div><div><div class="v">${min.n} ₽</div><div class="k">мин — ${esc(nameOf(min.rec.L))}</div></div></div>`+
         `<div class="vc-item"><div class="ic">Σ</div><div><div class="v">${st.total.toLocaleString('ru')} ₽</div><div class="k">всего заработано (оплачено)</div></div></div>`;
     }
   }
