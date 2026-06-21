@@ -2285,7 +2285,7 @@ document.getElementById('stuDelBtn').onclick=()=>{
 
 function openRefLink(){
   const s=studentById(profId); if(!s)return;
-  const link=`https://t.me/milyana_schedule_bot?start=s_${s.id}`;
+  const link=`https://t.me/milyana_schedule_bot?start=${s.id}`;
   document.getElementById('refLinkInput').value=link;
   document.getElementById('refLinkDim').classList.add('on');
   document.getElementById('refLinkSheet').classList.add('on');
