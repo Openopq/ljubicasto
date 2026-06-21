@@ -457,7 +457,8 @@
   .stu-stat-row.archived .v{color:var(--muted-2)}
   .restore-btn{
     border:1.5px solid var(--violet-soft);background:var(--violet-tint);color:var(--violet-deep);
-    font-size:12px;font-weight:800;padding:6px 11px;border-radius:9px;cursor:pointer;font-family:inherit;flex:none;
+    padding:6px 9px;border-radius:9px;cursor:pointer;font-family:inherit;flex:none;
+    display:grid;place-items:center;
   }
   .restore-btn:active{transform:scale(.95)}
   .delete-forever-btn{
@@ -466,6 +467,12 @@
     transition:background .12s;
   }
   .delete-forever-btn:active{background:#FEF0F2;transform:scale(.95)}
+  .hide-stats-btn{
+    border:1.5px solid var(--line);background:none;color:var(--muted-2);
+    padding:6px 9px;border-radius:9px;cursor:pointer;display:grid;place-items:center;
+    transition:background .12s;
+  }
+  .hide-stats-btn:active{background:var(--bg);transform:scale(.95)}
   .stats-panel{display:grid;grid-template-rows:0fr;transition:grid-template-rows .28s ease;overflow:hidden}
   .stats-panel.open{grid-template-rows:1fr}
   .stats-panel-inner{overflow:hidden;min-height:0}
@@ -868,13 +875,23 @@
 <div class="picker" id="refLinkSheet">
   <h3>Ссылка для подключения</h3>
   <p style="font-size:13px;color:var(--muted);font-weight:600;margin-bottom:14px">Отправь эту ссылку ученику — по ней он подключится к боту и получит доступ к заданиям.</p>
+  <button onclick="shareRefLink()" id="refLinkShareBtn"
+    style="width:100%;padding:14px;margin-bottom:10px;border:none;border-radius:13px;background:var(--violet);color:#fff;
+    font-size:15px;font-weight:800;font-family:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:9px;
+    box-shadow:0 6px 18px rgba(108,63,199,.3)">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+      <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+    </svg>
+    Поделиться ссылкой
+  </button>
   <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px">
     <input id="refLinkInput" readonly
       style="flex:1;min-width:0;font-size:13px;font-family:monospace;color:var(--ink);background:var(--surface-2);
       border:1.5px solid var(--violet-soft);border-radius:11px;padding:11px 12px;outline:none"
       onclick="this.select()">
     <button onclick="copyRefLink()" id="refLinkCopyBtn"
-      style="flex:none;width:46px;height:44px;border:none;border-radius:11px;background:var(--violet);color:#fff;
+      style="flex:none;width:46px;height:44px;border:none;border-radius:11px;background:var(--surface-2);color:var(--violet);border:1.5px solid var(--violet-soft);
       cursor:pointer;display:grid;place-items:center">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <rect x="9" y="9" width="13" height="13" rx="2"/>
@@ -1172,10 +1189,19 @@
     <div class="vc-block" style="margin-bottom:16px">
       <div class="toggle-line" style="padding:14px 16px;border-bottom:1px solid var(--line)">
         <div style="display:flex;align-items:center;gap:9px">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--violet)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
-          <div><div class="t-txt">Режим истории</div><div class="t-sub">назначать уроки в прошлое</div></div>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--violet)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9.5 12l1.8 1.8L14.5 10"/></svg>
+          <div><div class="t-txt">Специальные настройки</div><div class="t-sub">могут влиять на базу данных и не только</div></div>
         </div>
-        <div class="sw" id="settHistorySw"></div>
+        <div class="sw" id="settDevModeSw"></div>
+      </div>
+      <div id="devModeBlock" style="display:none">
+        <div class="toggle-line" style="padding:14px 16px;border-bottom:1px solid var(--line)">
+          <div style="display:flex;align-items:center;gap:9px">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--violet)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+            <div><div class="t-txt">Режим истории</div><div class="t-sub">назначать уроки в прошлое</div></div>
+          </div>
+          <div class="sw" id="settHistorySw"></div>
+        </div>
       </div>
       <div class="settings-item" id="settStatsBtn" style="padding:14px 16px;cursor:pointer;border-bottom:none">
         <div class="settings-body" style="display:flex;align-items:center;gap:9px">
@@ -1306,6 +1332,14 @@ async function mockApi(path, opts){
   if(p==='/api/students/delete'){
     const b=JSON.parse(opts.body); const st=mockStudents.find(x=>x.id===b.id); if(st) st.archived=1; return {ok:true};
   }
+  if(p==='/api/students/hide-from-stats'){
+    const b=JSON.parse(opts.body); const st=mockStudents.find(x=>x.id===b.id); if(st) st.hidden_from_stats=1; return {ok:true};
+  }
+  if(p==='/api/gen_connect_link'){
+    const b=JSON.parse(opts.body);
+    const token=Math.random().toString(36).slice(2,14);
+    return {link:`https://t.me/milyana_schedule_bot?start=${token}`, token};
+  }
   if(p==='/api/keys') return {keys:Object.keys(mockLessons)};
   if(p==='/api/day'){
     if(method==='POST'){ const b=JSON.parse(opts.body); const k='d_'+b.d.replace(/-/g,'_'); mockLessons[k]=b.lessons||[]; return {ok:true}; }
@@ -1319,11 +1353,15 @@ async function mockApi(path, opts){
     return {ok:true};
   }
   if(p==='/api/history') return {history:window._mockHistory===true};
+  if(p==='/api/history/set'){ const b=JSON.parse(opts.body); window._mockHistory=!!b.on; return {ok:true, history:window._mockHistory}; }
+  if(p==='/api/dev_mode') return {dev_mode:window._mockDevMode===true};
+  if(p==='/api/dev_mode/set'){ const b=JSON.parse(opts.body); window._mockDevMode=!!b.on; return {ok:true, dev_mode:window._mockDevMode}; }
   if(p==='/api/students/connected') return {connected:['s1','s2']}; // Кристина и Никита&Диана
   if(p==='/api/broadcast'){ console.log('BROADCAST:', b.text, b.student_ids); return {ok:true,sent:b.student_ids.length,failed:0}; }
   return {ok:true};
 }
 window._mockHistory=false;
+window._mockDevMode=false;
 
 async function apiFetch(path, opts){
   if(MOCK) return mockApi(path, opts);
@@ -1422,10 +1460,16 @@ async function deleteStudentApi(id){
 }
 function studentById(id){ return (studentsCache||[]).find(x=>x.id===id)||null; }
 let historyMode=false;
+let devMode=false;
 async function loadHistoryMode(){
   try{ historyMode=(await apiFetch('/api/history')).history===true; }
   catch(e){ historyMode=false; }
   return historyMode;
+}
+async function loadDevMode(){
+  try{ devMode=(await apiFetch('/api/dev_mode')).dev_mode===true; }
+  catch(e){ devMode=false; }
+  return devMode;
 }
 function initials(name){
   const p=(name||'').trim().split(/\s+/);
@@ -2283,13 +2327,26 @@ document.getElementById('stuDelBtn').onclick=()=>{
   });
 };
 
-function openRefLink(){
+async function openRefLink(){
   const s=studentById(profId); if(!s)return;
-  const link=`https://t.me/milyana_schedule_bot?start=${s.id}`;
-  document.getElementById('refLinkInput').value=link;
+  document.getElementById('refLinkInput').value='Генерируем ссылку…';
   document.getElementById('refLinkDim').classList.add('on');
   document.getElementById('refLinkSheet').classList.add('on');
-  setTimeout(()=>{ const inp=document.getElementById('refLinkInput'); inp.focus(); inp.select(); },150);
+  try{
+    const r=await apiFetch('/api/gen_connect_link',{method:'POST',body:JSON.stringify({student_id:s.id})});
+    document.getElementById('refLinkInput').value=r.link;
+  }catch(e){
+    document.getElementById('refLinkInput').value='Ошибка генерации ссылки';
+    toast('Не удалось создать ссылку');
+  }
+}
+function shareRefLink(){
+  const link=document.getElementById('refLinkInput').value;
+  const text='Нажмите на ссылку для доступа к занятиям';
+  const shareUrl=`https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(text)}`;
+  if(tg && tg.openTelegramLink){ tg.openTelegramLink(shareUrl); }
+  else { window.open(shareUrl,'_blank'); }
+  haptic('light');
 }
 function closeRefLink(){
   document.getElementById('refLinkDim').classList.remove('on');
@@ -3209,15 +3266,18 @@ async function openSettings(){
   void settingsScreen.offsetWidth; // reflow для корректной стартовой позиции
   settingsScreen.classList.add('on');
   // ПОТОМ подгружаем актуальное состояние
-  let histOn=false, hourOn=true, mornOn=true, eveOn=false, hwResOn=false;
+  let histOn=false, hourOn=true, mornOn=true, eveOn=false, hwResOn=false, devOn=false;
   try{ const h=await apiFetch('/api/history'); histOn=h.history===true; }catch(e){}
+  try{ const d=await apiFetch('/api/dev_mode'); devOn=d.dev_mode===true; }catch(e){}
   try{ const n=await apiFetch('/api/notify'); hourOn=n.hour_reminder!==false; mornOn=n.morning!==false; eveOn=n.evening===true; hwResOn=n.hw_results===true; }catch(e){}
   setSw('settHistorySw',histOn);
+  setSw('settDevModeSw',devOn);
+  document.getElementById('devModeBlock').style.display=devOn?'block':'none';
   setSw('settHourSw',hourOn);
   setSw('settMorningSw',mornOn);
   setSw('settEveningSw',eveOn);
   setSw('settHwResultsSw',hwResOn);
-  settInitial={history:histOn,hour:hourOn,morning:mornOn,evening:eveOn,hwResults:hwResOn};
+  settInitial={history:histOn,hour:hourOn,morning:mornOn,evening:eveOn,hwResults:hwResOn,devMode:devOn};
 }
 
 document.getElementById('settingsBack').onclick=()=>settingsScreen.classList.remove('on');
@@ -3225,6 +3285,23 @@ document.getElementById('settingsBtnMain').onclick=openSettings;
 
 // тогглы — просто переключают визуально, сохраняются по кнопке
 document.getElementById('settHistorySw').onclick=()=>{ const on=!document.getElementById('settHistorySw').classList.contains('on'); setSw('settHistorySw',on); haptic('light'); };
+document.getElementById('settDevModeSw').onclick=()=>{
+  const sw=document.getElementById('settDevModeSw');
+  const willTurnOn=!sw.classList.contains('on');
+  const applyAndSave=async(on)=>{
+    setSw('settDevModeSw',on);
+    document.getElementById('devModeBlock').style.display=on?'block':'none';
+    devMode=on; settInitial.devMode=on; // синхронизируем, чтобы кнопка "Сохранить" не считала это незафиксированным изменением
+    try{ await apiFetch('/api/dev_mode/set',{method:'POST',body:JSON.stringify({on})}); }catch(e){}
+    dataCache={}; allKeysCache=null; loadedMonths.clear(); studentsCache=null;
+    haptic('light');
+  };
+  if(willTurnOn){
+    showConfirm('Эти настройки могут влиять на базу данных и не только. Продолжить?', ()=>applyAndSave(true));
+  }else{
+    applyAndSave(false);
+  }
+};
 document.getElementById('settHourSw').onclick=()=>{ const on=!document.getElementById('settHourSw').classList.contains('on'); setSw('settHourSw',on); haptic('light'); };
 document.getElementById('settMorningSw').onclick=()=>{ const on=!document.getElementById('settMorningSw').classList.contains('on'); setSw('settMorningSw',on); haptic('light'); };
 document.getElementById('settEveningSw').onclick=()=>{ const on=!document.getElementById('settEveningSw').classList.contains('on'); setSw('settEveningSw',on); haptic('light'); };
@@ -3232,23 +3309,28 @@ document.getElementById('settHwResultsSw').onclick=()=>{ const on=!document.getE
 
 document.getElementById('settSaveBtn').onclick=async()=>{
   const histOn=document.getElementById('settHistorySw').classList.contains('on');
+  const devOn=document.getElementById('settDevModeSw').classList.contains('on');
   const hourOn=document.getElementById('settHourSw').classList.contains('on');
   const mornOn=document.getElementById('settMorningSw').classList.contains('on');
   const eveOn=document.getElementById('settEveningSw').classList.contains('on');
   const hwResOn=document.getElementById('settHwResultsSw').classList.contains('on');
   const histChanged=histOn!==settInitial.history;
+  const devModeChanged=devOn!==settInitial.devMode;
   const notifChanged=hourOn!==settInitial.hour||mornOn!==settInitial.morning||eveOn!==settInitial.evening||hwResOn!==settInitial.hwResults;
-  const anyChanged=histChanged||notifChanged;
+  const anyChanged=histChanged||devModeChanged||notifChanged;
   if(anyChanged){
     if(histChanged){
       try{ await apiFetch('/api/history/set',{method:'POST',body:JSON.stringify({on:histOn})}); historyMode=histOn; }catch(e){}
+    }
+    if(devModeChanged){
+      try{ await apiFetch('/api/dev_mode/set',{method:'POST',body:JSON.stringify({on:devOn})}); devMode=devOn; }catch(e){}
     }
     if(notifChanged){
       try{ await apiFetch('/api/notify/set',{method:'POST',body:JSON.stringify({hour_reminder:hourOn,morning:mornOn,evening:eveOn,hw_results:hwResOn})}); }catch(e){}
     }
     settingsScreen.classList.remove('on');
-    if(histChanged){
-      // режим истории влияет на то какие дни доступны — обновляем кэш
+    if(histChanged||devModeChanged){
+      // режим истории/специальных настроек влияет на отображение — обновляем кэш
       dataCache={}; allKeysCache=null; loadedMonths.clear(); studentsCache=null;
       await renderMonth(); await renderStudents();
     }
@@ -3264,6 +3346,7 @@ document.getElementById('settStatsBtn').onclick=async()=>{
   const sheet=document.getElementById('statsFromSettingsSheet');
   const boxes=document.getElementById('statsFromSettingsBoxes');
   const psub=document.getElementById('statsFromSettingsPsub');
+  await loadDevMode();
   // всегда открываем на странице сводки
   document.getElementById('statsPageSummary').style.display='flex';
   document.getElementById('statsPageDetail').style.display='none';
@@ -3394,9 +3477,11 @@ async function gatherStats(){
   plannedList.sort((a,b)=>(`${a.y}${pad(a.m)}${pad(a.d)}`).localeCompare(`${b.y}${pad(b.m)}${pad(b.d)}`));
   const total=paidSums.reduce((s,x)=>s+x.n,0);
   const avg=paidSums.length?Math.round(total/paidSums.length):0;
-  // активных = не архивированных учеников (независимо от наличия уроков)
-  const activeStudents=(studentsCache||[]).filter(s=>!s.archived).length;
-  return {students:studentsCache||[], activeStudents, doneList, plannedList, paidSums, total, avg};
+  // видимые в статистике = не скрытые через hidden_from_stats (уроки/доход всё равно считаются выше из dataCache)
+  const visibleStudents=(studentsCache||[]).filter(s=>!s.hidden_from_stats);
+  // активных = не архивированных учеников среди видимых
+  const activeStudents=visibleStudents.filter(s=>!s.archived).length;
+  return {students:visibleStudents, activeStudents, doneList, plannedList, paidSums, total, avg};
 }
 
 function nameOf(L){ const s=L.studentId?studentById(L.studentId):null; return s?s.name:(L.name||'Занятие'); }
@@ -3435,12 +3520,25 @@ function openStatDetail(id,st){
     const rowS=(s,arch)=>`<div class="vc-item stu-stat-row${arch?' archived':''}" data-sid="${s.id}">`+
       `<div style="flex:1"><div class="v">${esc(s.name)}</div></div>`+
       (arch?`<div style="display:flex;gap:6px;flex:none">
-        <button class="restore-btn" data-restore="${s.id}">Восстановить</button>
-        <button class="delete-forever-btn" data-delete="${s.id}" title="Удалить навсегда" style="display:grid;place-items:center"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
+        <button class="restore-btn" data-restore="${s.id}" title="Восстановить"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></button>
+        <button class="hide-stats-btn" data-hide="${s.id}" title="Удалить" style="display:grid;place-items:center"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        ${devMode?`<button class="delete-forever-btn" data-delete="${s.id}" title="Удалить из базы навсегда" style="display:grid;place-items:center"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>`:''}
       </div>`:'')+
       `</div>`;
     const html=active.map(s=>rowS(s,false)).join('')+archived.map(s=>rowS(s,true)).join('');
     b.innerHTML=html||'<div class="empty-note">Нет учеников.</div>';
+    b.querySelectorAll('[data-hide]').forEach(btn=>{
+      btn.onclick=async(e)=>{
+        e.stopPropagation();
+        const sid=btn.dataset.hide; const s=studentById(sid); if(!s)return;
+        showConfirm(`Удалить «${s.name}» из статистики? Уроки и доход останутся в истории, вернуть из интерфейса будет нельзя.`, async()=>{
+          await apiFetch('/api/students/hide-from-stats',{method:'POST',body:JSON.stringify({id:sid})});
+          if(studentsCache){ const st=studentsCache.find(x=>x.id===sid); if(st) st.hidden_from_stats=1; }
+          toast('Ученик удалён из статистики'); haptic('warning');
+          const fresh=await gatherStats(); openStatDetail('students',fresh); renderStatBoxes(fresh);
+        });
+      };
+    });
     b.querySelectorAll('[data-restore]').forEach(btn=>{
       btn.onclick=async(e)=>{
         e.stopPropagation();
@@ -3456,7 +3554,7 @@ function openStatDetail(id,st){
       btn.onclick=async(e)=>{
         e.stopPropagation();
         const sid=btn.dataset.delete;
-        showConfirm('Удалить ученика навсегда? Это нельзя отменить.', async()=>{
+        showConfirm('Удалить ученика навсегда из базы? Карточка и Telegram-подключение удалятся безвозвратно. Уроки в расписании останутся, но без привязки к имени.', async()=>{
           // физически удаляем из базы
           try{
             await apiFetch('/api/students/delete-forever',{method:'POST',body:JSON.stringify({id:sid})});
