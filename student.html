@@ -872,6 +872,11 @@ function renderStorySlide(){
 // ---- единый запуск карточки: прогресс-бар + (опционально) звук, с учётом задержек 1с/2с ----
 async function startStoryCard(card){
   const totalIdx=storyCurrentIdx;
+  if(card.duration_mode==='preview'){
+    // карточка-обложка урока — короткий показ 3 сек, без озвучки
+    beginStoryTimeline(0, 0, 3000, null);
+    return;
+  }
   if(card.audio_file_id){
     let url='';
     try{
@@ -1578,11 +1583,11 @@ async function openSettings(){
   try {
     const n = await api('/api/student/notif');
     const sw = (id, on) => { document.getElementById(id).classList.toggle('on', on); };
-    sw('sw_homework', n.notif_homework !== false);
-    sw('sw_hour', n.notif_hour !== false);
+    sw('sw_homework', n.notif_homework != 0);
+    sw('sw_hour', n.notif_hour != 0);
     sw('sw_day', !!n.notif_day);
-    sw('sw_cards', n.notif_cards !== false);
-    sw('sw_posts', n.notif_posts !== false);
+    sw('sw_cards', n.notif_cards != 0);
+    sw('sw_posts', n.notif_posts != 0);
     updateAllToggleState();
     currentStudentTz = n.timezone || 'Europe/Moscow';
     const city = TZ_CITIES.find(c => c.tz === currentStudentTz);
@@ -1594,6 +1599,7 @@ async function openSettings(){
   });
   document.getElementById('settDim').classList.add('on');
   document.getElementById('settSheet').classList.add('on');
+  document.getElementById('settSheet').scrollTop = 0;
 }
 
 function updateAllToggleState(){

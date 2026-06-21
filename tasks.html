@@ -293,10 +293,32 @@ html,body{background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,'Seg
     <div class="form-card">
       <div class="field">
         <label>Группа карточек</label>
-        <select id="cardGroupSel">
+        <select id="cardGroupSel" onchange="refreshCoverBlock()">
           <option value="">— выбери группу —</option>
         </select>
         <button type="button" onclick="openAddCardGroupFromTab()" style="margin-top:8px;width:100%;padding:9px;border:1.5px dashed var(--violet-soft);border-radius:10px;background:var(--violet-tint);color:var(--violet);font-size:12px;font-weight:700;font-family:inherit;cursor:pointer">+ Новая группа карточек</button>
+      </div>
+    </div>
+
+    <!-- обложка группы карточек -->
+    <div class="form-card" id="coverBlock" style="display:none">
+      <button type="button" id="coverToggleBtn" onclick="toggleCoverBox()"
+        style="width:100%;padding:12px;border:1.5px dashed var(--gold-soft);border-radius:12px;background:var(--gold-tint);color:#9a7b1e;font-size:13px;font-weight:800;font-family:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+        <span id="coverToggleTxt">Создать обложку</span>
+      </button>
+      <div id="coverBox" style="display:none;margin-top:12px">
+        <div style="font-size:11px;color:var(--muted);text-align:center;margin-bottom:8px;font-weight:600">📱 вертикальный формат 9:16 (например 1080×1920) — то, что видно в кружке у ученика</div>
+        <div id="coverPreviewWrap" style="display:none;margin-bottom:8px;position:relative;max-width:160px;margin-left:auto;margin-right:auto">
+          <img id="coverPreview" style="width:100%;aspect-ratio:9/16;object-fit:cover;border-radius:16px;display:block">
+          <button type="button" onclick="removeCover()" style="position:absolute;top:6px;right:6px;width:26px;height:26px;border:none;border-radius:50%;background:rgba(43,36,68,.65);color:#fff;font-size:14px;cursor:pointer;display:grid;place-items:center">✕</button>
+        </div>
+        <button type="button" onclick="document.getElementById('coverInput').click()"
+          style="width:100%;padding:13px;border:2px dashed var(--gold-soft);border-radius:13px;background:var(--gold-tint);color:#9a7b1e;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          Загрузить обложку
+        </button>
+        <input type="file" id="coverInput" accept="image/*" style="display:none" onchange="onCoverSelected(this)">
       </div>
     </div>
 
@@ -321,6 +343,15 @@ html,body{background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,'Seg
       <div class="field">
         <label>Название (отразится у ученика)</label>
         <input id="cardTitle" placeholder="нпр. Хоботница" autocomplete="off">
+      </div>
+      <div class="field">
+        <label>Длительность</label>
+        <button type="button" id="cardDurBtn" onclick="openDurationPicker()"
+          style="width:100%;padding:11px;border:1.5px solid var(--line);border-radius:11px;background:var(--surface-2);color:var(--ink);font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;display:flex;align-items:center;justify-content:space-between">
+          <span id="cardDurTxt">Обычная</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div id="cardDurHint" style="margin-top:6px;font-size:11px;color:var(--muted);line-height:1.5">Идёт по длине голосового + ~3 сек (или 4 сек без озвучки)</div>
       </div>
       <div class="field">
         <label>Аудио file_id <span style="font-weight:600;color:var(--muted);font-size:10px">— необязательно</span></label>
@@ -359,6 +390,22 @@ html,body{background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,'Seg
   <h3 id="cardGroupSheetTitle">Группа карточек</h3>
   <div class="field"><label>Название</label><input id="cardGroupName" placeholder="нпр. Морские животные" autocomplete="off"></div>
   <button class="sheet-btn primary" onclick="saveCardGroupSheet()">Сохранить</button>
+  <button class="sheet-btn cancel" onclick="closeSheet()">Отмена</button>
+</div>
+
+<!-- выбор длительности карточки -->
+<div class="sheet" id="durationSheet">
+  <h3>Длительность карточки</h3>
+  <button type="button" class="dur-opt" data-mode="normal" onclick="pickDuration('normal')"
+    style="width:100%;text-align:left;padding:13px 15px;border:1.5px solid var(--line);border-radius:13px;background:var(--surface-2);font-family:inherit;cursor:pointer;margin-bottom:10px">
+    <div style="font-size:14px;font-weight:800;color:var(--ink)">Обычная</div>
+    <div style="font-size:11.5px;color:var(--muted);margin-top:3px;line-height:1.45">Идёт по длине голосового + ~3 сек (или 4 сек, если озвучки нет)</div>
+  </button>
+  <button type="button" class="dur-opt" data-mode="preview" onclick="pickDuration('preview')"
+    style="width:100%;text-align:left;padding:13px 15px;border:1.5px solid var(--line);border-radius:13px;background:var(--surface-2);font-family:inherit;cursor:pointer;margin-bottom:10px">
+    <div style="font-size:14px;font-weight:800;color:var(--ink)">Превью (3 сек)</div>
+    <div style="font-size:11.5px;color:var(--muted);margin-top:3px;line-height:1.45">Короткий показ. Для первой карточки-обложки, где написано, что за урок</div>
+  </button>
   <button class="sheet-btn cancel" onclick="closeSheet()">Отмена</button>
 </div>
 
@@ -405,6 +452,24 @@ html,body{background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,'Seg
   <div style="position:fixed;bottom:0;left:0;right:0;padding:16px;background:var(--bg);border-top:1.5px solid var(--line)">
     <button class="save-btn" onclick="saveReorder()">Сохранить порядок</button>
   </div>
+</div>
+
+<!-- Очередность карточек (миниатюры) -->
+<div class="screen" id="cardReorderScreen" style="visibility:hidden">
+  <div class="scr-head" style="position:sticky;top:0;background:var(--bg);z-index:5;display:flex;align-items:center;gap:12px;padding:16px 16px 12px;border-bottom:1.5px solid var(--line)">
+    <button class="back" onclick="closeCardReorder()" style="width:38px;height:38px;border:none;border-radius:11px;background:var(--surface);box-shadow:0 2px 8px rgba(43,36,68,.07);color:var(--ink);font-size:20px;cursor:pointer;display:grid;place-items:center">‹</button>
+    <div style="font-size:18px;font-weight:800">Очередность карточек</div>
+  </div>
+  <div style="padding:8px 16px 4px;font-size:12px;color:var(--muted);line-height:1.5">Стрелками меняй порядок. Нажми на фото, чтобы увидеть целиком. Обложка группы показывается в самом начале и здесь не участвует.</div>
+  <div style="padding:10px 16px 120px" id="cardReorderList"></div>
+  <div style="position:fixed;bottom:0;left:0;right:0;padding:16px;background:var(--bg);border-top:1.5px solid var(--line)">
+    <button class="save-btn" onclick="saveCardReorder()">Сохранить порядок</button>
+  </div>
+</div>
+
+<!-- Лайтбокс полного фото карточки -->
+<div id="cardImgLightbox" onclick="closeCardImg()" style="display:none;position:fixed;inset:0;z-index:90;background:rgba(20,16,32,.92);align-items:center;justify-content:center;padding:24px">
+  <img id="cardImgLightboxImg" style="max-width:100%;max-height:100%;border-radius:14px;object-fit:contain">
 </div>
 
 <!-- Выбор номера позиции -->
@@ -478,10 +543,17 @@ async function init(){
       await api('/api/levels',{method:'POST',body:JSON.stringify(lv)});
       levels.push(lv);
     }
-    // отдельный уровень для карточек — особый тип, в самом конце
-    const cardsLevel={id:uid(),name:'Карточки',sort:defaults.length,created:Date.now()+defaults.length,is_cards:true};
+  }
+  // уровень карточек должен существовать всегда; на старых базах он мог быть без флага is_cards
+  if(!levels.some(l=>l.is_cards)){
+    let cardsLevel=levels.find(l=>l.name==='Карточки');
+    if(cardsLevel){
+      cardsLevel.is_cards=true;            // чиним существующий уровень
+    }else{
+      cardsLevel={id:uid(),name:'Карточки',sort:levels.length,created:Date.now(),is_cards:true};
+      levels.push(cardsLevel);
+    }
     await api('/api/levels',{method:'POST',body:JSON.stringify(cardsLevel)});
-    levels.push(cardsLevel);
   }
   renderAll();
 }
@@ -569,6 +641,7 @@ function renderCardGroupCard(g){
         <div class="group-sub">${gCards.length} карточек</div>
       </div>
       <div class="task-btns" onclick="event.stopPropagation()">
+        ${gCards.length>1?`<button class="task-btn" style="width:auto;padding:0 8px;font-size:11px;font-weight:800" onclick="openCardReorder('${esc(g.id)}')" title="Очередность">1↔2</button>`:''}
         <button class="task-btn" onclick="openRenameCardGroup('${esc(g.id)}')" title="Переименовать">Аа</button>
         <button class="task-btn danger" onclick="confirmDeleteCardGroup('${esc(g.id)}')" title="Удалить">✕</button>
       </div>
@@ -661,7 +734,7 @@ function initNewForm(prefillGroupId,prefillLevelId,mode){
 function addTaskBlock(prefill){
   const idx=taskBlocks.length;
   const id='tb'+idx+'_'+Date.now();
-  const block={id,type:'choice',correct:0,prefill:prefill||null};
+  const block={id,type:'choice',correct:0,lang_dir:prefill?(prefill.lang_dir?1:0):1,prefill:prefill||null};
   taskBlocks.push(block);
   const div=document.createElement('div');
   div.className='form-card';div.id=id;div.style.position='relative';
@@ -685,6 +758,15 @@ function addTaskBlock(prefill){
     <div class="field tb-word-wrap">
       <label>Слово / фраза (сербский)</label>
       <input class="tb-word" placeholder="нпр. уцак" autocomplete="off">
+    </div>
+
+    <!-- ввод слова: направление перевода -->
+    <div class="tb-lang-toggle-wrap field" style="display:none;margin-bottom:10px">
+      <button type="button" class="tb-lang-toggle" onclick="toggleLangDir('${id}')"
+        style="width:100%;padding:9px;border:1.5px dashed var(--violet-soft);border-radius:10px;background:var(--violet-tint);color:var(--violet);font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3 4 7l4 4"/><path d="M4 7h16"/><path d="m16 21 4-4-4-4"/><path d="M20 17H4"/></svg>
+        <span class="tb-lang-toggle-txt">Спрашиваем русский → ответ сербский</span>
+      </button>
     </div>
 
     <!-- ввод слова: правильный ответ + комментарий-аккордеон -->
@@ -981,6 +1063,69 @@ function closeReorderScreen(){
   document.getElementById('reorderScreen').classList.remove('on');
 }
 
+// ---- очередность карточек (миниатюры) ----
+let cardReorderArr=[]; // массив объектов карточек в текущем порядке
+let cardReorderGroupId=null;
+
+function openCardReorder(groupId){
+  cardReorderGroupId=groupId;
+  cardReorderArr=cardItems.filter(c=>c.group_id===groupId).sort((a,b)=>a.sort-b.sort);
+  renderCardReorderList();
+  const scr=document.getElementById('cardReorderScreen');
+  scr.style.visibility='';
+  void scr.offsetWidth;
+  scr.classList.add('on');
+}
+function closeCardReorder(){
+  document.getElementById('cardReorderScreen').classList.remove('on');
+}
+function renderCardReorderList(){
+  const box=document.getElementById('cardReorderList');
+  box.innerHTML=cardReorderArr.map((c,idx)=>{
+    const prevTag=c.duration_mode==='preview'?`<span style="display:inline-block;margin-left:6px;font-size:9px;font-weight:800;color:var(--gold);background:var(--gold-tint);padding:2px 6px;border-radius:6px;vertical-align:middle">ПРЕВЬЮ</span>`:'';
+    return `<div class="reorder-item">
+      <div style="font-size:15px;font-weight:800;color:var(--violet);width:24px;text-align:center;flex:none">${idx+1}</div>
+      <div onclick="${c.photo?`openCardImg('${esc(c.photo)}')`:''}" style="width:38px;height:66px;border-radius:9px;overflow:hidden;flex:none;background:var(--bg);cursor:${c.photo?'zoom-in':'default'}">
+        ${c.photo?`<img src="${c.photo}" style="width:100%;height:100%;object-fit:cover">`:''}
+      </div>
+      <div class="task-word" style="flex:1;min-width:0">
+        <div class="task-w" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(c.title||'без названия')}${prevTag}</div>
+        <div class="task-t">${c.audio_file_id?'🔊 есть озвучка':'без озвучки'}</div>
+      </div>
+      <div class="reorder-btns">
+        <button class="reorder-btn" onclick="moveCardReorder(${idx},-1)" ${idx===0?'style="opacity:.3;pointer-events:none"':''}>▲</button>
+        <button class="reorder-btn" onclick="moveCardReorder(${idx},1)" ${idx===cardReorderArr.length-1?'style="opacity:.3;pointer-events:none"':''}>▼</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+function moveCardReorder(idx,dir){
+  const j=idx+dir;
+  if(j<0||j>=cardReorderArr.length) return;
+  const tmp=cardReorderArr[idx]; cardReorderArr[idx]=cardReorderArr[j]; cardReorderArr[j]=tmp;
+  renderCardReorderList();
+}
+async function saveCardReorder(){
+  const ids=cardReorderArr.map(c=>c.id);
+  try{
+    await api('/api/cards/reorder',{method:'POST',body:JSON.stringify({ids})});
+  }catch(e){ toast('Не удалось сохранить порядок'); return; }
+  // применяем sort локально
+  cardReorderArr.forEach((c,i)=>{ const it=cardItems.find(x=>x.id===c.id); if(it) it.sort=i; });
+  closeCardReorder();
+  renderAll();
+  toast('Порядок карточек сохранён');
+}
+function openCardImg(src){
+  if(!src) return;
+  document.getElementById('cardImgLightboxImg').src=src;
+  document.getElementById('cardImgLightbox').style.display='flex';
+}
+function closeCardImg(){
+  document.getElementById('cardImgLightbox').style.display='none';
+  document.getElementById('cardImgLightboxImg').src='';
+}
+
 function renderReorderList(){
   const list=document.getElementById('reorderList');
   list.innerHTML='';
@@ -1099,7 +1244,39 @@ function setBlockType(blockId,type,el){
   div.querySelector('.tb-input-answer-wrap').style.display=type==='input'?'block':'none';
   div.querySelector('.tb-input-comment-wrap').style.display=type==='input'?'block':'none';
   div.querySelector('.tb-word-wrap').style.display=type==='photo'?'none':'block';
+  div.querySelector('.tb-lang-toggle-wrap').style.display=type==='input'?'block':'none';
   div.querySelector('.tb-photo').style.display=type==='photo'?'block':'none';
+  applyLangDir(blockId);
+}
+
+// направление перевода для «Ввод слова»: lang_dir 1 = рус→серб (ответ сербский, по умолчанию), 0 = серб→рус
+function applyLangDir(blockId){
+  const b=taskBlocks.find(x=>x.id===blockId); if(!b) return;
+  const div=document.getElementById(blockId); if(!div) return;
+  const wordLabel=div.querySelector('.tb-word-wrap label');
+  const wordInp=div.querySelector('.tb-word');
+  const ansLabel=div.querySelector('.tb-input-answer-wrap label');
+  const ansInp=div.querySelector('.tb-input-answer');
+  const tglTxt=div.querySelector('.tb-lang-toggle-txt');
+  const hint='<span style="font-weight:600;color:var(--muted);font-size:10px">— что должен ввести ученик</span>';
+  if(b.type==='input'){
+    if(b.lang_dir){ // рус → серб
+      wordLabel.textContent='Слово / фраза (русский)'; wordInp.placeholder='нпр. дядя';
+      ansLabel.innerHTML='Правильный ответ (сербский) '+hint; ansInp.placeholder='нпр. ујак';
+      if(tglTxt) tglTxt.textContent='Спрашиваем русский → ответ сербский';
+    } else {        // серб → рус
+      wordLabel.textContent='Слово / фраза (сербский)'; wordInp.placeholder='нпр. ујак';
+      ansLabel.innerHTML='Правильный ответ (русский) '+hint; ansInp.placeholder='нпр. дядя';
+      if(tglTxt) tglTxt.textContent='Спрашиваем сербский → ответ русский';
+    }
+  } else {
+    wordLabel.textContent='Слово / фраза (сербский)'; wordInp.placeholder='нпр. уцак';
+  }
+}
+function toggleLangDir(blockId){
+  const b=taskBlocks.find(x=>x.id===blockId); if(!b) return;
+  b.lang_dir=b.lang_dir?0:1;
+  applyLangDir(blockId);
 }
 
 function setBlockCorrect(blockId,idx){
@@ -1176,7 +1353,8 @@ async function saveGroup(){
     collected.push({
       type:b.type, word, translation:trans, choices, correct:b.correct||0,
       audio_file_id:'', word_comment:wordComment,
-      choice_comments:JSON.stringify(choiceComments)
+      choice_comments:JSON.stringify(choiceComments),
+      lang_dir:b.lang_dir?1:0
     });
   }
   if(!collected.length){toast('Добавь хотя бы одно задание');return;}
@@ -1225,6 +1403,9 @@ async function saveGroup(){
   renderAll();
   toast('Группа сохранена');
   switchTab('library');
+  } catch(e){
+    renderAll();
+    toast('Не удалось сохранить полностью — проверь фото/соединение');
   } finally {
     savingGroup=false;
     if(btn){ btn.disabled=false; btn.style.opacity=''; btn.textContent='Сохранить группу'; }
@@ -1394,6 +1575,7 @@ function openCardFormForGroup(groupId){
   document.getElementById('cardPhotoPreview').src='';
   renderCardGroupSelect();
   document.getElementById('cardGroupSel').value=groupId;
+  setCardDuration('normal');
   switchTab('card');
 }
 
@@ -1406,6 +1588,7 @@ function openNewCardTab(){
   document.getElementById('cardPhotoPreviewWrap').style.display='none';
   document.getElementById('cardPhotoPreview').src='';
   renderCardGroupSelect();
+  setCardDuration('normal');
   switchTab('card');
 }
 
@@ -1416,6 +1599,7 @@ function renderCardGroupSelect(){
   const v=editingCardGroupId||sel.value;
   sel.innerHTML='<option value="">— выбери группу —</option>'+cardGroups.map(g=>`<option value="${esc(g.id)}">${esc(g.name)}</option>`).join('');
   sel.value=v||'';
+  refreshCoverBlock();
 }
 
 function openAddCardGroupFromTab(){
@@ -1451,6 +1635,7 @@ async function saveCardFromTab(){
     cardPhotoData=null; editingCardId=null;
     document.getElementById('cardGroupSel').value=groupId; // оставляем ту же группу выбранной
     editingCardGroupId=groupId;
+    setCardDuration('normal');
   } finally {
     savingCard=false;
     if(btn){ btn.disabled=false; btn.style.opacity=''; btn.textContent='Сохранить карточку'; }
@@ -1471,6 +1656,7 @@ function editCard(id){
     document.getElementById('cardPhotoPreviewWrap').style.display='none';
   }
   renderCardGroupSelect();
+  setCardDuration(c.duration_mode);
   switchTab('card');
 }
 
@@ -1487,6 +1673,84 @@ function onCardPhotoSelected(input){
   reader.readAsDataURL(file);
   input.value='';
 }
+
+// ---- обложка группы карточек ----
+function currentCardGroupId(){ return document.getElementById('cardGroupSel').value; }
+
+function refreshCoverBlock(){
+  const gid=currentCardGroupId();
+  const block=document.getElementById('coverBlock');
+  if(!block) return;
+  if(!gid){ block.style.display='none'; return; }
+  block.style.display='block';
+  const g=groups.find(x=>x.id===gid);
+  const cover=g?(g.cover||''):'';
+  const wrap=document.getElementById('coverPreviewWrap');
+  const img=document.getElementById('coverPreview');
+  if(cover){ img.src=cover; wrap.style.display='block'; }
+  else { img.src=''; wrap.style.display='none'; }
+  document.getElementById('coverBox').style.display='none';
+  document.getElementById('coverToggleTxt').textContent=cover?'Обложка загружена · изменить':'Создать обложку';
+}
+
+function toggleCoverBox(){
+  const box=document.getElementById('coverBox');
+  box.style.display = box.style.display==='none' ? 'block' : 'none';
+}
+
+function onCoverSelected(input){
+  const file=input.files && input.files[0];
+  if(!file) return;
+  if(file.size>8*1024*1024){toast('Файл слишком большой (максимум 8 МБ)');input.value='';return;}
+  const gid=currentCardGroupId();
+  if(!gid){ toast('Сначала выбери группу'); input.value=''; return; }
+  const reader=new FileReader();
+  reader.onload=async(e)=>{
+    const data=e.target.result;
+    document.getElementById('coverPreview').src=data;
+    document.getElementById('coverPreviewWrap').style.display='block';
+    try{
+      await api('/api/groups/cover',{method:'POST',body:JSON.stringify({group_id:gid,photo:data})});
+      const g=groups.find(x=>x.id===gid); if(g) g.cover=data;
+      document.getElementById('coverToggleTxt').textContent='Обложка загружена · изменить';
+      renderAll();
+      toast('Обложка сохранена');
+    }catch(err){ toast('Не удалось сохранить обложку'); }
+  };
+  reader.readAsDataURL(file);
+  input.value='';
+}
+
+async function removeCover(){
+  const gid=currentCardGroupId();
+  if(!gid) return;
+  try{
+    await api('/api/groups/cover',{method:'POST',body:JSON.stringify({group_id:gid,photo:''})});
+    const g=groups.find(x=>x.id===gid); if(g) g.cover='';
+    document.getElementById('coverPreview').src='';
+    document.getElementById('coverPreviewWrap').style.display='none';
+    document.getElementById('coverToggleTxt').textContent='Создать обложку';
+    renderAll();
+    toast('Обложка убрана');
+  }catch(err){ toast('Не удалось убрать обложку'); }
+}
+
+// ---- длительность карточки ----
+let cardDuration='normal';
+function setCardDuration(mode){
+  cardDuration=(mode==='preview')?'preview':'normal';
+  const txt=document.getElementById('cardDurTxt');
+  const hint=document.getElementById('cardDurHint');
+  if(cardDuration==='preview'){
+    if(txt) txt.textContent='Превью (3 сек)';
+    if(hint) hint.textContent='Короткий показ 3 сек — для первой карточки-обложки урока';
+  } else {
+    if(txt) txt.textContent='Обычная';
+    if(hint) hint.textContent='Идёт по длине голосового + ~3 сек (или 4 сек без озвучки)';
+  }
+}
+function openDurationPicker(){ openSheet('durationSheet'); }
+function pickDuration(mode){ setCardDuration(mode); closeSheet(); }
 
 function removeCardPhoto(){
   cardPhotoData=null;
@@ -1516,6 +1780,7 @@ async function saveCard(){
   const c={
     id:editingCardId||uid(), group_id:editingCardGroupId, title,
     photo_file_id:photoFileId, photo:photoForMock, audio_file_id:audio,
+    duration_mode:cardDuration||'normal',
     sort:editingCardId?(cardItems.find(x=>x.id===editingCardId)||{}).sort||0:cardItems.filter(x=>x.group_id===editingCardGroupId).length,
     created:Date.now()
   };
