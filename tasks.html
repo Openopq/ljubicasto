@@ -1336,10 +1336,19 @@ async function saveGroup(){
 
     const word=div.querySelector('.tb-word').value.trim();
     if(!word){toast('Заполни слово в каждом задании');return;}
-    const choices=b.type==='choice'?[...div.querySelectorAll('.choices-grid input')].map(i=>i.value.trim()).join('|'):'';
+    let choices='', correctOut=b.correct||0, choiceCommentsArr=[];
     if(b.type==='choice'){
-      const filled=choices.split('|').filter(c=>c.trim()).length;
-      if(filled<2){toast('Заполни хотя бы 2 варианта ответа');return;}
+      const rawInputs=[...div.querySelectorAll('.choices-grid input')].map(i=>i.value.trim());
+      const rawComments=[...div.querySelectorAll('.tb-choice-comment')].map(ta=>ta.value.trim());
+      const kept=[];
+      rawInputs.forEach((v,i)=>{
+        if(v!==''){
+          if(i===(b.correct||0)) correctOut=kept.length;
+          kept.push(v); choiceCommentsArr.push(rawComments[i]||'');
+        }
+      });
+      if(kept.length<2){toast('Заполни хотя бы 2 варианта ответа');return;}
+      choices=kept.join('|');
     }
     let trans='';
     if(b.type==='choice'){
@@ -1349,11 +1358,10 @@ async function saveGroup(){
       if(!trans){toast('Заполни правильный ответ для задания на ввод слова');return;}
     }
     const wordComment=b.type==='input'?(div.querySelector('.tb-word-comment').value.trim()):'';
-    const choiceComments=b.type==='choice'?[...div.querySelectorAll('.tb-choice-comment')].map(ta=>ta.value.trim()):[];
     collected.push({
-      type:b.type, word, translation:trans, choices, correct:b.correct||0,
+      type:b.type, word, translation:trans, choices, correct:correctOut,
       audio_file_id:'', word_comment:wordComment,
-      choice_comments:JSON.stringify(choiceComments),
+      choice_comments:JSON.stringify(choiceCommentsArr),
       lang_dir:b.lang_dir?1:0
     });
   }

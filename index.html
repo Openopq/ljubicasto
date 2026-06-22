@@ -921,7 +921,7 @@
   </div>
   <div style="padding:14px 16px 120px" id="hwLevelsList"></div>
   <div style="position:fixed;bottom:0;left:0;right:0;padding:16px;background:var(--bg);border-top:1.5px solid var(--line)">
-    <div id="hwSelCount" style="font-size:12px;color:var(--muted);font-weight:700;margin-bottom:8px;text-align:center">Выбрано: 0 заданий</div>
+    <div id="hwSelCount" style="font-size:12px;color:var(--muted);font-weight:700;margin-bottom:8px;text-align:center">Выбрано: 0 групп</div>
     <button class="save" id="hwSendBtn" onclick="sendHomework()">Отправить домашнее задание</button>
   </div>
 </div>
@@ -2968,21 +2968,21 @@ async function loadConnectedStudents(){
 function isConnected(studentId){ return connectedStudents.has(studentId); }
 
 /* ============ HOMEWORK ASSIGN ============ */
-let hwSelectedTasks = new Set(); // task_id
+let hwSelectedGroups = new Set(); // group_id — выбираем целыми группами (и задания, и карточки)
 let hwTargetStudentId = null;
-let hwLevels = [], hwGroups = [], hwTasks = [];
-let hwOpenLevels = new Set(), hwOpenGroups = new Set();
+let hwLevels = [], hwGroups = [], hwTasks = [], hwCards = [];
+let hwOpenLevels = new Set();
 
 async function openHomeworkAssign(){
   hwTargetStudentId = profId;
-  hwSelectedTasks.clear();
-  hwOpenLevels.clear(); hwOpenGroups.clear();
-  document.getElementById('hwSelCount').textContent = 'Выбрано: 0 заданий';
-  // загружаем библиотеку
-  const [ld, gd, td] = await Promise.all([
-    apiFetch('/api/levels'), apiFetch('/api/groups'), apiFetch('/api/tasks')
+  hwSelectedGroups.clear();
+  hwOpenLevels.clear();
+  document.getElementById('hwSelCount').textContent = 'Выбрано: 0 групп';
+  // загружаем библиотеку (уровни, группы, задания, карточки)
+  const [ld, gd, td, cd] = await Promise.all([
+    apiFetch('/api/levels'), apiFetch('/api/groups'), apiFetch('/api/tasks'), apiFetch('/api/cards')
   ]);
-  hwLevels = ld.levels || []; hwGroups = gd.groups || []; hwTasks = td.tasks || [];
+  hwLevels = ld.levels || []; hwGroups = gd.groups || []; hwTasks = td.tasks || []; hwCards = cd.cards || [];
   renderHwLibrary();
   const scr = document.getElementById('hwScreen');
   void scr.offsetWidth; scr.classList.add('on');
@@ -2990,39 +2990,40 @@ async function openHomeworkAssign(){
 
 document.getElementById('hwBack').onclick = () => document.getElementById('hwScreen').classList.remove('on');
 
+function hwGroupItemCount(g, isCards){
+  return isCards
+    ? hwCards.filter(c => c.group_id === g.id).length
+    : hwTasks.filter(t => t.group_id === g.id).length;
+}
+
 function renderHwLibrary(){
   const box = document.getElementById('hwLevelsList');
   if(!hwLevels.length){ box.innerHTML = '<div class="empty-note">Нет уровней</div>'; return; }
   box.innerHTML = hwLevels.map(lv => {
+    const isCards = !!lv.is_cards;
     const lvGroups = hwGroups.filter(g => g.level_id === lv.id);
     if(!lvGroups.length) return '';
     const isOpen = hwOpenLevels.has(lv.id);
     const groupsHtml = lvGroups.map(g => {
-      const gTasks = hwTasks.filter(t => t.group_id === g.id);
-      const isGOpen = hwOpenGroups.has(g.id);
-      const tasksHtml = gTasks.map(t => {
-        const checked = hwSelectedTasks.has(t.id);
-        return `<div style="display:flex;align-items:center;gap:10px;padding:9px 14px 9px 28px;border-top:1px solid var(--line);cursor:pointer" onclick="toggleHwTask('${esc(t.id)}')">
-          <div style="width:22px;height:22px;border-radius:6px;border:1.5px solid ${checked?'var(--violet)':'var(--line)'};background:${checked?'var(--violet)':'var(--bg)'};display:grid;place-items:center;flex:none">
-            ${checked?'<svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 6l3 3 5-5" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>':''}
-          </div>
-          <div style="flex:1;min-width:0">
-            <div style="font-size:14px;font-weight:700">${esc(t.word)}</div>
-            <div style="font-size:11px;color:var(--muted);font-weight:600">${esc(t.translation)}</div>
-          </div>
-        </div>`;
-      }).join('');
-      return `<div style="border-top:1px solid var(--line)">
-        <div style="display:flex;align-items:center;gap:8px;padding:10px 14px 10px 20px;cursor:pointer;background:var(--surface-2)" onclick="toggleHwGroup('${esc(g.id)}')">
-          <div style="flex:1;font-size:13px;font-weight:700">${esc(g.name)} <span style="color:var(--muted);font-weight:600">${gTasks.length} заданий</span></div>
-          <div style="font-size:11px;color:var(--muted-2)">${isGOpen?'▲':'▼'}</div>
+      const cnt = hwGroupItemCount(g, isCards);
+      if(!cnt) return ''; // пустые группы не отправляем
+      const checked = hwSelectedGroups.has(g.id);
+      const sub = isCards ? `${cnt} карточек` : `${cnt} заданий`;
+      return `<div style="display:flex;align-items:center;gap:10px;padding:11px 14px 11px 20px;border-top:1px solid var(--line);cursor:pointer" onclick="toggleHwGroup('${esc(g.id)}')">
+        <div style="width:22px;height:22px;border-radius:6px;border:1.5px solid ${checked?'var(--violet)':'var(--line)'};background:${checked?'var(--violet)':'var(--bg)'};display:grid;place-items:center;flex:none">
+          ${checked?'<svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 6l3 3 5-5" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>':''}
         </div>
-        ${isGOpen ? tasksHtml : ''}
+        <div style="flex:1;min-width:0">
+          <div style="font-size:14px;font-weight:700">${esc(g.name)}</div>
+          <div style="font-size:11px;color:var(--muted);font-weight:600">${sub}</div>
+        </div>
       </div>`;
     }).join('');
+    if(!groupsHtml) return '';
+    const icon = isCards ? '🖼 ' : '';
     return `<div class="card" style="margin-bottom:8px">
       <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer" onclick="toggleHwLevel('${esc(lv.id)}')">
-        <div style="flex:1;font-size:15px;font-weight:800">${esc(lv.name)}</div>
+        <div style="flex:1;font-size:15px;font-weight:800">${icon}${esc(lv.name)}</div>
         <div style="font-size:12px;color:var(--muted-2)">${isOpen?'▲':'▼'}</div>
       </div>
       ${isOpen ? `<div style="border-top:1px solid var(--line)">${groupsHtml}</div>` : ''}
@@ -3031,31 +3032,38 @@ function renderHwLibrary(){
 }
 
 function toggleHwLevel(id){ if(hwOpenLevels.has(id)) hwOpenLevels.delete(id); else hwOpenLevels.add(id); renderHwLibrary(); }
-function toggleHwGroup(id){ if(hwOpenGroups.has(id)) hwOpenGroups.delete(id); else hwOpenGroups.add(id); renderHwLibrary(); }
-function toggleHwTask(id){
-  if(hwSelectedTasks.has(id)) hwSelectedTasks.delete(id); else hwSelectedTasks.add(id);
-  document.getElementById('hwSelCount').textContent = `Выбрано: ${hwSelectedTasks.size} заданий`;
+function toggleHwGroup(id){
+  if(hwSelectedGroups.has(id)) hwSelectedGroups.delete(id); else hwSelectedGroups.add(id);
+  document.getElementById('hwSelCount').textContent = `Выбрано: ${hwSelectedGroups.size} групп`;
   renderHwLibrary();
 }
 
 async function sendHomework(){
-  if(!hwSelectedTasks.size){ toast('Выбери хотя бы одно задание'); return; }
+  if(!hwSelectedGroups.size){ toast('Выбери хотя бы одну группу'); return; }
   if(!hwTargetStudentId){ toast('Ученик не выбран'); return; }
-  // группируем по group_id
-  const byGroup = {};
-  hwSelectedTasks.forEach(tid => {
-    const t = hwTasks.find(x => x.id === tid);
-    if(!t) return;
-    if(!byGroup[t.group_id]) byGroup[t.group_id] = [];
-    byGroup[t.group_id].push(tid);
-  });
-  for(const [gid, tids] of Object.entries(byGroup)){
-    await apiFetch('/api/homework/assign', {method:'POST', body:JSON.stringify({
-      student_id: hwTargetStudentId, task_ids: tids, group_id: gid
+  // карты уровней: какой group_id — карточки, какой — задания
+  const cardsLevelIds = new Set(hwLevels.filter(l => l.is_cards).map(l => l.id));
+  const isCardGroup = gid => {
+    const g = hwGroups.find(x => x.id === gid);
+    return g && cardsLevelIds.has(g.level_id);
+  };
+  const cardGroupIds = [];
+  for(const gid of hwSelectedGroups){
+    if(isCardGroup(gid)){ cardGroupIds.push(gid); continue; }
+    const tids = hwTasks.filter(t => t.group_id === gid).map(t => t.id);
+    if(tids.length){
+      await apiFetch('/api/homework/assign', {method:'POST', body:JSON.stringify({
+        student_id: hwTargetStudentId, task_ids: tids, group_id: gid
+      })});
+    }
+  }
+  if(cardGroupIds.length){
+    await apiFetch('/api/cards/assign', {method:'POST', body:JSON.stringify({
+      student_id: hwTargetStudentId, group_ids: cardGroupIds
     })});
   }
   document.getElementById('hwScreen').classList.remove('on');
-  toast('Домашнее задание отправлено'); haptic('success');
+  toast('Отправлено ученику'); haptic('success');
 }
 
 /* ============ STUDENT NOTIF SETTINGS ============ */

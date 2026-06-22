@@ -505,7 +505,7 @@ html,body{background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,'Seg
 </div>
 
 <!-- НАСТРОЙКИ -->
-<div class="dim" id="settDim" onclick="closeSettings()"></div>
+<div class="dim" id="settDim" onclick="saveSettings()"></div>
 <div class="picker" id="settSheet">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
     <h3 style="margin:0">Настройки уведомлений</h3>
@@ -621,6 +621,7 @@ let studentData = null; // данные из /api/homework/student
 let homeworkGroups = []; // сгруппированные задания
 let currentGroup = null; // текущая группа для прохождения
 let curTaskIdx = 0, curCorrect = 0, answered = false;
+let curChoiceComments = []; // комментарии к вариантам, выровненные после удаления пустых
 let toastT = null;
 
 function esc(s){ const d=document.createElement('div');d.textContent=s||'';return d.innerHTML; }
@@ -1204,14 +1205,26 @@ function renderExercise(){
   answered = false;
 
   if(t.type === 'choice'){
-    const choices = t.choices ? t.choices.split('|') : [];
+    const raw = t.choices ? t.choices.split('|') : [];
+    let rawComments = [];
+    try{ rawComments = JSON.parse(t.choice_comments || '[]'); }catch(e){}
+    let correctIdx = 0;
+    const choices = [];
+    curChoiceComments = [];
+    raw.forEach((c,i)=>{
+      if(c.trim() !== ''){
+        if(i === t.correct) correctIdx = choices.length;
+        curChoiceComments.push(rawComments[i] || '');
+        choices.push(c);
+      }
+    });
     container.innerHTML=`
       <div class="ex-progress"><div class="ex-fill" style="width:${pct}%"></div></div>
       <div class="ex-counter">${curTaskIdx+1} / ${total}</div>
       <div class="ex-word">${esc(t.word)}</div>
       <div class="ex-hint">Что это значит по-русски?</div>
       <div class="choices" id="choices">
-        ${choices.map((c,i)=>`<div class="choice" onclick="pickChoice(${i},${t.correct},'${esc(t.id)}','${esc(t.id)}')">${esc(c)}</div>`).join('')}
+        ${choices.map((c,i)=>`<div class="choice" onclick="pickChoice(${i},${correctIdx},'${esc(t.id)}','${esc(t.id)}')">${esc(c)}</div>`).join('')}
       </div>
       <div id="exComment"></div>
       <button class="next-btn" id="nextBtn" onclick="nextTask()">
@@ -1393,9 +1406,7 @@ async function pickChoice(idx, correct, taskId, assignedId){
   if(isCorrect){
     commentText = t.translation || ''; // у choice-заданий "translation" хранит общий комментарий к правильному ответу
   } else {
-    let choiceComments = [];
-    try{ choiceComments = JSON.parse(t.choice_comments || '[]'); }catch(e){}
-    commentText = choiceComments[idx] || '';
+    commentText = curChoiceComments[idx] || '';
   }
   if(commentText){
     commentBox.innerHTML = `<div class="ex-comment ${isCorrect?'correct':'wrong'}">${esc(commentText)}</div>`;
