@@ -838,6 +838,7 @@ function openStoryViewer(groupIdx, originEl){
     img.onload=img.onerror=()=>{ loaded++; if(loaded>=total) tryProceed(); };
     img.src=src;
   });
+} // конец openStoryViewer
 
 function closeStoryViewer(){
   const viewer=document.getElementById('storyViewer');
@@ -1455,6 +1456,8 @@ function checkPhotoInput(){
     input.classList.remove('shake'); void input.offsetWidth; input.classList.add('shake');
     if(pi.wrong_comments && pi.wrong_comments.length){
       document.getElementById('exComment').innerHTML = `<div class="ex-comment wrong">${esc(pi.wrong_comments[0])}</div>`;
+    } else if(t.word_wrong_comment){
+      document.getElementById('exComment').innerHTML = `<div class="ex-comment wrong">${esc(t.word_wrong_comment)}</div>`;
     }
     inputErrors++;
     saveProgress(t.id, t.id, false, val, false);
@@ -1522,10 +1525,12 @@ function checkInput(){
     input.classList.add('wrong');
     input.classList.remove('shake'); void input.offsetWidth; input.classList.add('shake');
     setTimeout(()=>{ input.classList.remove('shake'); }, 400);
+    if(t.word_wrong_comment){
+      document.getElementById('exComment').innerHTML = `<div class="ex-comment wrong">${esc(t.word_wrong_comment)}</div>`;
+    }
     inputErrors++;
     saveProgress(t.id, t.id, false, val, false);
     if(inputErrors >= 3){
-      // показываем кнопку подсказки
       const hint = document.getElementById('hintBtn');
       if(hint) hint.style.display = 'block';
     }

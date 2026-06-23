@@ -91,6 +91,9 @@ html,body{background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,'Seg
   color:var(--muted);font-size:13px;cursor:pointer;display:grid;place-items:center}
 .task-btn:active{background:var(--violet-tint);color:var(--violet)}
 .task-btn.danger:active{background:var(--danger-tint);color:var(--danger)}
+.reorder-btn{width:26px;height:26px;border-radius:7px;border:none;background:var(--bg);
+  color:var(--muted);font-size:13px;cursor:pointer;display:grid;place-items:center}
+.reorder-btn:active{background:var(--violet-tint);color:var(--violet)}
 .group-add-task{display:flex;align-items:center;gap:6px;padding:9px 14px 9px 32px;
   font-size:12px;font-weight:700;color:var(--violet);cursor:pointer;border-top:1px solid var(--line)}
 .group-add-task:active{background:var(--violet-tint)}
@@ -630,16 +633,15 @@ function renderCardGroupCard(g){
   return`<div class="group-card">
     <div class="group-header" onclick="toggleGroup('${esc(g.id)}')">
       <div class="group-icon" style="background:var(--gold-tint)">🖼</div>
+      ${gCards.length>1?`<div class="reorder-btns" onclick="event.stopPropagation()" style="display:flex;flex-direction:column;gap:2px;flex:none">
+        <button class="reorder-btn" style="width:22px;height:20px;font-size:11px" onclick="moveCardGroup('${esc(g.id)}',-1)" title="Вверх">▲</button>
+        <button class="reorder-btn" style="width:22px;height:20px;font-size:11px" onclick="moveCardGroup('${esc(g.id)}',1)" title="Вниз">▼</button>
+      </div>`:''}
       <div class="task-word">
         <div class="group-name">${esc(g.name)}</div>
         <div class="group-sub">${gCards.length} карточек</div>
       </div>
       <div class="task-btns" onclick="event.stopPropagation()">
-        ${gCards.length>1?`
-        <button class="task-btn" style="width:30px;height:30px" onclick="moveCardGroup('${esc(g.id)}',-1)" title="Вверх">▲</button>
-        <button class="task-btn" style="width:30px;height:30px" onclick="moveCardGroup('${esc(g.id)}',1)" title="Вниз">▼</button>
-        <button class="task-btn" style="width:auto;padding:0 8px;height:30px;font-size:11px;font-weight:800" onclick="openCardReorder('${esc(g.id)}')" title="Очередность">1↔2</button>
-        `:''}
         <button class="task-btn" onclick="editCardGroup('${esc(g.id)}')" title="Редактировать">✎</button>
         <button class="task-btn" onclick="openRenameCardGroup('${esc(g.id)}')" title="Переименовать">Аа</button>
         <button class="task-btn danger" onclick="confirmDeleteCardGroup('${esc(g.id)}')" title="Удалить">✕</button>
@@ -786,6 +788,14 @@ function addTaskBlock(prefill){
       </button>
       <div class="tb-word-comment-box note-box" style="display:none;margin-top:6px">
         <textarea class="tb-word-comment" placeholder="Покажется ученику после правильного ответа (необязательно)" maxlength="4096"
+          style="width:100%;min-height:60px;resize:vertical;border:1.5px solid var(--line);background:var(--surface-2);border-radius:11px;padding:9px 11px;font-size:13px;font-family:inherit;color:var(--ink);outline:none"></textarea>
+      </div>
+      <button type="button" class="note-btn" style="margin-top:6px" onclick="toggleCommentBox('${id}','tb-word-wrong-comment-box')">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Комментарий к неправильному ответу
+      </button>
+      <div class="tb-word-wrong-comment-box note-box" style="display:none;margin-top:6px">
+        <textarea class="tb-word-wrong-comment" placeholder="Покажется ученику после неправильного ответа (необязательно)" maxlength="4096"
           style="width:100%;min-height:60px;resize:vertical;border:1.5px solid var(--line);background:var(--surface-2);border-radius:11px;padding:9px 11px;font-size:13px;font-family:inherit;color:var(--ink);outline:none"></textarea>
       </div>
     </div>
@@ -972,6 +982,11 @@ function addTaskBlock(prefill){
       div.querySelector('.tb-input-comment-wrap').style.display = prefill.type==='input' ? 'block' : 'none';
       const box=div.querySelector('.tb-word-comment-box'); box.style.display='block';
       div.querySelector('.tb-input-comment-wrap .note-btn').classList.add('on');
+    }
+    if(prefill.word_wrong_comment){
+      const el=div.querySelector('.tb-word-wrong-comment');
+      if(el){ el.value=prefill.word_wrong_comment;
+        const box=div.querySelector('.tb-word-wrong-comment-box'); if(box) box.style.display='block'; }
     }
     if(prefill.choice_comments){
       let cc=[]; try{ cc=JSON.parse(prefill.choice_comments); }catch(e){}
@@ -1413,10 +1428,11 @@ async function saveGroup(){
       trans=div.querySelector('.tb-input-answer').value.trim();
       if(!trans){toast('Заполни правильный ответ для задания на ввод слова');return;}
     }
-    const wordComment=b.type==='input'?(div.querySelector('.tb-word-comment').value.trim()):'';
+    const wordComment=b.type==='input'?(div.querySelector('.tb-word-comment')?.value.trim()||''):'';
+    const wordWrongComment=b.type==='input'?(div.querySelector('.tb-word-wrong-comment')?.value.trim()||''):'';
     collected.push({
       type:b.type, word, translation:trans, choices, correct:correctOut,
-      audio_file_id:'', word_comment:wordComment,
+      audio_file_id:'', word_comment:wordComment, word_wrong_comment:wordWrongComment,
       choice_comments:JSON.stringify(choiceCommentsArr),
       lang_dir:b.lang_dir?1:0,
       _taskId:b.taskId||null
@@ -1735,8 +1751,12 @@ function addCardBlock(prefill){
   const hasPhoto=prefill&&prefill.photo;
   div.innerHTML=`
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-      <div style="font-size:13px;font-weight:800;color:var(--muted)">Карточка ${cardBlocks.length}</div>
-      ${cardBlocks.length>1?`<button type="button" onclick="removeCardBlock('${bid}')" style="width:26px;height:26px;border:none;border-radius:50%;background:#fdecea;color:#E5484D;font-size:15px;cursor:pointer;display:grid;place-items:center">✕</button>`:''}
+      <div style="display:flex;align-items:center;gap:4px">
+        <button type="button" class="task-btn" style="width:28px;height:28px" onclick="moveCbBlock('${bid}',-1)" title="Вверх">▲</button>
+        <button type="button" class="task-btn" style="width:28px;height:28px" onclick="moveCbBlock('${bid}',1)" title="Вниз">▼</button>
+        <span style="font-size:13px;font-weight:800;color:var(--muted);margin-left:4px" id="cbNum-${bid}">Карточка ${cardBlocks.length}</span>
+      </div>
+      ${cardBlocks.length>1?`<button type="button" onclick="removeCardBlock('${bid}')" style="width:26px;height:26px;border:none;border-radius:50%;background:#fdecea;color:#E5484D;font-size:15px;cursor:pointer;display:grid;place-items:center">✕</button>`:'<div></div>'}
     </div>
     <div class="field">
       <div id="cbPhotoWrap-${bid}" style="${hasPhoto?'':'display:none;'}margin-bottom:8px;position:relative;max-width:180px;margin-left:auto;margin-right:auto">
@@ -1772,13 +1792,32 @@ function addCardBlock(prefill){
   container.appendChild(div);
 }
 
+function moveCbBlock(bid, dir){
+  const idx = cardBlocks.findIndex(b=>b.blockId===bid);
+  const newIdx = idx+dir;
+  if(newIdx<0||newIdx>=cardBlocks.length) return;
+  // меняем местами в массиве
+  [cardBlocks[idx],cardBlocks[newIdx]] = [cardBlocks[newIdx],cardBlocks[idx]];
+  // перестраиваем DOM
+  const container = document.getElementById('cardBlocksContainer');
+  const els = [...container.children];
+  const a = document.getElementById('cb-'+bid);
+  const b = document.getElementById('cb-'+cardBlocks[idx].blockId);
+  if(dir===-1){ container.insertBefore(a,b); } else { container.insertBefore(b,a); }
+  // обновляем номера
+  cardBlocks.forEach((b,i)=>{
+    const num=document.getElementById('cbNum-'+b.blockId);
+    if(num) num.textContent='Карточка '+(i+1);
+  });
+}
+
 function removeCardBlock(bid){
   const i=cardBlocks.findIndex(x=>x.blockId===bid);
   if(i>=0) cardBlocks.splice(i,1);
   const el=document.getElementById('cb-'+bid); if(el) el.remove();
   cardBlocks.forEach((b,idx)=>{
-    const hdr=document.querySelector('#cb-'+b.blockId+' div:first-child div:first-child');
-    if(hdr) hdr.textContent='Карточка '+(idx+1);
+    const num=document.getElementById('cbNum-'+b.blockId);
+    if(num) num.textContent='Карточка '+(idx+1);
   });
 }
 
