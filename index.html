@@ -921,8 +921,20 @@
   </div>
   <div style="padding:14px 16px 120px" id="hwLevelsList"></div>
   <div style="position:fixed;bottom:0;left:0;right:0;padding:16px;background:var(--bg);border-top:1.5px solid var(--line)">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px">
+      <span style="font-size:13px;font-weight:700;color:var(--ink)">Висит у ученика</span>
+      <button type="button" id="hwTtlBtn" onclick="openHwTtlPicker()"
+        style="display:flex;align-items:center;gap:6px;padding:8px 12px;border:1.5px solid var(--line);border-radius:11px;background:var(--surface);color:var(--ink);font-size:13px;font-weight:700;font-family:inherit;cursor:pointer">
+        <span id="hwTtlLabel">Неделя</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px">
+      <span style="font-size:13px;font-weight:700;color:var(--ink)">Уведомить ученика</span>
+      <div class="sw on" id="hwNotifySw" onclick="this.classList.toggle('on')"></div>
+    </div>
     <div id="hwSelCount" style="font-size:12px;color:var(--muted);font-weight:700;margin-bottom:8px;text-align:center">Выбрано: 0 групп</div>
-    <button class="save" id="hwSendBtn" onclick="sendHomework()">Отправить домашнее задание</button>
+    <button class="save" id="hwSendBtn" onclick="sendHomework()">Отправить ученику</button>
   </div>
 </div>
 
@@ -1106,7 +1118,7 @@
 <!-- TTL PICKER SHEET -->
 <div class="dim" id="ttlDim"></div>
 <div class="picker" id="ttlSheet">
-  <h3>Срок жизни поста</h3>
+  <h3 id="ttlSheetTitle">Срок жизни поста</h3>
   <p style="font-size:13px;color:var(--muted);font-weight:600;margin-bottom:14px">Через сколько пост исчезнет из приложения ученика</p>
   <div id="ttlOptions" style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px"></div>
 </div>
@@ -1357,7 +1369,26 @@ async function mockApi(path, opts){
   if(p==='/api/dev_mode') return {dev_mode:window._mockDevMode===true};
   if(p==='/api/dev_mode/set'){ const b=JSON.parse(opts.body); window._mockDevMode=!!b.on; return {ok:true, dev_mode:window._mockDevMode}; }
   if(p==='/api/students/connected') return {connected:['s1','s2']}; // Кристина и Никита&Диана
-  if(p==='/api/broadcast'){ console.log('BROADCAST:', b.text, b.student_ids); return {ok:true,sent:b.student_ids.length,failed:0}; }
+  if(p==='/api/broadcast'){ return {ok:true,sent:1,failed:0}; }
+  if(p==='/api/levels') return {levels:[
+    {id:'L1',name:'А1',sort:0,is_cards:0},
+    {id:'CL',name:'Карточки',sort:1,is_cards:1}
+  ]};
+  if(p==='/api/groups') return {groups:[
+    {id:'G1',name:'Семья',level_id:'L1',sort:0,cover:''},
+    {id:'G2',name:'Глаголы движения',level_id:'L1',sort:1,cover:''},
+    {id:'CG1',name:'Морские животные',level_id:'CL',sort:0,cover:''}
+  ]};
+  if(p==='/api/tasks') return {tasks:[
+    {id:'t1',group_id:'G1',level_id:'L1',type:'choice',word:'мајка',translation:'мама',sort:0},
+    {id:'t2',group_id:'G1',level_id:'L1',type:'input',word:'отац',translation:'отец',sort:1},
+    {id:'t3',group_id:'G2',level_id:'L1',type:'choice',word:'ићи',translation:'идти',sort:0}
+  ]};
+  if(p==='/api/cards') return {cards:[
+    {id:'c1',group_id:'CG1',title:'Хоботница',sort:0},
+    {id:'c2',group_id:'CG1',title:'Ајкула',sort:1}
+  ]};
+  if(p==='/api/homework/assign'||p==='/api/cards/assign'||p==='/api/homework/notify') return {ok:true};
   return {ok:true};
 }
 window._mockHistory=false;
@@ -2908,6 +2939,10 @@ function saveBroadcastDraft(){
     try{ localStorage.setItem('broadcastDrafts', JSON.stringify(broadcastDrafts)); }catch(e2){}
   }
   toast('Сохранено'); haptic('success');
+  // очищаем поле ввода и фото — пост «переехал» в сохранённые
+  el.innerHTML = '';
+  removeBroadcastPhoto();
+  updateBroadcastCounter(el);
 }
 
 // подтверждение и отправка
@@ -2968,21 +3003,28 @@ async function loadConnectedStudents(){
 function isConnected(studentId){ return connectedStudents.has(studentId); }
 
 /* ============ HOMEWORK ASSIGN ============ */
-let hwSelectedGroups = new Set(); // group_id — выбираем целыми группами (и задания, и карточки)
+let hwSelectedGroups = new Set();
 let hwTargetStudentId = null;
 let hwLevels = [], hwGroups = [], hwTasks = [], hwCards = [];
 let hwOpenLevels = new Set();
+let hwTtlDays = 7;
+let hwAssigned = {}; // group_id -> 'active' | 'expired'
 
 async function openHomeworkAssign(){
   hwTargetStudentId = profId;
   hwSelectedGroups.clear();
   hwOpenLevels.clear();
+  hwTtlDays = 7;
+  document.getElementById('hwTtlLabel').textContent = 'Неделя';
+  document.getElementById('hwNotifySw').classList.add('on');
   document.getElementById('hwSelCount').textContent = 'Выбрано: 0 групп';
-  // загружаем библиотеку (уровни, группы, задания, карточки)
-  const [ld, gd, td, cd] = await Promise.all([
-    apiFetch('/api/levels'), apiFetch('/api/groups'), apiFetch('/api/tasks'), apiFetch('/api/cards')
+  // загружаем библиотеку и что уже отправлено этому ученику
+  const [ld, gd, td, cd, asgn] = await Promise.all([
+    apiFetch('/api/levels'), apiFetch('/api/groups'), apiFetch('/api/tasks'), apiFetch('/api/cards'),
+    apiFetch(`/api/homework/assigned?student_id=${hwTargetStudentId}`).catch(()=>({tasks:{},cards:{}}))
   ]);
   hwLevels = ld.levels || []; hwGroups = gd.groups || []; hwTasks = td.tasks || []; hwCards = cd.cards || [];
+  hwAssigned = Object.assign({}, asgn.tasks || {}, asgn.cards || {});
   renderHwLibrary();
   const scr = document.getElementById('hwScreen');
   void scr.offsetWidth; scr.classList.add('on');
@@ -3009,12 +3051,18 @@ function renderHwLibrary(){
       if(!cnt) return ''; // пустые группы не отправляем
       const checked = hwSelectedGroups.has(g.id);
       const sub = isCards ? `${cnt} карточек` : `${cnt} заданий`;
+      const aStatus = hwAssigned[g.id];
+      const sentLabel = aStatus === 'active'
+        ? `<span style="font-size:10px;font-weight:800;color:#22c55e;margin-left:6px">● Отправлено</span>`
+        : aStatus === 'expired'
+        ? `<span style="font-size:10px;font-weight:800;color:var(--muted);margin-left:6px">● Отправлено</span>`
+        : '';
       return `<div style="display:flex;align-items:center;gap:10px;padding:11px 14px 11px 20px;border-top:1px solid var(--line);cursor:pointer" onclick="toggleHwGroup('${esc(g.id)}')">
         <div style="width:22px;height:22px;border-radius:6px;border:1.5px solid ${checked?'var(--violet)':'var(--line)'};background:${checked?'var(--violet)':'var(--bg)'};display:grid;place-items:center;flex:none">
           ${checked?'<svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 6l3 3 5-5" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>':''}
         </div>
         <div style="flex:1;min-width:0">
-          <div style="font-size:14px;font-weight:700">${esc(g.name)}</div>
+          <div style="font-size:14px;font-weight:700;display:flex;align-items:center;flex-wrap:wrap">${esc(g.name)}${sentLabel}</div>
           <div style="font-size:11px;color:var(--muted);font-weight:600">${sub}</div>
         </div>
       </div>`;
@@ -3041,6 +3089,7 @@ function toggleHwGroup(id){
 async function sendHomework(){
   if(!hwSelectedGroups.size){ toast('Выбери хотя бы одну группу'); return; }
   if(!hwTargetStudentId){ toast('Ученик не выбран'); return; }
+  const notify = document.getElementById('hwNotifySw').classList.contains('on');
   // карты уровней: какой group_id — карточки, какой — задания
   const cardsLevelIds = new Set(hwLevels.filter(l => l.is_cards).map(l => l.id));
   const isCardGroup = gid => {
@@ -3048,22 +3097,58 @@ async function sendHomework(){
     return g && cardsLevelIds.has(g.level_id);
   };
   const cardGroupIds = [];
+  let taskCount = 0, cardCount = 0;
   for(const gid of hwSelectedGroups){
-    if(isCardGroup(gid)){ cardGroupIds.push(gid); continue; }
+    if(isCardGroup(gid)){ cardGroupIds.push(gid); cardCount++; continue; }
     const tids = hwTasks.filter(t => t.group_id === gid).map(t => t.id);
     if(tids.length){
+      taskCount++;
       await apiFetch('/api/homework/assign', {method:'POST', body:JSON.stringify({
-        student_id: hwTargetStudentId, task_ids: tids, group_id: gid
+        student_id: hwTargetStudentId, task_ids: tids, group_id: gid,
+        ttl_days: hwTtlDays, notify: false   // уведомление шлём одно в конце
       })});
     }
   }
   if(cardGroupIds.length){
     await apiFetch('/api/cards/assign', {method:'POST', body:JSON.stringify({
-      student_id: hwTargetStudentId, group_ids: cardGroupIds
+      student_id: hwTargetStudentId, group_ids: cardGroupIds,
+      ttl_days: hwTtlDays, notify: false
     })});
+  }
+  // одно уведомление на всю отправку (если включено)
+  if(notify){
+    const total = taskCount + cardCount;
+    await apiFetch('/api/homework/notify', {method:'POST', body:JSON.stringify({
+      student_id: hwTargetStudentId,
+      has_tasks: taskCount > 0, has_cards: cardCount > 0, multiple: total > 1
+    })}).catch(()=>{});
   }
   document.getElementById('hwScreen').classList.remove('on');
   toast('Отправлено ученику'); haptic('success');
+}
+
+function openHwTtlPicker(){
+  document.getElementById('ttlSheetTitle').textContent = 'Сколько висит у ученика';
+  const box = document.getElementById('ttlOptions');
+  box.innerHTML = TTL_OPTIONS.map(o => {
+    const sel = o.days === hwTtlDays;
+    return `<button onclick="selectHwTtl(${o.days})" style="display:flex;align-items:center;justify-content:space-between;
+      width:100%;padding:13px 16px;border:1.5px solid ${sel?'var(--violet)':'var(--line)'};border-radius:12px;
+      background:${sel?'var(--violet-tint)':'var(--surface)'};color:${sel?'var(--violet)':'var(--ink)'};
+      font-size:15px;font-weight:700;font-family:inherit;cursor:pointer">
+      ${o.label}
+      ${sel?'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>':''}
+    </button>`;
+  }).join('');
+  document.getElementById('ttlDim').classList.add('on');
+  document.getElementById('ttlSheet').classList.add('on');
+}
+function selectHwTtl(days){
+  hwTtlDays = days;
+  const opt = TTL_OPTIONS.find(o => o.days === days);
+  document.getElementById('hwTtlLabel').textContent = opt.label;
+  closeTtlPicker();
+  haptic('light');
 }
 
 /* ============ STUDENT NOTIF SETTINGS ============ */

@@ -18,8 +18,7 @@
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:var(--ink)}
 
-.header{position:sticky;top:0;z-index:10;background:linear-gradient(180deg,var(--bg) 70%,rgba(244,240,251,0));padding:18px 20px 14px;transition:transform .25s ease}
-.header.hidden{transform:translateY(-100%)}
+.header{background:linear-gradient(180deg,var(--bg) 70%,rgba(244,240,251,0));padding:18px 20px 14px}
 .brand{display:flex;align-items:center;gap:10px;margin-bottom:16px}
 .dot{width:36px;height:36px;border-radius:11px;background:var(--surface);box-shadow:var(--shadow-soft);display:grid;place-items:center;flex:none}
 .brand h1{font-size:20px;font-weight:800;letter-spacing:-.02em;color:var(--ink)}
@@ -64,7 +63,7 @@ html,body{background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,'Seg
   background:var(--line)}
 .card-tile-frame.is-new{background:linear-gradient(135deg,var(--violet),#8B6AD4,var(--gold-soft))}
 .card-tile-frame.has-progress{
-  background:conic-gradient(var(--violet) var(--prog,0%), var(--line) var(--prog,0%));
+  background:conic-gradient(var(--line) var(--prog,0%), var(--violet) var(--prog,0%));
 }
 .card-tile.viewed .card-tile-frame{background:var(--line)}
 .card-tile-inner{width:100%;height:100%;border-radius:15px;overflow:hidden;background:var(--surface-2);
@@ -514,6 +513,7 @@ html,body{background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,'Seg
       <div class="sw" id="sw_all" onclick="toggleAllNotif()"></div>
     </div>
   </div>
+  <div style="font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin:2px 0 4px">Уведомления о занятиях</div>
   <div class="toggle-line" style="padding:12px 0;border-bottom:1px solid var(--line)">
     <div style="display:flex;align-items:center;gap:9px">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--violet)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>
@@ -528,6 +528,7 @@ html,body{background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,'Seg
     </div>
     <div class="sw" id="sw_day"></div>
   </div>
+  <div style="font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin:14px 0 4px">Уведомления о заданиях</div>
   <div class="toggle-line" style="padding:12px 0;border-bottom:1px solid var(--line)">
     <div style="display:flex;align-items:center;gap:9px">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--violet)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
@@ -620,7 +621,7 @@ const WEEKDAYS = ['Воскресенье','Понедельник','Вторн�
 let studentData = null; // данные из /api/homework/student
 let homeworkGroups = []; // сгруппированные задания
 let currentGroup = null; // текущая группа для прохождения
-let curTaskIdx = 0, curCorrect = 0, answered = false;
+let curTaskIdx = 0, curCorrect = 0, answered = false, inputErrors = 0;
 let curChoiceComments = []; // комментарии к вариантам, выровненные после удаления пустых
 let toastT = null;
 
@@ -808,11 +809,22 @@ function closeStoryViewer(){
   if(storyCurrentAudio){ storyCurrentAudio.pause(); storyCurrentAudio=null; }
   if(storyCurrentGroup){
     storyLastIdxByGroup[storyCurrentGroup.group_id] = storyCurrentIdx;
+    // обновляем плитку без полного ре-рендера
+    const tileIdx = cardGroupsData.findIndex(g=>g.group_id===storyCurrentGroup.group_id);
+    if(tileIdx>=0){
+      const frame=document.querySelector(`#cardTile${tileIdx} .card-tile-frame`);
+      if(frame){
+        const g=cardGroupsData[tileIdx];
+        const prog=cardTileProgress(g);
+        frame.className='card-tile-frame'+(prog===0?' is-new':prog>=100?'':' has-progress');
+        if(prog>0&&prog<100) frame.style.setProperty('--prog',prog+'%');
+        else frame.style.removeProperty('--prog');
+      }
+    }
     if(!storyCurrentGroup.viewed){
       storyCurrentGroup.viewed = true;
       api('/api/cards/view',{method:'POST',body:JSON.stringify({group_id:storyCurrentGroup.group_id})}).catch(()=>{});
     }
-    renderCardsStrip();
   }
   storyCurrentGroup = null;
 
@@ -1203,6 +1215,7 @@ function renderExercise(){
   const pct = Math.round((curTaskIdx/total)*100);
   const container = document.getElementById('exerciseContainer');
   answered = false;
+  inputErrors = 0;
 
   if(t.type === 'choice'){
     const raw = t.choices ? t.choices.split('|') : [];
@@ -1241,6 +1254,8 @@ function renderExercise(){
       </div>
       <div id="exComment"></div>
       <button class="check-btn on" id="checkBtn" onclick="checkInput()">Проверить</button>
+      <button id="hintBtn" onclick="showHint()" style="display:none;width:100%;padding:13px;border:1.5px solid var(--line);border-radius:14px;background:var(--surface);color:var(--muted);font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;margin-top:8px">Показать правильный вариант</button>
+      <button id="skipBtn" onclick="nextTask()" style="display:none;width:100%;padding:13px;border-radius:14px;background:var(--violet-tint);color:var(--violet);border:none;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;margin-top:8px">Пропустить →</button>
       <button class="next-btn" id="nextBtn" onclick="nextTask()">
         ${curTaskIdx+1<total?'Следующее →':'Завершить'}
       </button>`;
@@ -1302,6 +1317,8 @@ function renderPhotoExercise(t, pct, total){
       </div>
       <div id="exComment"></div>
       <button class="check-btn on" id="checkBtn" onclick="checkPhotoInput()">Проверить</button>
+      <button id="hintBtn" onclick="showHint()" style="display:none;width:100%;padding:13px;border:1.5px solid var(--line);border-radius:14px;background:var(--surface);color:var(--muted);font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;margin-top:8px">Показать правильный вариант</button>
+      <button id="skipBtn" onclick="nextTask()" style="display:none;width:100%;padding:13px;border-radius:14px;background:var(--violet-tint);color:var(--violet);border:none;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;margin-top:8px">Пропустить →</button>
       <button class="next-btn" id="nextBtn" onclick="nextTask()">
         ${curTaskIdx+1<total?'Следующее →':'Завершить'}
       </button>`;
@@ -1348,7 +1365,7 @@ async function pickPhotoChoice(idx){
   if(commentText){
     commentBox.innerHTML = `<div class="ex-comment ${isCorrect?'correct':'wrong'}">${esc(commentText)}</div>`;
   }
-  saveProgress(t.id, t.id, isCorrect);
+  saveProgress(t.id, t.id, isCorrect, '', true);
   if(tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred(isCorrect?'success':'error');
 }
 
@@ -1372,17 +1389,21 @@ function checkPhotoInput(){
     if(pi.correct_comment){
       document.getElementById('exComment').innerHTML = `<div class="ex-comment correct">${esc(pi.correct_comment)}</div>`;
     }
-    saveProgress(t.id, t.id, true, val);
+    saveProgress(t.id, t.id, true, val, true);
   } else {
     input.classList.remove('correct');
     input.classList.add('wrong');
     input.classList.remove('shake'); void input.offsetWidth; input.classList.add('shake');
-    // показываем первый подходящий комментарий к неверным вариантам, если есть
     if(pi.wrong_comments && pi.wrong_comments.length){
       document.getElementById('exComment').innerHTML = `<div class="ex-comment wrong">${esc(pi.wrong_comments[0])}</div>`;
     }
-    saveProgress(t.id, t.id, false, val);
+    inputErrors++;
+    saveProgress(t.id, t.id, false, val, false);
     setTimeout(()=>{ input.classList.remove('shake'); }, 400);
+    if(inputErrors >= 3){
+      const hint = document.getElementById('hintBtn');
+      if(hint) hint.style.display = 'block';
+    }
   }
 }
 
@@ -1412,8 +1433,8 @@ async function pickChoice(idx, correct, taskId, assignedId){
     commentBox.innerHTML = `<div class="ex-comment ${isCorrect?'correct':'wrong'}">${esc(commentText)}</div>`;
   }
 
-  // сохраняем прогресс
-  saveProgress(taskId, assignedId, isCorrect);
+  // сохраняем прогресс — done:true, задание пройдено в любом случае
+  saveProgress(taskId, assignedId, isCorrect, '', true);
   if(tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred(isCorrect?'success':'error');
 }
 
@@ -1433,19 +1454,43 @@ function checkInput(){
     input.classList.add('correct');
     document.getElementById('checkBtn').style.display='none';
     document.getElementById('nextBtn').classList.add('on');
-    // комментарий к правильному ответу
     if(t.word_comment){
       document.getElementById('exComment').innerHTML = `<div class="ex-comment correct">${esc(t.word_comment)}</div>`;
     }
-    saveProgress(t.id, t.id, true, val);
+    saveProgress(t.id, t.id, true, val, true);
   } else {
-    // неверно — поле краснеет и трясётся, попытка не засчитывается как финальная, можно вводить заново
     input.classList.remove('correct');
     input.classList.add('wrong');
     input.classList.remove('shake'); void input.offsetWidth; input.classList.add('shake');
-    saveProgress(t.id, t.id, false, val);
     setTimeout(()=>{ input.classList.remove('shake'); }, 400);
+    inputErrors++;
+    saveProgress(t.id, t.id, false, val, false);
+    if(inputErrors >= 3){
+      // показываем кнопку подсказки
+      const hint = document.getElementById('hintBtn');
+      if(hint) hint.style.display = 'block';
+    }
   }
+}
+
+function showHint(){
+  const t = currentGroup.tasks[curTaskIdx];
+  const pi = t.photo_input ? parsePhotoSub(t.photo_input) : null;
+  const correctAnswer = pi ? (pi.answer||'') : (t.translation||'');
+  const comment = pi ? (pi.correct_comment||'') : (t.word_comment||'');
+  answered = true;
+  // показываем правильный ответ + комментарий
+  const commentBox = document.getElementById('exComment');
+  let html = `<div class="ex-comment wrong" style="margin-bottom:8px">Правильный вариант: <strong>${esc(correctAnswer)}</strong></div>`;
+  if(comment) html += `<div class="ex-comment correct">${esc(comment)}</div>`;
+  commentBox.innerHTML = html;
+  document.getElementById('hintBtn').style.display = 'none';
+  document.getElementById('checkBtn').style.display = 'none';
+  document.getElementById('skipBtn').style.display = 'block';
+  document.getElementById('nextBtn').classList.remove('on');
+  // статистика — как неправильный, но задание помечаем done
+  saveProgress(t.id, t.id, false, '', true);
+  if(tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
 }
 
 async function playAudio(fileId){
@@ -1457,7 +1502,7 @@ async function playAudio(fileId){
   } catch(e){ toast('Ошибка воспроизведения'); }
 }
 
-async function saveProgress(taskId, assignedId, isCorrect, inputValue=''){
+async function saveProgress(taskId, assignedId, isCorrect, inputValue='', done=false){
   try {
     const t = currentGroup.tasks[curTaskIdx];
     await api('/api/homework/progress', {method:'POST', body:JSON.stringify({
@@ -1465,7 +1510,8 @@ async function saveProgress(taskId, assignedId, isCorrect, inputValue=''){
       assigned_id: t.id, // используем id из assigned_tasks
       group_id: currentGroup.id,
       is_correct: isCorrect,
-      input_value: inputValue
+      input_value: inputValue,
+      done: done || isCorrect
     })});
   } catch(e) { /* не критично */ }
 }
@@ -1655,19 +1701,6 @@ function switchHelpTab(tab){
   document.getElementById('helpPanel-'+tab).classList.add('on');
 }
 
-// ---- СКРЫТИЕ ШАПКИ ПРИ СКРОЛЛЕ ----
-let lastScrollY = 0;
-window.addEventListener('scroll', () => {
-  const header = document.querySelector('.header');
-  if(!header) return;
-  const y = window.scrollY;
-  if(y > lastScrollY && y > 60){
-    header.classList.add('hidden');
-  } else {
-    header.classList.remove('hidden');
-  }
-  lastScrollY = y;
-}, {passive:true});
 
 async function api(path, opts){
   return apiReal(path, opts);
