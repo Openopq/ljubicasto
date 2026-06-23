@@ -260,9 +260,14 @@ html,body{background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,'Seg
 .toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:10px 18px;border-radius:20px;font-size:13px;font-weight:700;opacity:0;transition:all .2s;z-index:99;white-space:nowrap}
 .toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
 
+#splash{position:fixed;inset:0;background:#F5F2FC;display:flex;align-items:center;justify-content:center;z-index:9999;transition:opacity .4s ease;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;}
+#splash.hide{opacity:0;pointer-events:none;}
+.sp-lt{display:inline-block;font-size:52px;font-weight:800;letter-spacing:-.025em;will-change:transform;}
+.sp-lt.blk{color:#2B2444}.sp-lt.vio{color:#6C3FC7}
 </style>
 </head>
 <body>
+<div id="splash"><div id="spWord" style="display:flex;align-items:flex-end"></div></div>
 
 <!-- ЧАСОВОЙ ПОЯС (если нужен выбор) -->
 <div class="tz-screen" id="tzScreen" style="display:none" onclick="onTzScreenBgClick(event)">
@@ -636,14 +641,32 @@ async function apiReal(path, opts){
   return r.json();
 }
 
+// ---- СПЛЭШ-АНИМАЦИЯ ----
+(function(){
+  const BLK='Љуби',VIO='чица';
+  let els=[],splashDone=false;
+  function build(){const w=document.getElementById('spWord');w.innerHTML='';els=[];[...BLK].forEach(c=>{const s=document.createElement('span');s.className='sp-lt blk';s.textContent=c;s.style.opacity='0';w.appendChild(s);els.push(s);});[...VIO].forEach(c=>{const s=document.createElement('span');s.className='sp-lt vio';s.textContent=c;s.style.opacity='0';w.appendChild(s);els.push(s);});}
+  function eout(t){return 1-Math.pow(1-t,3)}
+  function wait(ms){return new Promise(r=>setTimeout(r,ms))}
+  function animLetter(el,delay){return new Promise(res=>{setTimeout(()=>{const s=performance.now(),dur=420;el.style.opacity='0';el.style.transform='translateY(28px)';(function f(now){const t=Math.min((now-s)/dur,1),e=eout(t);const b=t<0.65?-9*Math.sin(Math.PI*t/0.65):0;el.style.transform=`translateY(${28*(1-e)+b}px)`;el.style.opacity=String(Math.min(t*5,1));t<1?requestAnimationFrame(f):(el.style.transform='translateY(0)',el.style.opacity='1',res());})(s);},delay);});}
+  function bounceEl(el){return new Promise(res=>{const s=performance.now(),dur=320;(function f(n){const t=Math.min((n-s)/dur,1);el.style.transform=`translateY(${-10*Math.sin(Math.PI*t)}px)`;t<1?requestAnimationFrame(f):(el.style.transform='translateY(0)',res());})(s);})}
+  async function phase1(){els.forEach(l=>{l.style.opacity='0';l.style.transform='translateY(28px)';});await wait(40);await Promise.all(els.map((l,i)=>animLetter(l,i*68)));await wait(350);}
+  async function phaseWave(dir){const order=dir===1?[...els]:[...els].reverse();for(let i=0;i<order.length;i++){bounceEl(order[i]);await wait(90);}await wait(320);}
+  async function loop(){build();await phase1();while(!splashDone){await phaseWave(1);if(!splashDone)await phaseWave(-1);}}
+  window._hideSplash=function(){splashDone=true;const sp=document.getElementById('splash');if(sp){sp.classList.add('hide');setTimeout(()=>sp.remove(),450);}};
+  loop();
+})();
+
 // ---- ИНИЦИАЛИЗАЦИЯ ----
 async function init(){
   const r = await api('/api/homework/student');
   studentData = r;
   const su = r.student || {};
 
-  // сначала показываем основной интерфейс — чтобы он был виден сквозь полупрозрачный экран приветствия
+  // показываем основной интерфейс
   showMainApp(r);
+  // скрываем сплэш
+  if(window._hideSplash) window._hideSplash();
 
   // и поверх него — приветствие+часовой пояс, если ученик ещё их не проходил
   if(!su.onboarding_done){
@@ -776,7 +799,6 @@ async function renderCardsStrip(){
 function openStoryViewer(groupIdx, originEl){
   storyCurrentGroup = cardGroupsData[groupIdx];
   const prog = cardTileProgress(storyCurrentGroup);
-  // если группа пройдена полностью — начинаем заново, иначе продолжаем с места остановки
   if(prog>=100){
     storyCurrentIdx = 0;
   } else {
@@ -786,21 +808,36 @@ function openStoryViewer(groupIdx, originEl){
   storyPaused = false;
   storyLoop = false;
   document.getElementById('storyTitle').textContent = storyCurrentGroup.group_name;
-  renderStoryProgress();
-  renderStorySlide();
 
-  const viewer=document.getElementById('storyViewer');
-  if(originEl){
-    const r=originEl.getBoundingClientRect();
-    const cx=r.left+r.width/2, cy=r.top+r.height/2;
-    viewer.style.transformOrigin=`${cx}px ${cy}px`;
+  // предзагружаем все фото группы до показа первой карточки
+  const photosToLoad = storyCurrentGroup.cards.map(c=>c.photo).filter(Boolean);
+  let loaded = 0;
+  const total = photosToLoad.length;
+  function proceed(){
+    renderStoryProgress();
+    renderStorySlide();
+    const viewer=document.getElementById('storyViewer');
+    if(originEl){
+      const r=originEl.getBoundingClientRect();
+      const cx=r.left+r.width/2, cy=r.top+r.height/2;
+      viewer.style.transformOrigin=`${cx}px ${cy}px`;
+    }
+    viewer.style.transform='scale(.85)';
+    viewer.classList.add('on');
+    requestAnimationFrame(()=>{ viewer.style.transition='opacity .25s ease, transform .3s cubic-bezier(.2,.8,.3,1)'; viewer.style.transform='scale(1)'; });
+    if(tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
   }
-  viewer.style.transform='scale(.85)';
-  viewer.classList.add('on');
-  requestAnimationFrame(()=>{ viewer.style.transition='opacity .25s ease, transform .3s cubic-bezier(.2,.8,.3,1)'; viewer.style.transform='scale(1)'; });
 
-  if(tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
-}
+  if(total===0){ proceed(); return; }
+  // таймаут 1.5с — если фото долго грузятся, всё равно открываем
+  let proceedCalled=false;
+  function tryProceed(){ if(!proceedCalled){ proceedCalled=true; proceed(); } }
+  setTimeout(tryProceed, 1500);
+  photosToLoad.forEach(src=>{
+    const img=new Image();
+    img.onload=img.onerror=()=>{ loaded++; if(loaded>=total) tryProceed(); };
+    img.src=src;
+  });
 
 function closeStoryViewer(){
   const viewer=document.getElementById('storyViewer');

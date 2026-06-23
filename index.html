@@ -494,10 +494,13 @@
   .msg-card-text{font-size:15px;line-height:1.55;color:var(--ink);word-break:break-word}
   .msg-card-text b{font-weight:800}
   .msg-card-time{font-size:11px;color:var(--muted-2);font-weight:600;margin-top:10px}
-</style>
-</head>
+#splash{position:fixed;inset:0;background:#F5F2FC;display:flex;align-items:center;justify-content:center;z-index:9999;transition:opacity .4s ease;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;}
+#splash.hide{opacity:0;pointer-events:none;}
+.sp-lt{display:inline-block;font-size:52px;font-weight:800;letter-spacing:-.025em;will-change:transform;}
+.sp-lt.blk{color:#2B2444}.sp-lt.vio{color:#6C3FC7}
+</style></head>
 <body>
-<div class="app" id="app">
+<div id="splash"><div id="spWord" style="display:flex;align-items:flex-end"></div></div><div class="app" id="app">
   <div class="topbar">
     <div class="brand">
       <div class="dot">
@@ -1288,6 +1291,22 @@ if(tg){ try{ tg.ready(); tg.expand(); tg.setHeaderColor && tg.setHeaderColor('#F
 // Кого пускаем (Telegram user id). Замени на реальные id — твой и Миляны.
 // Узнать id: написать @userinfobot. Пустой список = пускаем всех (для отладки).
 const ALLOWED = [7653945813, 6571313515];
+
+// ---- СПЛЭШ-АНИМАЦИЯ ----
+(function(){
+  const BLK='Љуби',VIO='чица';
+  let els=[],splashDone=false;
+  function build(){const w=document.getElementById('spWord');if(!w)return;w.innerHTML='';els=[];[...BLK].forEach(c=>{const s=document.createElement('span');s.className='sp-lt blk';s.textContent=c;s.style.opacity='0';w.appendChild(s);els.push(s);});[...VIO].forEach(c=>{const s=document.createElement('span');s.className='sp-lt vio';s.textContent=c;s.style.opacity='0';w.appendChild(s);els.push(s);});}
+  function eout(t){return 1-Math.pow(1-t,3)}
+  function wait(ms){return new Promise(r=>setTimeout(r,ms))}
+  function animLetter(el,delay){return new Promise(res=>{setTimeout(()=>{const s=performance.now(),dur=420;el.style.opacity='0';el.style.transform='translateY(28px)';(function f(now){const t=Math.min((now-s)/dur,1),e=eout(t);const b=t<0.65?-9*Math.sin(Math.PI*t/0.65):0;el.style.transform=`translateY(${28*(1-e)+b}px)`;el.style.opacity=String(Math.min(t*5,1));t<1?requestAnimationFrame(f):(el.style.transform='translateY(0)',el.style.opacity='1',res());})(s);},delay);});}
+  function bounceEl(el){return new Promise(res=>{const s=performance.now(),dur=320;(function f(n){const t=Math.min((n-s)/dur,1);el.style.transform=`translateY(${-10*Math.sin(Math.PI*t)}px)`;t<1?requestAnimationFrame(f):(el.style.transform='translateY(0)',res());})(s);})}
+  async function phase1(){els.forEach(l=>{l.style.opacity='0';l.style.transform='translateY(28px)';});await wait(40);await Promise.all(els.map((l,i)=>animLetter(l,i*68)));await wait(350);}
+  async function phaseWave(dir){const order=dir===1?[...els]:[...els].reverse();for(let i=0;i<order.length;i++){bounceEl(order[i]);await wait(90);}await wait(320);}
+  async function loop(){build();await phase1();while(!splashDone){await phaseWave(1);if(!splashDone)await phaseWave(-1);}}
+  window._hideSplash=function(){splashDone=true;const sp=document.getElementById('splash');if(sp){sp.classList.add('hide');setTimeout(()=>sp.remove(),450);}};
+  loop();
+})();
 function accessOk(){
   if(!ALLOWED.length) return true;
   const u = tg && tg.initDataUnsafe && tg.initDataUnsafe.user;
@@ -3259,10 +3278,14 @@ document.getElementById('stuNotifSave').onclick = async () => {
 
 /* ============ HW RESULTS IN NOTIF SCREEN ============ */
 let hwResults = [];
+// восстанавливаем кэш из localStorage — кнопка заполнена сразу при старте
+try{ const c=localStorage.getItem('_hwResultsCache'); if(c){ hwResults=JSON.parse(c)||[]; updateNotifBell(); } }catch(e){}
 
 async function renderHwResults(){
   const r = await apiFetch('/api/homework/results').catch(() => ({results:[]}));
   hwResults = r.results || [];
+  // сохраняем кэш
+  try{ localStorage.setItem('_hwResultsCache', JSON.stringify(hwResults)); }catch(e){}
   const section = document.getElementById('notifHwSection');
   const listEl = document.getElementById('notifHwList');
   const empty = document.getElementById('notifEmpty');
@@ -3292,6 +3315,7 @@ async function renderHwResults(){
         await apiFetch('/api/homework/dismiss', {method:'POST', body:JSON.stringify({id: r.id})});
         item.remove();
         hwResults = hwResults.filter(x => x.id !== r.id);
+        try{ localStorage.setItem('_hwResultsCache', JSON.stringify(hwResults)); }catch(e){}
         if(!hwResults.length) section.style.display = 'none';
         updateNotifBell();
       }, 260);
@@ -3714,6 +3738,7 @@ if(!accessOk()){
   document.body.innerHTML='<div class="empty-note" style="padding-top:80px">Нет доступа.</div>';
 }else{
   renderMonth().then(async()=>{
+    if(window._hideSplash) window._hideSplash();
     updateStuCount();
     await loadConnectedStudents();
     renderStudents();
