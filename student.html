@@ -858,12 +858,34 @@ function renderStorySlide(){
   const body=document.getElementById('storyBody');
   body.querySelectorAll('.story-slide').forEach(el=>el.remove());
   const slide=document.createElement('div');
-  slide.className='story-slide active';
+  slide.className='story-slide'; // не active пока фото не загружено
   slide.onclick=()=>storyNav(1);
-  slide.innerHTML = `
-    ${card.photo?`<img src="${card.photo}">`:`<div style="width:80%;aspect-ratio:9/16;background:linear-gradient(135deg,#2a2440,#3d3460);border-radius:16px;display:grid;place-items:center;color:rgba(255,255,255,.3);font-size:13px;font-weight:700">нет фото</div>`}
-    ${card.title?`<div class="story-caption">${esc(card.title)}</div>`:''}`;
-  body.insertBefore(slide, body.firstChild);
+
+  if(card.photo){
+    const img=document.createElement('img');
+    img.src=card.photo;
+    if(card.title){
+      const cap=document.createElement('div');
+      cap.className='story-caption';
+      cap.textContent=card.title;
+      slide.appendChild(img);
+      slide.appendChild(cap);
+    } else {
+      slide.appendChild(img);
+    }
+    body.insertBefore(slide, body.firstChild);
+    // показываем слайд только после загрузки фото
+    if(img.complete){
+      slide.classList.add('active');
+    } else {
+      img.onload = () => slide.classList.add('active');
+      img.onerror = () => slide.classList.add('active'); // показываем даже если ошибка
+    }
+  } else {
+    slide.innerHTML = `<div style="width:80%;aspect-ratio:9/16;background:linear-gradient(135deg,#2a2440,#3d3460);border-radius:16px;display:grid;place-items:center;color:rgba(255,255,255,.3);font-size:13px;font-weight:700">нет фото</div>${card.title?`<div class="story-caption">${esc(card.title)}</div>`:''}`;
+    slide.classList.add('active');
+    body.insertBefore(slide, body.firstChild);
+  }
 
   for(let i=0;i<storyCurrentGroup.cards.length;i++){
     const fill=document.getElementById('storyFill'+i);

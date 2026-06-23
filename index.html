@@ -3355,15 +3355,29 @@ function updateNotifBell(){
 const settingsScreen=document.getElementById('settingsScreen');
 let settInitial={}; // начальное состояние при открытии
 
+let _settCache = null; // кэш состояния настроек
+
 async function openSettings(){
-  // СНАЧАЛА показываем экран с анимацией (контент уже в DOM статично)
-  void settingsScreen.offsetWidth; // reflow для корректной стартовой позиции
+  void settingsScreen.offsetWidth;
   settingsScreen.classList.add('on');
-  // ПОТОМ подгружаем актуальное состояние
-  let histOn=false, hourOn=true, mornOn=true, eveOn=false, hwResOn=false, devOn=false;
+  // если есть кэш — показываем мгновенно, без дёрганья
+  if(_settCache){
+    setSw('settHistorySw',_settCache.histOn);
+    setSw('settDevModeSw',_settCache.devOn);
+    document.getElementById('devModeBlock').style.display=_settCache.devOn?'block':'none';
+    setSw('settHourSw',_settCache.hourOn);
+    setSw('settMorningSw',_settCache.mornOn);
+    setSw('settEveningSw',_settCache.eveOn);
+    setSw('settHwResultsSw',_settCache.hwResOn);
+  }
+  // подгружаем актуальное состояние с сервера
+  let histOn=_settCache?_settCache.histOn:false, hourOn=_settCache?_settCache.hourOn:true,
+      mornOn=_settCache?_settCache.mornOn:true, eveOn=_settCache?_settCache.eveOn:false,
+      hwResOn=_settCache?_settCache.hwResOn:false, devOn=_settCache?_settCache.devOn:false;
   try{ const h=await apiFetch('/api/history'); histOn=h.history===true; }catch(e){}
   try{ const d=await apiFetch('/api/dev_mode'); devOn=d.dev_mode===true; }catch(e){}
   try{ const n=await apiFetch('/api/notify'); hourOn=n.hour_reminder!==false; mornOn=n.morning!==false; eveOn=n.evening===true; hwResOn=n.hw_results===true; }catch(e){}
+  _settCache={histOn,hourOn,mornOn,eveOn,hwResOn,devOn};
   setSw('settHistorySw',histOn);
   setSw('settDevModeSw',devOn);
   document.getElementById('devModeBlock').style.display=devOn?'block':'none';
@@ -3545,7 +3559,7 @@ document.getElementById('notifBtn').onclick = async () => {
   await renderUnpaidNotif();
   await renderHwResults();
 };
-document.getElementById('notifBack').onclick = () => notifScreen.classList.remove('on');
+document.getElementById('notifBack').onclick = () => { notifScreen.classList.remove('on'); updateNotifBell(); };
 
 /* ============ STATISTICS (lazy, only on tap) ============ */
 async function gatherStats(){
@@ -3703,6 +3717,8 @@ if(!accessOk()){
     updateStuCount();
     await loadConnectedStudents();
     renderStudents();
+    // загружаем уведомления о ДЗ сразу — чтобы кнопка была заполнена без клика
+    renderHwResults().catch(()=>{});
     // подгружаем все месяцы с данными для точного счётчика учеников
     await fetchAllKeys();
     if(allKeysCache&&allKeysCache.length){

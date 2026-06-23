@@ -304,7 +304,14 @@ html,body{background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,'Seg
     <div class="form-card">
       <div class="field">
         <label>Название группы карточек</label>
-        <input id="cardGroupNameInp" placeholder="нпр. Морские животные" autocomplete="off">
+        <input id="cardGroupNameInp" placeholder="нпр. Морские животные" autocomplete="off" oninput="checkCardGroupExists()">
+        <div id="cardGroupExistsHint" style="display:none;margin-top:8px;background:var(--violet-tint);border-radius:10px;padding:10px 12px;font-size:13px;color:var(--violet);font-weight:600;line-height:1.5">
+          Группа с таким названием уже существует.
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <button onclick="confirmEditExistingCardGroup()" style="flex:1;padding:8px;background:var(--violet);color:#fff;border:none;border-radius:9px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer">Редактировать её</button>
+            <button onclick="makeCardGroupCopy()" style="flex:1;padding:8px;background:var(--bg);color:var(--muted);border:1.5px solid var(--line);border-radius:9px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer">Создать копию</button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -335,8 +342,13 @@ html,body{background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,'Seg
 
     <!-- добавить карточку -->
     <button type="button" onclick="addCardBlock()" id="addCardBlockBtn"
-      style="display:flex;align-items:center;justify-content:center;gap:8px;width:calc(100% - 32px);margin:0 16px 12px;padding:13px;border:2px dashed var(--violet-soft);border-radius:14px;background:var(--violet-tint);color:var(--violet);font-size:13px;font-weight:800;font-family:inherit;cursor:pointer">
+      style="display:flex;align-items:center;justify-content:center;gap:8px;width:calc(100% - 32px);margin:0 16px 8px;padding:13px;border:2px dashed var(--violet-soft);border-radius:14px;background:var(--violet-tint);color:var(--violet);font-size:13px;font-weight:800;font-family:inherit;cursor:pointer">
       + Добавить карточку
+    </button>
+
+    <button type="button" id="cardSortBtn" onclick="openCardSortFromEditor()"
+      style="display:flex;align-items:center;justify-content:center;gap:8px;width:calc(100% - 32px);margin:0 16px 12px;padding:11px;border:1.5px solid var(--line);border-radius:14px;background:var(--surface);color:var(--muted);font-size:13px;font-weight:700;font-family:inherit;cursor:pointer">
+      1↔2 Изменить порядок
     </button>
 
     <button class="save-btn" id="saveCardGroupBtn" onclick="saveCardGroup()" style="margin:0 16px 24px;width:calc(100% - 32px)">Сохранить группу</button>
@@ -1098,16 +1110,56 @@ function moveCardReorder(idx,dir){
   renderCardReorderList();
 }
 async function saveCardReorder(){
+  // если сортировка из редактора — применяем локально без запроса к серверу
+  if(cardReorderGroupId === '__editor__'){
+    applyEditorCardSort();
+    closeCardReorder();
+    toast('Порядок изменён');
+    return;
+  }
   const ids=cardReorderArr.map(c=>c.id);
   try{
     await api('/api/cards/reorder',{method:'POST',body:JSON.stringify({ids})});
   }catch(e){ toast('Не удалось сохранить порядок'); return; }
-  // применяем sort локально
   cardReorderArr.forEach((c,i)=>{ const it=cardItems.find(x=>x.id===c.id); if(it) it.sort=i; });
   closeCardReorder();
   renderAll();
   toast('Порядок карточек сохранён');
 }
+
+function openCardSortFromEditor(){
+  if(cardBlocks.length < 2){ toast('Нужно минимум 2 карточки'); return; }
+  cardReorderGroupId = '__editor__';
+  cardReorderArr = cardBlocks.map((b,i) => {
+    const titleEl = document.getElementById('cbTitle-'+b.blockId);
+    const img = document.getElementById('cbPhotoImg-'+b.blockId);
+    return {
+      id: b.blockId,
+      title: titleEl ? titleEl.value : '',
+      photo: b.photoData || (img && img.src !== window.location.href ? img.src : '') || '',
+      audio_file_id: document.getElementById('cbAudio-'+b.blockId)?.value || '',
+      duration_mode: b.durMode || 'normal',
+      _blockIdx: i
+    };
+  });
+  renderCardReorderList();
+  const scr = document.getElementById('cardReorderScreen');
+  scr.style.visibility = 'visible';
+  void scr.offsetWidth;
+  scr.classList.add('on');
+}
+
+function applyEditorCardSort(){
+  const newOrder = cardReorderArr.map(r => cardBlocks.find(b => b.blockId === r.id));
+  const container = document.getElementById('cardBlocksContainer');
+  newOrder.forEach(b => { if(b) container.appendChild(document.getElementById('cb-'+b.blockId)); });
+  cardBlocks = newOrder.filter(Boolean);
+  cardBlocks.forEach((b,idx) => {
+    const hdr = document.querySelector('#cb-'+b.blockId+' div:first-child div:first-child');
+    if(hdr) hdr.textContent = 'Карточка '+(idx+1);
+  });
+}
+
 function openCardImg(src){
   if(!src) return;
   document.getElementById('cardImgLightboxImg').src=src;
@@ -1844,12 +1896,39 @@ async function saveCardGroup(){
       }
     }
     editingCardGroupId=gid;
-    openGroups.add(gid); openLevels.add(levelId);
+    openLevels.add(levelId);
+    // открываем только уровень и группу, но НЕ список карточек внутри
     renderAll(); _cardFormInited = false; toast('Группа карточек сохранена'); haptic('success');
   }finally{
     savingCardGroup=false;
     if(btn){btn.disabled=false;btn.style.opacity='';btn.textContent='Сохранить группу';}
   }
+}
+
+function checkCardGroupExists(){
+  if(editingCardGroupId) return;
+  const name = document.getElementById('cardGroupNameInp').value.trim().toLowerCase();
+  const hint = document.getElementById('cardGroupExistsHint');
+  const cardsLevel = levels.find(l=>l.is_cards);
+  if(!name){ hint.style.display='none'; return; }
+  const exists = groups.find(g => g.name.trim().toLowerCase()===name && cardsLevel && g.level_id===cardsLevel.id);
+  hint.style.display = (exists && !editingCardGroupId) ? 'block' : 'none';
+}
+
+function confirmEditExistingCardGroup(){
+  const name = document.getElementById('cardGroupNameInp').value.trim().toLowerCase();
+  const cardsLevel = levels.find(l=>l.is_cards);
+  const exists = groups.find(g => g.name.trim().toLowerCase()===name && cardsLevel && g.level_id===cardsLevel.id);
+  if(!exists) return;
+  document.getElementById('cardGroupExistsHint').style.display='none';
+  editCardGroup(exists.id);
+  toast('Открыта существующая группа для редактирования');
+}
+
+function makeCardGroupCopy(){
+  const inp = document.getElementById('cardGroupNameInp');
+  inp.value = inp.value.trim() + ' (копия)';
+  document.getElementById('cardGroupExistsHint').style.display='none';
 }
 
 function editCard(id){ editCardFromLib(id); }
