@@ -1217,6 +1217,13 @@
           </div>
           <div class="sw" id="settHistorySw"></div>
         </div>
+        <div class="toggle-line" style="padding:14px 16px;border-bottom:1px solid var(--line)">
+          <div style="display:flex;align-items:center;gap:9px">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--violet)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <div><div class="t-txt">Удаление контента</div><div class="t-sub">крестики у заданий, карточек и постов у ученика</div></div>
+          </div>
+          <div class="sw" id="settDeleteModeSw"></div>
+        </div>
       </div>
       <div class="settings-item" id="settStatsBtn" style="padding:14px 16px;cursor:pointer;border-bottom:none">
         <div class="settings-body" style="display:flex;align-items:center;gap:9px">
@@ -3395,15 +3402,17 @@ async function openSettings(){
     setSw('settMorningSw',_settCache.mornOn);
     setSw('settEveningSw',_settCache.eveOn);
     setSw('settHwResultsSw',_settCache.hwResOn);
+    setSw('settDeleteModeSw',_settCache.deleteOn||false);
   }
   // подгружаем актуальное состояние с сервера
   let histOn=_settCache?_settCache.histOn:false, hourOn=_settCache?_settCache.hourOn:true,
       mornOn=_settCache?_settCache.mornOn:true, eveOn=_settCache?_settCache.eveOn:false,
-      hwResOn=_settCache?_settCache.hwResOn:false, devOn=_settCache?_settCache.devOn:false;
+      hwResOn=_settCache?_settCache.hwResOn:false, devOn=_settCache?_settCache.devOn:false,
+      deleteOn=_settCache?(_settCache.deleteOn||false):false;
   try{ const h=await apiFetch('/api/history'); histOn=h.history===true; }catch(e){}
-  try{ const d=await apiFetch('/api/dev_mode'); devOn=d.dev_mode===true; }catch(e){}
+  try{ const d=await apiFetch('/api/dev_mode'); devOn=d.dev_mode===true; deleteOn=d.delete_mode===true; }catch(e){}
   try{ const n=await apiFetch('/api/notify'); hourOn=n.hour_reminder!==false; mornOn=n.morning!==false; eveOn=n.evening===true; hwResOn=n.hw_results===true; }catch(e){}
-  _settCache={histOn,hourOn,mornOn,eveOn,hwResOn,devOn};
+  _settCache={histOn,hourOn,mornOn,eveOn,hwResOn,devOn,deleteOn};
   try{ localStorage.setItem('_settCache', JSON.stringify(_settCache)); }catch(e){}
   setSw('settHistorySw',histOn);
   setSw('settDevModeSw',devOn);
@@ -3412,7 +3421,8 @@ async function openSettings(){
   setSw('settMorningSw',mornOn);
   setSw('settEveningSw',eveOn);
   setSw('settHwResultsSw',hwResOn);
-  settInitial={history:histOn,hour:hourOn,morning:mornOn,evening:eveOn,hwResults:hwResOn,devMode:devOn};
+  setSw('settDeleteModeSw',deleteOn);
+  settInitial={history:histOn,hour:hourOn,morning:mornOn,evening:eveOn,hwResults:hwResOn,devMode:devOn,deleteMode:deleteOn};
 }
 
 document.getElementById('settingsBack').onclick=()=>settingsScreen.classList.remove('on');
@@ -3449,23 +3459,19 @@ document.getElementById('settSaveBtn').onclick=async()=>{
   const mornOn=document.getElementById('settMorningSw').classList.contains('on');
   const eveOn=document.getElementById('settEveningSw').classList.contains('on');
   const hwResOn=document.getElementById('settHwResultsSw').classList.contains('on');
+  const deleteOn=document.getElementById('settDeleteModeSw').classList.contains('on');
   const histChanged=histOn!==settInitial.history;
   const devModeChanged=devOn!==settInitial.devMode;
+  const deleteModeChanged=deleteOn!==(settInitial.deleteMode||false);
   const notifChanged=hourOn!==settInitial.hour||mornOn!==settInitial.morning||eveOn!==settInitial.evening||hwResOn!==settInitial.hwResults;
-  const anyChanged=histChanged||devModeChanged||notifChanged;
+  const anyChanged=histChanged||devModeChanged||deleteModeChanged||notifChanged;
   if(anyChanged){
-    if(histChanged){
-      try{ await apiFetch('/api/history/set',{method:'POST',body:JSON.stringify({on:histOn})}); historyMode=histOn; }catch(e){}
-    }
-    if(devModeChanged){
-      try{ await apiFetch('/api/dev_mode/set',{method:'POST',body:JSON.stringify({on:devOn})}); devMode=devOn; }catch(e){}
-    }
-    if(notifChanged){
-      try{ await apiFetch('/api/notify/set',{method:'POST',body:JSON.stringify({hour_reminder:hourOn,morning:mornOn,evening:eveOn,hw_results:hwResOn})}); }catch(e){}
-    }
+    if(histChanged) try{ await apiFetch('/api/history/set',{method:'POST',body:JSON.stringify({on:histOn})}); historyMode=histOn; }catch(e){}
+    if(devModeChanged) try{ await apiFetch('/api/dev_mode/set',{method:'POST',body:JSON.stringify({on:devOn})}); devMode=devOn; }catch(e){}
+    if(deleteModeChanged) try{ await apiFetch('/api/delete_mode/set',{method:'POST',body:JSON.stringify({on:deleteOn})}); }catch(e){}
+    if(notifChanged) try{ await apiFetch('/api/notify/set',{method:'POST',body:JSON.stringify({hour_reminder:hourOn,morning:mornOn,evening:eveOn,hw_results:hwResOn})}); }catch(e){}
     settingsScreen.classList.remove('on');
     if(histChanged||devModeChanged){
-      // режим истории/специальных настроек влияет на отображение — обновляем кэш
       dataCache={}; allKeysCache=null; loadedMonths.clear(); studentsCache=null;
       await renderMonth(); await renderStudents();
     }

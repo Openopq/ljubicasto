@@ -660,10 +660,12 @@ async function apiReal(path, opts){
 // ---- ИНИЦИАЛИЗАЦИЯ ----
 async function init(){
   // грузим все данные параллельно
-  const [r] = await Promise.all([
-    api('/api/homework/student')
+  const [r, devData] = await Promise.all([
+    api('/api/homework/student'),
+    api('/api/dev_mode').catch(()=>({delete_mode:false}))
   ]);
   studentData = r;
+  deleteMode = !!(devData && devData.delete_mode);
   const su = r.student || {};
 
   // рендерим всё до показа интерфейса
@@ -798,11 +800,13 @@ async function renderCardsStrip(){
     const prog = cardTileProgress(g);
     const frameClass = prog===0 ? 'is-new' : (prog>=100 ? '' : 'has-progress');
     const frameStyle = (prog>0 && prog<100) ? `style="--prog:${prog}%"` : '';
-    return `<div class="card-tile${g.viewed?' viewed':''}" id="cardTile${i}" onclick="openStoryViewer(${i},this)">
+    return `<div class="card-tile${g.viewed?' viewed':''}" id="cardTile${i}" onclick="openStoryViewer(${i},this)" style="position:relative">
       <div class="card-tile-frame ${frameClass}" ${frameStyle}>
         <div class="card-tile-inner">${cover?`<img src="${cover}">`:`<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--violet-soft)" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>`}</div>
       </div>
       <div class="card-tile-name">${esc(g.group_name)}</div>
+      ${deleteMode?`<button onclick="event.stopPropagation();confirmRemove('card_group','${esc(g.group_id)}')"
+        style="position:absolute;top:0;right:0;width:20px;height:20px;border:none;border-radius:50%;background:#fdecea;color:#E5484D;font-size:11px;cursor:pointer;display:grid;place-items:center;z-index:5">✕</button>`:''}
     </div>`;
   }).join('');
 }
@@ -1128,8 +1132,10 @@ async function renderMessages(){
   track.innerHTML = messages.map(m => {
     const d = new Date(m.sent_at);
     const timeStr = d.toLocaleString('ru-RU', {day:'numeric', month:'long', hour:'2-digit', minute:'2-digit'});
-    return `<div class="msg-card">
-      ${m.photo_url ? `<img src="${m.photo_url}" alt="" onclick="openLightbox('${m.photo_url.replace(/'/g,"\\'")}')">` : ''}
+    return `<div class="msg-card" style="position:relative">
+      ${deleteMode?`<button onclick="confirmRemove('message','${m.id}')"
+        style="position:absolute;top:8px;right:8px;width:24px;height:24px;border:none;border-radius:50%;background:#fdecea;color:#E5484D;font-size:13px;cursor:pointer;display:grid;place-items:center;z-index:5">✕</button>`:''}
+      ${m.photo_url ? `<img src="${m.photo_url}" alt="" onclick="openLightbox('${m.photo_url.replace(/'/g,"\'")}')" >` : ''}
       <div class="msg-card-body">
         ${m.text ? `<div class="msg-card-text">${m.text}</div>` : ''}
         <div class="msg-card-time">${timeStr}</div>
@@ -1242,10 +1248,12 @@ function renderHomework(hw){
           : `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--violet)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>`}</div>
         <div class="hw-body">
           <div class="hw-name">${esc(g.name)}</div>
-          <div class="hw-sub">${total} заданий${done?` · выполнено ${done}`:''}  </div>
+          <div class="hw-sub">${total} заданий${done?` · выполнено ${done}`:''}</div>
           <div class="progress-bar"><div class="progress-fill" style="width:${pct}%;${isDone?'background:var(--green)':''}"></div></div>
         </div>
         <div class="hw-badge ${isDone?'done':'new'}">${isDone?'Готово':'Новое'}</div>
+        ${deleteMode?`<button onclick="event.stopPropagation();confirmRemove('task_group','${esc(g.id)}')"
+          style="position:absolute;top:6px;right:6px;width:22px;height:22px;border:none;border-radius:50%;background:#fdecea;color:#E5484D;font-size:13px;cursor:pointer;display:grid;place-items:center">✕</button>`:''}
       </div>`;
     card.onclick = () => openTask(g);
     list.appendChild(card);
@@ -1708,30 +1716,62 @@ function renderTzList(q){
 
 // ---- НАСТРОЙКИ ----
 const NOTIF_TOGGLE_IDS = ['sw_homework','sw_hour','sw_day','sw_cards','sw_posts'];
+let _notifCache = null; // кэш настроек уведомлений
+try{ const c=localStorage.getItem('_notifCache'); if(c) _notifCache=JSON.parse(c); }catch(e){}
 
-let currentStudentTz = 'Europe/Moscow'; // для шторки выбора пояса из настроек
+let deleteMode = false; // режим удаления контента (из dev настроек)
+
+function _applyNotifCache(n){
+  const sw = (id, on) => { document.getElementById(id).classList.toggle('on', on); };
+  sw('sw_homework', n.notif_homework != 0);
+  sw('sw_hour', n.notif_hour != 0);
+  sw('sw_day', !!n.notif_day);
+  sw('sw_cards', n.notif_cards != 0);
+  sw('sw_posts', n.notif_posts != 0);
+  updateAllToggleState();
+}
 
 async function openSettings(){
+  // применяем кэш мгновенно — без дёрганья
+  if(_notifCache) _applyNotifCache(_notifCache);
+
+  document.getElementById('settDim').classList.add('on');
+  document.getElementById('settSheet').classList.add('on');
+  document.getElementById('settSheet').scrollTop = 0;
+
   try {
     const n = await api('/api/student/notif');
-    const sw = (id, on) => { document.getElementById(id).classList.toggle('on', on); };
-    sw('sw_homework', n.notif_homework != 0);
-    sw('sw_hour', n.notif_hour != 0);
-    sw('sw_day', !!n.notif_day);
-    sw('sw_cards', n.notif_cards != 0);
-    sw('sw_posts', n.notif_posts != 0);
-    updateAllToggleState();
+    _notifCache = n;
+    try{ localStorage.setItem('_notifCache', JSON.stringify(n)); }catch(e){}
+    _applyNotifCache(n);
     currentStudentTz = n.timezone || 'Europe/Moscow';
     const city = TZ_CITIES.find(c => c.tz === currentStudentTz);
     document.getElementById('settTzInfo').textContent = city ? `${city.name} · ${city.utc}` : currentStudentTz;
   } catch(e){}
+
   NOTIF_TOGGLE_IDS.forEach(id => {
     const el = document.getElementById(id);
     el.onclick = () => { el.classList.toggle('on'); updateAllToggleState(); };
   });
-  document.getElementById('settDim').classList.add('on');
-  document.getElementById('settSheet').classList.add('on');
-  document.getElementById('settSheet').scrollTop = 0;
+}
+
+async function confirmRemove(kind, id){
+  const labels = {task_group:'задание', card_group:'карточки', message:'пост'};
+  const ok = confirm(`Убрать ${labels[kind]||'элемент'}?`);
+  if(!ok) return;
+  try{
+    await api('/api/student/remove',{method:'POST',body:JSON.stringify({kind,id})});
+    toast('Убрано');
+    // перезагружаем нужный раздел
+    if(kind==='task_group'){
+      const r = await api('/api/homework/student');
+      renderHomework(r.homework||[]);
+    } else if(kind==='card_group'){
+      await renderCardsStrip();
+    } else if(kind==='message'){
+      await renderMessages();
+    }
+  }catch(e){ toast('Не удалось убрать'); }
 }
 
 function updateAllToggleState(){
@@ -1754,12 +1794,31 @@ function closeSettings(){
 
 async function saveSettings(){
   const on = id => document.getElementById(id).classList.contains('on');
-  await api('/api/student/notif', {method:'POST', body:JSON.stringify({
+  const cur = {
     homework: on('sw_homework'), hour: on('sw_hour'), day: on('sw_day'),
     cards: on('sw_cards'), posts: on('sw_posts')
-  })}).catch(()=>{});
+  };
+  // сравниваем с кэшем — сохраняем только если изменилось
+  const changed = !_notifCache ||
+    (cur.homework ? 1 : 0) !== (_notifCache.notif_homework != 0 ? 1 : 0) ||
+    (cur.hour ? 1 : 0) !== (_notifCache.notif_hour != 0 ? 1 : 0) ||
+    (cur.day ? 1 : 0) !== (!!_notifCache.notif_day ? 1 : 0) ||
+    (cur.cards ? 1 : 0) !== (_notifCache.notif_cards != 0 ? 1 : 0) ||
+    (cur.posts ? 1 : 0) !== (_notifCache.notif_posts != 0 ? 1 : 0);
   closeSettings();
-  toast('Настройки сохранены');
+  if(changed){
+    await api('/api/student/notif', {method:'POST', body:JSON.stringify(cur)}).catch(()=>{});
+    // обновляем кэш
+    if(_notifCache){
+      _notifCache.notif_homework = cur.homework ? 1 : 0;
+      _notifCache.notif_hour = cur.hour ? 1 : 0;
+      _notifCache.notif_day = cur.day ? 1 : 0;
+      _notifCache.notif_cards = cur.cards ? 1 : 0;
+      _notifCache.notif_posts = cur.posts ? 1 : 0;
+      try{ localStorage.setItem('_notifCache', JSON.stringify(_notifCache)); }catch(e){}
+    }
+    toast('Настройки сохранены');
+  }
 }
 
 function openHelp(){

@@ -1779,9 +1779,47 @@ function addCardBlock(prefill){
       <div id="cbDurHint-${bid}" style="margin-top:6px;font-size:11px;color:var(--muted);line-height:1.5">${durMode==='preview'?'Короткий показ 3 сек':'1 сек до голосового · длина голосового · 2 сек после (или 4 сек без озвучки)'}</div>
     </div>
     <div class="field">
-      <label>Аудио file_id <span style="font-weight:600;color:var(--muted);font-size:10px">— необязательно</span></label>
-      <input id="cbAudio-${bid}" value="${prefill&&prefill.audio_file_id?prefill.audio_file_id:''}" placeholder="Telegram file_id" autocomplete="off">
-      <div style="margin-top:6px;font-size:12px;color:var(--muted);line-height:1.5">💡 Отправь голосовое боту — он пришлёт file_id</div>
+      <label>Голосовое</label>
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
+        <!-- переключатель режима записи -->
+        <div id="cbRecMode-${bid}" data-mode="hold" style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:var(--muted);cursor:pointer;flex:none" onclick="toggleCbRecMode('${bid}')">
+          <div style="width:36px;height:20px;border-radius:10px;background:var(--violet);position:relative;flex:none">
+            <div id="cbRecDot-${bid}" style="position:absolute;top:3px;right:3px;width:14px;height:14px;border-radius:50%;background:#fff;transition:left .2s;left:auto"></div>
+          </div>
+          <span id="cbRecModeLabel-${bid}">зажать</span>
+        </div>
+        <!-- кнопка микрофона -->
+        <button type="button" id="cbMicBtn-${bid}"
+          onmousedown="startCbRec('${bid}')" onmouseup="stopCbRec('${bid}')" onmouseleave="stopCbRec('${bid}')"
+          ontouchstart="event.preventDefault();startCbRec('${bid}')" ontouchend="stopCbRec('${bid}')"
+          onclick="clickCbRec('${bid}')"
+          style="width:56px;height:56px;border-radius:50%;border:none;background:var(--violet-tint);color:var(--violet);cursor:pointer;display:grid;place-items:center;flex:none;position:relative;transition:background .2s">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="9" y="2" width="6" height="11" rx="3"/>
+            <path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="19" x2="12" y2="22"/>
+            <line x1="8" y1="22" x2="16" y2="22"/>
+          </svg>
+          <div id="cbMicRing-${bid}" style="position:absolute;inset:-4px;border-radius:50%;border:2px solid var(--violet);opacity:0;transition:opacity .2s"></div>
+        </button>
+        <!-- плей и удаление -->
+        <button type="button" id="cbPlayBtn-${bid}" style="display:none;width:36px;height:36px;border-radius:50%;border:1.5px solid var(--line);background:var(--surface);color:var(--violet);cursor:pointer;display:none;place-items:center" onclick="playCbAudioPreview('${bid}')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        </button>
+        <button type="button" id="cbDelBtn-${bid}" style="display:none;width:36px;height:36px;border-radius:50%;border:1.5px solid #fdecea;background:#fdecea;color:#E5484D;cursor:pointer;display:none;place-items:center" onclick="deleteCbRec('${bid}')">✕</button>
+      </div>
+      <div id="cbRecStatus-${bid}" style="font-size:12px;color:var(--muted);font-weight:600;margin-bottom:8px;display:none">Голос записан ✓</div>
+      <!-- спойлер с file_id -->
+      <div>
+        <button type="button" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'"
+          style="font-size:11px;font-weight:700;color:var(--muted);background:none;border:none;cursor:pointer;padding:0;margin-bottom:4px">
+          ▸ Аудио file_id (если не работает запись с микрофона)
+        </button>
+        <div style="display:none">
+          <input id="cbAudio-${bid}" value="${prefill&&prefill.audio_file_id?prefill.audio_file_id:''}" placeholder="Telegram file_id" autocomplete="off"
+            style="width:100%;padding:9px 11px;border:1.5px solid var(--line);border-radius:10px;font-size:13px;font-family:inherit;background:var(--surface-2);color:var(--ink)">
+          <div style="font-size:11px;color:var(--muted);margin-top:4px">💡 Отправь голосовое боту — он пришлёт file_id</div>
+        </div>
+      </div>
     </div>`;
   container.appendChild(div);
 }
@@ -1976,6 +2014,121 @@ function makeCardGroupCopy(){
   const inp = document.getElementById('cardGroupNameInp');
   inp.value = inp.value.trim() + ' (копия)';
   document.getElementById('cardGroupExistsHint').style.display='none';
+}
+
+// ---- ЗАПИСЬ МИКРОФОНА В КАРТОЧКАХ ----
+const _cbRecState = {}; // bid -> {mediaRecorder, chunks, blob, mode, recording}
+
+function toggleCbRecMode(bid){
+  const st = _cbRecState[bid] || (_cbRecState[bid]={mode:'hold',recording:false});
+  st.mode = st.mode==='hold' ? 'toggle' : 'hold';
+  const dot = document.getElementById('cbRecDot-'+bid);
+  const label = document.getElementById('cbRecModeLabel-'+bid);
+  if(st.mode==='hold'){
+    dot.style.right='3px'; dot.style.left='auto';
+    label.textContent='зажать';
+  } else {
+    dot.style.left='3px'; dot.style.right='auto';
+    label.textContent='вкл/выкл';
+  }
+}
+
+async function startCbRec(bid){
+  const st = _cbRecState[bid] || (_cbRecState[bid]={mode:'hold',recording:false});
+  if(st.mode!=='hold') return; // toggle — обрабатывается в clickCbRec
+  if(st.recording) return;
+  await _beginCbRec(bid);
+}
+
+function stopCbRec(bid){
+  const st = _cbRecState[bid];
+  if(!st||!st.recording||st.mode!=='hold') return;
+  _endCbRec(bid);
+}
+
+async function clickCbRec(bid){
+  const st = _cbRecState[bid] || (_cbRecState[bid]={mode:'hold',recording:false});
+  if(st.mode!=='toggle') return;
+  if(st.recording) _endCbRec(bid);
+  else await _beginCbRec(bid);
+}
+
+async function _beginCbRec(bid){
+  const st = _cbRecState[bid];
+  try{
+    const stream = await navigator.mediaDevices.getUserMedia({audio:true});
+    const mr = new MediaRecorder(stream, {mimeType: MediaRecorder.isTypeSupported('audio/webm')?'audio/webm':'audio/ogg'});
+    st.mediaRecorder=mr; st.chunks=[]; st.recording=true;
+    mr.ondataavailable = e=>{ if(e.data.size>0) st.chunks.push(e.data); };
+    mr.start(100);
+    // анимация кнопки
+    const btn=document.getElementById('cbMicBtn-'+bid);
+    const ring=document.getElementById('cbMicRing-'+bid);
+    btn.style.background='#4B2A8F'; btn.style.color='#fff';
+    ring.style.opacity='1';
+    // пульсация
+    st._pulseInt=setInterval(()=>{
+      ring.style.transform=ring.style.transform==='scale(1.2)'?'scale(1)':'scale(1.2)';
+    },600);
+  }catch(e){ toast('Нет доступа к микрофону'); }
+}
+
+function _endCbRec(bid){
+  const st = _cbRecState[bid]; if(!st||!st.mediaRecorder) return;
+  st.recording=false;
+  clearInterval(st._pulseInt);
+  const ring=document.getElementById('cbMicRing-'+bid);
+  const btn=document.getElementById('cbMicBtn-'+bid);
+  ring.style.opacity='0'; ring.style.transform='scale(1)';
+  btn.style.background='var(--violet-tint)'; btn.style.color='var(--violet)';
+  st.mediaRecorder.onstop=async()=>{
+    const blob=new Blob(st.chunks,{type:st.mediaRecorder.mimeType||'audio/webm'});
+    st.blob=blob;
+    st.mediaRecorder.stream.getTracks().forEach(t=>t.stop());
+    // загружаем на сервер
+    const reader=new FileReader();
+    reader.onload=async(e)=>{
+      try{
+        const fmt=blob.type.includes('ogg')?'ogg':'webm';
+        const res=await api('/api/upload_audio',{method:'POST',body:JSON.stringify({audio:e.target.result,format:fmt})});
+        if(res.audio_file_id){
+          // записываем file_id в скрытый инпут
+          const inp=document.getElementById('cbAudio-'+bid);
+          if(inp) inp.value=res.audio_file_id;
+          // показываем статус и кнопки
+          const status=document.getElementById('cbRecStatus-'+bid);
+          const play=document.getElementById('cbPlayBtn-'+bid);
+          const del=document.getElementById('cbDelBtn-'+bid);
+          if(status){status.style.display='block';}
+          if(play){play.style.display='grid';}
+          if(del){del.style.display='grid';}
+          toast('Голос записан');
+        }
+      }catch(err){ toast('Не удалось загрузить запись'); }
+    };
+    reader.readAsDataURL(blob);
+  };
+  st.mediaRecorder.stop();
+}
+
+function playCbAudioPreview(bid){
+  const st=_cbRecState[bid];
+  if(!st||!st.blob) return;
+  const url=URL.createObjectURL(st.blob);
+  const a=new Audio(url);
+  a.play().catch(()=>{});
+}
+
+function deleteCbRec(bid){
+  if(!confirm('Удалить запись?')) return;
+  const st=_cbRecState[bid]; if(st) st.blob=null;
+  const inp=document.getElementById('cbAudio-'+bid); if(inp) inp.value='';
+  const status=document.getElementById('cbRecStatus-'+bid);
+  const play=document.getElementById('cbPlayBtn-'+bid);
+  const del=document.getElementById('cbDelBtn-'+bid);
+  if(status) status.style.display='none';
+  if(play) play.style.display='none';
+  if(del) del.style.display='none';
 }
 
 function editCard(id){ editCardFromLib(id); }
