@@ -3379,7 +3379,9 @@ function updateNotifBell(){
 const settingsScreen=document.getElementById('settingsScreen');
 let settInitial={}; // начальное состояние при открытии
 
-let _settCache = null; // кэш состояния настроек
+let _settCache = null;
+// восстанавливаем кэш настроек из localStorage — тумблеры без дёрганья
+try{ const c=localStorage.getItem('_settCache'); if(c) _settCache=JSON.parse(c); }catch(e){}
 
 async function openSettings(){
   void settingsScreen.offsetWidth;
@@ -3402,6 +3404,7 @@ async function openSettings(){
   try{ const d=await apiFetch('/api/dev_mode'); devOn=d.dev_mode===true; }catch(e){}
   try{ const n=await apiFetch('/api/notify'); hourOn=n.hour_reminder!==false; mornOn=n.morning!==false; eveOn=n.evening===true; hwResOn=n.hw_results===true; }catch(e){}
   _settCache={histOn,hourOn,mornOn,eveOn,hwResOn,devOn};
+  try{ localStorage.setItem('_settCache', JSON.stringify(_settCache)); }catch(e){}
   setSw('settHistorySw',histOn);
   setSw('settDevModeSw',devOn);
   document.getElementById('devModeBlock').style.display=devOn?'block':'none';
@@ -3738,20 +3741,21 @@ if(!accessOk()){
   document.body.innerHTML='<div class="empty-note" style="padding-top:80px">Нет доступа.</div>';
 }else{
   renderMonth().then(async()=>{
-    if(window._hideSplash) window._hideSplash();
-    updateStuCount();
-    await loadConnectedStudents();
+    // грузим всё параллельно
+    await Promise.all([
+      loadConnectedStudents(),
+      fetchAllKeys(),
+      renderHwResults().catch(()=>{})
+    ]);
     renderStudents();
-    // загружаем уведомления о ДЗ сразу — чтобы кнопка была заполнена без клика
-    renderHwResults().catch(()=>{});
-    // подгружаем все месяцы с данными для точного счётчика учеников
-    await fetchAllKeys();
     if(allKeysCache&&allKeysCache.length){
       const months=new Set();
       allKeysCache.forEach(k=>{const p=k.split('_');months.add(`${p[1]}_${parseInt(p[2])-1}`);});
       await Promise.all([...months].map(mk=>{const[y,m]=mk.split('_');return ensureMonthLoaded(+y,+m);}));
-      updateStuCount(); // пересчитываем с полными данными
     }
+    updateStuCount();
+    // скрываем сплэш только когда всё загружено
+    if(window._hideSplash) window._hideSplash();
     // переход сразу в день, если открыли по ссылке из уведомления (?d=YYYY-MM-DD)
     const qd = new URLSearchParams(location.search).get('d');
     if(qd && /^\d{4}-\d{2}-\d{2}$/.test(qd)){

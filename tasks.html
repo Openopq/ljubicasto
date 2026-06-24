@@ -345,13 +345,8 @@ html,body{background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,'Seg
 
     <!-- добавить карточку -->
     <button type="button" onclick="addCardBlock()" id="addCardBlockBtn"
-      style="display:flex;align-items:center;justify-content:center;gap:8px;width:calc(100% - 32px);margin:0 16px 8px;padding:13px;border:2px dashed var(--violet-soft);border-radius:14px;background:var(--violet-tint);color:var(--violet);font-size:13px;font-weight:800;font-family:inherit;cursor:pointer">
+      style="display:flex;align-items:center;justify-content:center;gap:8px;width:calc(100% - 32px);margin:0 16px 12px;padding:13px;border:2px dashed var(--violet-soft);border-radius:14px;background:var(--violet-tint);color:var(--violet);font-size:13px;font-weight:800;font-family:inherit;cursor:pointer">
       + Добавить карточку
-    </button>
-
-    <button type="button" id="cardSortBtn" onclick="openCardSortFromEditor()"
-      style="display:flex;align-items:center;justify-content:center;gap:8px;width:calc(100% - 32px);margin:0 16px 12px;padding:11px;border:1.5px solid var(--line);border-radius:14px;background:var(--surface);color:var(--muted);font-size:13px;font-weight:700;font-family:inherit;cursor:pointer">
-      1↔2 Изменить порядок
     </button>
 
     <button class="save-btn" id="saveCardGroupBtn" onclick="saveCardGroup()" style="margin:0 16px 24px;width:calc(100% - 32px)">Сохранить группу</button>
@@ -1750,14 +1745,13 @@ function addCardBlock(prefill){
   const durMode=prefill?prefill.duration_mode||'normal':'normal';
   const hasPhoto=prefill&&prefill.photo;
   div.innerHTML=`
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-      <div style="display:flex;align-items:center;gap:4px">
-        <button type="button" class="task-btn" style="width:28px;height:28px" onclick="moveCbBlock('${bid}',-1)" title="Вверх">▲</button>
-        <button type="button" class="task-btn" style="width:28px;height:28px" onclick="moveCbBlock('${bid}',1)" title="Вниз">▼</button>
-        <span style="font-size:13px;font-weight:800;color:var(--muted);margin-left:4px" id="cbNum-${bid}">Карточка ${cardBlocks.length}</span>
-      </div>
-      ${cardBlocks.length>1?`<button type="button" onclick="removeCardBlock('${bid}')" style="width:26px;height:26px;border:none;border-radius:50%;background:#fdecea;color:#E5484D;font-size:15px;cursor:pointer;display:grid;place-items:center">✕</button>`:'<div></div>'}
+    <div style="display:flex;align-items:center;gap:4px;margin-bottom:10px">
+      <button type="button" class="task-btn" style="width:28px;height:28px" onclick="moveCbBlock('${bid}',-1)" title="Вверх">▲</button>
+      <button type="button" class="task-btn" style="width:28px;height:28px" onclick="moveCbBlock('${bid}',1)" title="Вниз">▼</button>
+      <button type="button" class="task-btn" style="width:auto;padding:0 8px;height:28px;font-size:11px;font-weight:800" onclick="openCardSortFromEditor()" title="Сортировка">1↔2</button>
+      ${cardBlocks.length>1?`<button type="button" onclick="removeCardBlock('${bid}')" style="width:26px;height:26px;border:none;border-radius:50%;background:#fdecea;color:#E5484D;font-size:14px;cursor:pointer;display:grid;place-items:center;margin-left:auto">✕</button>`:''}
     </div>
+    <div style="font-size:13px;font-weight:800;color:var(--muted);margin-bottom:10px" id="cbNum-${bid}">Карточка ${cardBlocks.length}</div>
     <div class="field">
       <div id="cbPhotoWrap-${bid}" style="${hasPhoto?'':'display:none;'}margin-bottom:8px;position:relative;max-width:180px;margin-left:auto;margin-right:auto">
         <img id="cbPhotoImg-${bid}" src="${hasPhoto?prefill.photo:''}" style="width:100%;aspect-ratio:9/16;object-fit:cover;border-radius:14px;display:block">

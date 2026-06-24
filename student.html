@@ -659,16 +659,27 @@ async function apiReal(path, opts){
 
 // ---- ИНИЦИАЛИЗАЦИЯ ----
 async function init(){
-  const r = await api('/api/homework/student');
+  // грузим все данные параллельно
+  const [r] = await Promise.all([
+    api('/api/homework/student')
+  ]);
   studentData = r;
   const su = r.student || {};
 
-  // показываем основной интерфейс
-  showMainApp(r);
-  // скрываем сплэш
+  // рендерим всё до показа интерфейса
+  document.getElementById('mainApp').style.display='block';
+  renderNextLesson(r);
+  renderHomework(r.homework || []);
+  // карточки и сообщения грузим параллельно и ждём
+  await Promise.all([
+    renderCardsStrip(),
+    renderMessages()
+  ]);
+  startAutoRefresh();
+
+  // только теперь скрываем сплэш — интерфейс полностью готов
   if(window._hideSplash) window._hideSplash();
 
-  // и поверх него — приветствие+часовой пояс, если ученик ещё их не проходил
   if(!su.onboarding_done){
     showTzGreeting(su);
   }
