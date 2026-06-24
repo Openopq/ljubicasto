@@ -695,7 +695,7 @@
     </div>
 
     <!-- Перенести занятие -->
-    <div class="toggle-line" id="v_transferToggle" style="display:none">
+    <div class="toggle-line" id="v_transferToggle" style="display:none" onclick="document.getElementById('sn_homework').classList.toggle('on')">
       <div>
         <div class="t-txt">Перенести занятие</div>
         <div class="t-sub">переместить на другой день</div>
@@ -946,28 +946,28 @@
 <div class="picker" id="stuNotifSheet">
   <h3>Уведомления ученика</h3>
   <p style="font-size:13px;color:var(--muted);font-weight:600;margin-bottom:16px" id="stuNotifName">—</p>
-  <div class="toggle-line">
+  <div class="toggle-line" onclick="document.getElementById('sn_hour').classList.toggle('on')">
     <div style="display:flex;align-items:center;gap:9px">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--violet)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
       <div><div class="t-txt">Домашнее задание</div><div class="t-sub">уведомление о новом дз</div></div>
     </div>
     <div class="sw" id="sn_homework"></div>
   </div>
-  <div class="toggle-line">
+  <div class="toggle-line" onclick="document.getElementById('sn_day').classList.toggle('on')">
     <div style="display:flex;align-items:center;gap:9px">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--violet)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>
       <div><div class="t-txt">За час до урока</div><div class="t-sub">напоминание об уроке</div></div>
     </div>
     <div class="sw" id="sn_hour"></div>
   </div>
-  <div class="toggle-line">
+  <div class="toggle-line" onclick="document.getElementById('sn_cards').classList.toggle('on')">
     <div style="display:flex;align-items:center;gap:9px">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--violet)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
       <div><div class="t-txt">Утром в день урока</div><div class="t-sub">напоминание о занятии</div></div>
     </div>
     <div class="sw" id="sn_day"></div>
   </div>
-  <div class="toggle-line">
+  <div class="toggle-line" onclick="document.getElementById('sn_posts').classList.toggle('on')">
     <div style="display:flex;align-items:center;gap:9px">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--violet)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
       <div><div class="t-txt">Новые карточки</div><div class="t-sub">уведомление о новых карточках</div></div>
@@ -1170,28 +1170,28 @@
 
     <div class="section-head" style="margin-bottom:10px">Напоминания</div>
     <div class="vc-block" style="margin-bottom:16px">
-      <div class="toggle-line" style="padding:14px 16px;border-bottom:1px solid var(--line)">
+      <div class="toggle-line" style="padding:14px 16px;border-bottom:1px solid var(--line)" onclick="document.getElementById('settHourSw').classList.toggle('on')">
         <div style="display:flex;align-items:center;gap:9px">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--violet)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>
           <div><div class="t-txt">Напоминание за час</div><div class="t-sub">до начала урока</div></div>
         </div>
         <div class="sw" id="settHourSw"></div>
       </div>
-      <div class="toggle-line" style="padding:14px 16px;border-bottom:1px solid var(--line)">
+      <div class="toggle-line" style="padding:14px 16px;border-bottom:1px solid var(--line)" onclick="document.getElementById('settMorningSw').classList.toggle('on')">
         <div style="display:flex;align-items:center;gap:9px">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--violet)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M17 18a5 5 0 0 0-10 0"/><line x1="12" y1="2" x2="12" y2="9"/><line x1="4.22" y1="10.22" x2="5.64" y2="11.64"/><line x1="1" y1="18" x2="3" y2="18"/><line x1="21" y1="18" x2="23" y2="18"/><line x1="18.36" y1="11.64" x2="19.78" y2="10.22"/><line x1="1" y1="22" x2="23" y2="22"/></svg>
           <div><div class="t-txt">Утренние напоминания</div><div class="t-sub">расписание на день в 8:00</div></div>
         </div>
         <div class="sw" id="settMorningSw"></div>
       </div>
-      <div class="toggle-line" style="padding:14px 16px;border-bottom:1px solid var(--line)">
+      <div class="toggle-line" style="padding:14px 16px;border-bottom:1px solid var(--line)" onclick="document.getElementById('settEveningSw').classList.toggle('on')">
         <div style="display:flex;align-items:center;gap:9px">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--violet)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
           <div><div class="t-txt">Вечерние напоминания</div><div class="t-sub">расписание на завтра в 20:00</div></div>
         </div>
         <div class="sw" id="settEveningSw"></div>
       </div>
-      <div class="toggle-line" style="padding:14px 16px">
+      <div class="toggle-line" style="padding:14px 16px" onclick="document.getElementById('settHwResultsSw').classList.toggle('on')">
         <div style="display:flex;align-items:center;gap:9px">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--violet)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
           <div><div class="t-txt">Уведомления о дз</div><div class="t-sub">когда ученик выполнил задание</div></div>
@@ -1202,7 +1202,7 @@
 
     <div class="section-head" style="margin-bottom:10px">Данные</div>
     <div class="vc-block" style="margin-bottom:16px">
-      <div class="toggle-line" style="padding:14px 16px;border-bottom:1px solid var(--line)">
+      <div class="toggle-line" style="padding:14px 16px;border-bottom:1px solid var(--line)" onclick="document.getElementById('settDevModeSw').classList.toggle('on')">
         <div style="display:flex;align-items:center;gap:9px">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--violet)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9.5 12l1.8 1.8L14.5 10"/></svg>
           <div><div class="t-txt">Специальные настройки</div><div class="t-sub">могут влиять на базу данных и не только</div></div>
@@ -1210,14 +1210,14 @@
         <div class="sw" id="settDevModeSw"></div>
       </div>
       <div id="devModeBlock" style="display:none">
-        <div class="toggle-line" style="padding:14px 16px;border-bottom:1px solid var(--line)">
+        <div class="toggle-line" style="padding:14px 16px;border-bottom:1px solid var(--line)" onclick="const on=!document.getElementById('settHistorySw').classList.contains('on');setSw('settHistorySw',on);haptic('light')">
           <div style="display:flex;align-items:center;gap:9px">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--violet)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
             <div><div class="t-txt">Режим истории</div><div class="t-sub">назначать уроки в прошлое</div></div>
           </div>
           <div class="sw" id="settHistorySw"></div>
         </div>
-        <div class="toggle-line" style="padding:14px 16px;border-bottom:1px solid var(--line)">
+        <div class="toggle-line" style="padding:14px 16px;border-bottom:1px solid var(--line)" onclick="const on=!document.getElementById('settDeleteModeSw').classList.contains('on');setSw('settDeleteModeSw',on);haptic('light')">
           <div style="display:flex;align-items:center;gap:9px">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--violet)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
             <div><div class="t-txt">Удаление контента</div><div class="t-sub">крестики у заданий, карточек и постов у ученика</div></div>
