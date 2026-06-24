@@ -1784,13 +1784,13 @@ function addCardBlock(prefill){
     </div>
     <div class="field">
       <label>Голосовое</label>
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
+      <div style="display:flex;align-items:center;gap:16px;margin-bottom:10px">
         <!-- переключатель режима -->
         <div id="cbRecMode-${bid}" data-mode="hold" style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:var(--muted);cursor:pointer;flex:none" onclick="toggleCbRecMode('${bid}')">
           <div style="width:40px;height:22px;border-radius:11px;background:var(--violet);position:relative;flex:none">
             <div id="cbRecDot-${bid}" style="position:absolute;top:3px;right:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:all .2s"></div>
           </div>
-          <span id="cbRecModeLabel-${bid}" style="white-space:nowrap">зажать</span>
+          <span id="cbRecModeLabel-${bid}" style="white-space:nowrap;display:inline-block;width:60px">зажать</span>
         </div>
         <!-- кнопка-обёртка фиксированного размера (mic / play / pause) -->
         <div style="position:relative;width:64px;height:64px;flex:none" id="cbBtnWrap-${bid}">
@@ -1813,19 +1813,19 @@ function addCardBlock(prefill){
           <!-- кнопка плей/пауза — на том же месте -->
           <button type="button" id="cbPlayBtn-${bid}"
             onclick="playCbAudioPreview('${bid}')"
-            style="display:none;position:absolute;inset:0;width:64px;height:64px;border-radius:50%;border:none;background:var(--violet);color:#fff;cursor:pointer;align-items:center;justify-content:center;transition:background .2s">
+            style="visibility:hidden;display:flex;position:absolute;inset:0;width:64px;height:64px;border-radius:50%;border:none;background:var(--violet);color:#fff;cursor:pointer;align-items:center;justify-content:center;transition:background .2s">
             <svg id="cbPlayIcon-${bid}" width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
           </button>
         </div>
         <!-- удаление -->
         <button type="button" id="cbDelBtn-${bid}" onclick="deleteCbRec('${bid}')"
-          style="display:none;width:40px;height:40px;border-radius:50%;border:none;background:#fdecea;color:#E5484D;cursor:pointer;flex:none;align-items:center;justify-content:center;font-size:16px;line-height:1">✕</button>
+          style="visibility:hidden;display:flex;width:40px;height:40px;border-radius:50%;border:none;background:#fdecea;color:#E5484D;cursor:pointer;flex:none;align-items:center;justify-content:center;font-size:16px;line-height:1">✕</button>
       </div>
       <!-- спойлер с file_id -->
       <div>
         <button type="button" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'"
           style="font-size:11px;font-weight:700;color:var(--muted);background:none;border:none;cursor:pointer;padding:0;margin-bottom:4px">
-          ▸ Аудио file_id (если не работает запись с микрофона)
+          ▸ Аудио file_id (если не работает микрофон)
         </button>
         <div style="display:none">
           <input id="cbAudio-${bid}" value="${prefill&&prefill.audio_file_id?prefill.audio_file_id:''}" placeholder="Telegram file_id" autocomplete="off"
@@ -2111,9 +2111,9 @@ function _showPlayState(bid){
   const micBtn=document.getElementById('cbMicBtn-'+bid);
   const playBtn=document.getElementById('cbPlayBtn-'+bid);
   const delBtn=document.getElementById('cbDelBtn-'+bid);
-  if(micBtn) micBtn.style.display='none';
-  if(playBtn){ playBtn.style.display='flex'; }
-  if(delBtn){ delBtn.style.display='flex'; }
+  if(micBtn) micBtn.style.visibility='hidden';
+  if(playBtn) playBtn.style.visibility='visible';
+  if(delBtn) delBtn.style.visibility='visible';
 }
 
 // глобальный активный аудио для остановки при новом воспроизведении
@@ -2154,16 +2154,21 @@ function _setPlayIcon(bid,isPlaying){
 }
 
 function deleteCbRec(bid){
-  if(!confirm('Удалить запись?')) return;
-  const st=_cbRecState[bid];
-  if(st){ if(st.audioEl) st.audioEl.pause(); st.blob=null; st.playing=false; st.audioEl=null; }
-  const inp=document.getElementById('cbAudio-'+bid); if(inp) inp.value='';
-  const micBtn=document.getElementById('cbMicBtn-'+bid);
-  const playBtn=document.getElementById('cbPlayBtn-'+bid);
-  const delBtn=document.getElementById('cbDelBtn-'+bid);
-  if(micBtn){ micBtn.style.display='flex'; micBtn.style.background='var(--violet-tint)'; micBtn.style.color='var(--violet)'; }
-  if(playBtn) playBtn.style.display='none';
-  if(delBtn) delBtn.style.display='none';
+  document.getElementById('confirmTitle').textContent='Удалить запись?';
+  document.getElementById('confirmMsg').textContent='Голосовое сообщение будет удалено из карточки.';
+  document.getElementById('confirmYesBtn').onclick=()=>{
+    closeSheet();
+    const st=_cbRecState[bid];
+    if(st){ if(st.audioEl) st.audioEl.pause(); st.blob=null; st.playing=false; st.audioEl=null; }
+    const inp=document.getElementById('cbAudio-'+bid); if(inp) inp.value='';
+    const micBtn=document.getElementById('cbMicBtn-'+bid);
+    const playBtn=document.getElementById('cbPlayBtn-'+bid);
+    const delBtn=document.getElementById('cbDelBtn-'+bid);
+    if(micBtn){ micBtn.style.visibility='visible'; micBtn.style.background='var(--violet-tint)'; micBtn.style.color='var(--violet)'; }
+    if(playBtn) playBtn.style.visibility='hidden';
+    if(delBtn) delBtn.style.visibility='hidden';
+  };
+  openSheet('confirmSheet');
 }
 function editCard(id){ editCardFromLib(id); }
 
