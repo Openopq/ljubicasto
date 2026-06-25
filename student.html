@@ -662,7 +662,7 @@ async function init(){
   // грузим все данные параллельно
   const [r, devData] = await Promise.all([
     api('/api/homework/student'),
-    api('/api/dev_mode').catch(()=>({delete_mode:false}))
+    api('/api/student/settings').catch(()=>({delete_mode:false}))
   ]);
   studentData = r;
   deleteMode = !!(devData && devData.delete_mode);
