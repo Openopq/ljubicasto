@@ -818,8 +818,12 @@ async function renderCardsStrip(){
         style="position:absolute;top:0;right:0;width:20px;height:20px;border:none;border-radius:50%;background:#fdecea;color:#E5484D;font-size:11px;cursor:pointer;display:grid;place-items:center;z-index:5">✕</button>`:''}
     </div>`;
   }).join('');
-}
 
+  // предзагружаем все фото всех групп в фоне
+  cardGroupsData.forEach(g=>{
+    g.cards.forEach(c=>{ if(c.photo){ const img=new Image(); img.src=c.photo; } });
+  });
+}
 function openStoryViewer(groupIdx, originEl){
   storyCurrentGroup = cardGroupsData[groupIdx];
   const prog = cardTileProgress(storyCurrentGroup);
@@ -970,8 +974,8 @@ function renderStorySlide(){
 async function startStoryCard(card){
   const totalIdx=storyCurrentIdx;
   if(card.duration_mode==='preview'){
-    // карточка-обложка урока — короткий показ 3 сек, без озвучки
-    beginStoryTimeline(0, 0, 3000, null);
+    // карточка-обложка урока — короткий показ 2 сек, без озвучки
+    beginStoryTimeline(0, 0, 2000, null);
     return;
   }
   if(card.audio_file_id){
@@ -982,23 +986,28 @@ async function startStoryCard(card){
         url=r.url;
       }
     }catch(e){}
-    if(storyCurrentIdx!==totalIdx) return; // уже перешли дальше, пока грузили
+    if(storyCurrentIdx!==totalIdx) return;
     if(url){
       const audio=new Audio(url);
       audio.volume=storyVolume;
       storyCurrentAudio=audio;
-      audio.addEventListener('loadedmetadata', ()=>{
+      let started=false;
+      const doStart=()=>{
+        if(started) return; started=true;
         if(storyCurrentAudio!==audio) return;
-        const durMs=(isFinite(audio.duration)?audio.duration:2)*1000;
-        beginStoryTimeline(1000, durMs, 2000, audio);
-      });
+        const durMs=(isFinite(audio.duration)&&audio.duration>0)?audio.duration*1000:2000;
+        beginStoryTimeline(500, durMs, 500, audio);
+      };
+      audio.addEventListener('loadedmetadata', doStart);
       audio.addEventListener('error', ()=>{
         if(storyCurrentAudio!==audio) return;
         beginStoryTimeline(0, 0, 4000, null);
       });
+      // таймаут 3с — если метаданные не пришли, стартуем с дефолтом 2с
+      setTimeout(()=>{ doStart(); }, 3000);
     } else {
       // мок без реального файла — условная длительность голосового 2с
-      beginStoryTimeline(1000, 2000, 2000, null);
+      beginStoryTimeline(500, 2000, 500, null);
     }
   } else {
     beginStoryTimeline(0, 0, 4000, null);
