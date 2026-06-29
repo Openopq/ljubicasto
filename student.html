@@ -509,6 +509,15 @@ html,body{background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,'Seg
 </div>
 
 <!-- НАСТРОЙКИ -->
+<!-- шторка подтверждения удаления контента -->
+<div class="dim" id="confirmRemoveDim" onclick="document.getElementById('confirmRemoveSheet').classList.remove('on');this.classList.remove('on')"></div>
+<div class="sheet" id="confirmRemoveSheet">
+  <div style="font-size:17px;font-weight:800;color:var(--ink);margin-bottom:8px">Подтверждение</div>
+  <div id="confirmRemoveMsg" style="font-size:14px;color:var(--muted);margin-bottom:20px;line-height:1.5">Убрать элемент?</div>
+  <button id="confirmRemoveYes" style="width:100%;padding:14px;border:none;border-radius:14px;background:#fdecea;color:#E5484D;font-size:15px;font-weight:800;font-family:inherit;cursor:pointer;margin-bottom:10px">Убрать</button>
+  <button onclick="document.getElementById('confirmRemoveSheet').classList.remove('on')" style="width:100%;padding:14px;border:1.5px solid var(--line);border-radius:14px;background:var(--surface);color:var(--muted);font-size:15px;font-weight:700;font-family:inherit;cursor:pointer">Отмена</button>
+</div>
+
 <div class="dim" id="settDim" onclick="saveSettings()"></div>
 <div class="picker" id="settSheet">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
@@ -662,7 +671,7 @@ async function init(){
   // грузим все данные параллельно
   const [r, devData] = await Promise.all([
     api('/api/homework/student'),
-    api('/api/student/settings').catch(()=>({delete_mode:false}))
+    Promise.race([api('/api/student/settings').catch(()=>({delete_mode:false})), new Promise(r=>setTimeout(()=>r({delete_mode:false}),2000))])
   ]);
   studentData = r;
   deleteMode = !!(devData && devData.delete_mode);
@@ -1240,7 +1249,7 @@ function renderHomework(hw){
     const pct = Math.round((done/total)*100);
     const isDone = done === total;
     const card = document.createElement('div');
-    card.className='hw-card';
+    card.className='hw-card'; card.style.position='relative';
     card.innerHTML=`
       <div class="hw-inner">
         <div class="hw-icon ${isDone?'done':'new'}">${isDone
@@ -1755,23 +1764,36 @@ async function openSettings(){
   });
 }
 
-async function confirmRemove(kind, id){
-  const labels = {task_group:'задание', card_group:'карточки', message:'пост'};
-  const ok = confirm(`Убрать ${labels[kind]||'элемент'}?`);
-  if(!ok) return;
-  try{
-    await api('/api/student/remove',{method:'POST',body:JSON.stringify({kind,id})});
-    toast('Убрано');
-    // перезагружаем нужный раздел
-    if(kind==='task_group'){
-      const r = await api('/api/homework/student');
-      renderHomework(r.homework||[]);
-    } else if(kind==='card_group'){
-      await renderCardsStrip();
-    } else if(kind==='message'){
-      await renderMessages();
-    }
-  }catch(e){ toast('Не удалось убрать'); }
+function confirmRemove(kind, id){
+  const labels = {task_group:'задание', card_group:'группу карточек', message:'пост'};
+  const label = labels[kind] || 'элемент';
+  // показываем нашу шторку подтверждения
+  const sheet = document.getElementById('confirmRemoveSheet');
+  const dim = document.getElementById('confirmRemoveDim');
+  const msg = document.getElementById('confirmRemoveMsg');
+  if(msg) msg.textContent = `Убрать ${label}?`;
+  if(sheet) sheet.classList.add('on');
+  if(dim) dim.classList.add('on');
+  // вешаем обработчик на кнопку подтверждения
+  const yesBtn = document.getElementById('confirmRemoveYes');
+  if(yesBtn){
+    yesBtn.onclick = async () => {
+      if(sheet) sheet.classList.remove('on');
+      if(dim) dim.classList.remove('on');
+      try{
+        await api('/api/student/remove',{method:'POST',body:JSON.stringify({kind,id})});
+        toast('Убрано');
+        if(kind==='task_group'){
+          const r = await api('/api/homework/student');
+          renderHomework(r.homework||[]);
+        } else if(kind==='card_group'){
+          await renderCardsStrip();
+        } else if(kind==='message'){
+          await renderMessages();
+        }
+      }catch(e){ toast('Не удалось убрать'); }
+    };
+  }
 }
 
 function updateAllToggleState(){
