@@ -776,7 +776,8 @@ function closeLightbox(){
 // ---- КАРТОЧКИ-СТОРИС ----
 let storyCurrentGroup=null, storyCurrentIdx=0, storyPaused=false, storyLoop=false;
 let storyCurrentAudio=null, storyVolume=1;
-let storyLastIdxByGroup={}; // group_id -> последняя позиция, чтобы продолжать с места остановки
+let storyLastIdxByGroup={};
+try{ const _sl=localStorage.getItem('_storyLastIdx'); if(_sl) storyLastIdxByGroup=JSON.parse(_sl); }catch(e){}
 let storyFillTimer=null; // requestAnimationFrame-based таймер прогресса (с поддержкой паузы)
 let storyFillState={start:0,duration:4000,elapsed:0,raf:null};
 let storyAdvanceTimeout=null, storyAdvanceFireAt=0, storyAdvanceRemaining=0;
@@ -826,12 +827,8 @@ async function renderCardsStrip(){
 }
 function openStoryViewer(groupIdx, originEl){
   storyCurrentGroup = cardGroupsData[groupIdx];
-  const prog = cardTileProgress(storyCurrentGroup);
-  if(prog>=100){
-    storyCurrentIdx = 0;
-  } else {
-    storyCurrentIdx = storyLastIdxByGroup[storyCurrentGroup.group_id] ?? 0;
-  }
+  // всегда открываем с места остановки
+  storyCurrentIdx = storyLastIdxByGroup[storyCurrentGroup.group_id] ?? 0;
   if(storyCurrentIdx >= storyCurrentGroup.cards.length) storyCurrentIdx = 0;
   storyPaused = false;
   storyLoop = false;
@@ -875,6 +872,7 @@ function closeStoryViewer(){
   if(storyCurrentAudio){ storyCurrentAudio.pause(); storyCurrentAudio=null; }
   if(storyCurrentGroup){
     storyLastIdxByGroup[storyCurrentGroup.group_id] = storyCurrentIdx;
+    try{ localStorage.setItem('_storyLastIdx', JSON.stringify(storyLastIdxByGroup)); }catch(e){}
     // обновляем плитку без полного ре-рендера
     const tileIdx = cardGroupsData.findIndex(g=>g.group_id===storyCurrentGroup.group_id);
     if(tileIdx>=0){
