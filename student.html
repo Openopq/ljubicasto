@@ -978,12 +978,9 @@ async function startStoryCard(card){
   }
   if(card.audio_file_id){
     let url='';
-    try{
-      if(!MOCK){
-        const r=await api(`/api/audio?file_id=${encodeURIComponent(card.audio_file_id)}`);
-        url=r.url;
-      }
-    }catch(e){}
+    if(!MOCK){
+      url = `${API}/api/audio_stream?file_id=${encodeURIComponent(card.audio_file_id)}&init=${encodeURIComponent(INIT)}`;
+    }
     if(storyCurrentIdx!==totalIdx) return;
     if(url){
       const audio=new Audio(url);

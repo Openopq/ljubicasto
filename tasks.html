@@ -721,7 +721,7 @@ function renderNewFormSelects(){
 let formMode='new';
 
 function openNewTaskTab(){
-  if(!_taskFormInited){ initNewForm(null,null,'new'); _taskFormInited=true; }
+  initNewForm(null,null,'new'); _taskFormInited=true;
   switchTab('new');
 }
 
@@ -1353,8 +1353,12 @@ function setBlockCorrect(blockId,idx){
 let savingGroup=false;
 async function saveGroup(){
   if(savingGroup) return;
-  const groupName=document.getElementById('f_groupName').value.trim();
-  if(!groupName){toast('Введи название группы');return;}
+  const groupNameInp=document.getElementById('f_groupName');
+  const groupName=groupNameInp.value.trim();
+  if(!groupName){
+    scrollToAndFlash(groupNameInp, 'Введи название');
+    return;
+  }
   const levelId=document.getElementById('f_level').value;
   if(!levelId){toast('Выбери уровень');return;}
   // собираем задания
@@ -1668,9 +1672,7 @@ let cardBlocks=[];
 let cardGroupPreviewData=null;
 
 function openNewCardTab(){
-  // инициализируем форму только если она ещё ни разу не открывалась —
-  // иначе сохраняем то что пользователь уже ввёл
-  if(!_cardFormInited){ editingCardGroupId=null; initCardGroupForm(null); _cardFormInited=true; }
+  editingCardGroupId=null; initCardGroupForm(null); _cardFormInited=true;
   switchTab('card');
 }
 
@@ -1936,6 +1938,21 @@ function removeCardPreview(){
 // ---- обложка-заставка группы (первая карточка сторис, 2 сек, без звука) ----
 let cardGroupIntroData=null;
 
+function scrollToAndFlash(input, message){
+  input.scrollIntoView({behavior:'smooth', block:'center'});
+  const origPlaceholder = input.placeholder;
+  const origBorder = input.style.borderColor;
+  const origBg = input.style.background;
+  input.placeholder = message || 'Обязательное поле';
+  input.style.borderColor = '#E5484D';
+  input.style.background = '#fdecea';
+  input.focus();
+  setTimeout(()=>{
+    input.style.borderColor = origBorder;
+    input.style.background = origBg;
+  }, 1800);
+}
+
 function toggleCardIntroBox(){
   const box=document.getElementById('cardIntroBox_inner'); if(!box) return;
   box.style.display=box.style.display==='none'?'block':'none';
@@ -1979,8 +1996,12 @@ function removeCardIntro(){
 let savingCardGroup=false;
 async function saveCardGroup(){
   if(savingCardGroup) return;
-  const name=document.getElementById('cardGroupNameInp').value.trim();
-  if(!name){toast('Введи название группы');return;}
+  const nameInp=document.getElementById('cardGroupNameInp');
+  const name=nameInp.value.trim();
+  if(!name){
+    scrollToAndFlash(nameInp, 'Введи название');
+    return;
+  }
   const cardsLevel=levels.find(l=>l.is_cards);
   if(!cardsLevel){toast('Уровень карточек не найден');return;}
   const levelId=cardsLevel.id;
