@@ -1947,6 +1947,7 @@ function scrollToAndFlash(input, message){
   input.style.borderColor = '#E5484D';
   input.style.background = '#fdecea';
   input.focus();
+  toast(message || 'Обязательное поле');
   setTimeout(()=>{
     input.style.borderColor = origBorder;
     input.style.background = origBg;
