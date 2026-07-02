@@ -344,6 +344,28 @@ html,body{background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,'Seg
       </div>
     </div>
 
+    <!-- обложка-заставка группы (первая карточка сторис, 2 сек, без звука) -->
+    <div class="form-card" id="cardIntroBlock">
+      <button type="button" id="cardIntroToggleBtn" onclick="toggleCardIntroBox()"
+        style="width:100%;padding:12px;border:1.5px dashed var(--gold-soft);border-radius:12px;background:var(--gold-tint);color:#9a7b1e;font-size:13px;font-weight:800;font-family:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+        <span id="cardIntroToggleTxt">Загрузить обложку</span>
+      </button>
+      <div id="cardIntroBox_inner" style="display:none;margin-top:12px">
+        <div style="font-size:11px;color:var(--muted);text-align:center;margin-bottom:8px;font-weight:600">📱 размер как у обычной карточки — идёт первой, 2 сек, без звука (нельзя изменить)</div>
+        <div id="cardIntroImgWrap" style="display:none;margin-bottom:8px;position:relative;width:140px;margin-left:auto;margin-right:auto">
+          <img id="cardIntroImg" style="width:140px;height:140px;object-fit:cover;border-radius:15px;display:block">
+          <button type="button" onclick="removeCardIntro()" style="position:absolute;top:4px;right:4px;width:22px;height:22px;border:none;border-radius:50%;background:rgba(43,36,68,.65);color:#fff;font-size:12px;cursor:pointer;display:grid;place-items:center">✕</button>
+        </div>
+        <button type="button" onclick="document.getElementById('cardIntroInput').click()"
+          style="width:100%;padding:13px;border:2px dashed var(--gold-soft);border-radius:13px;background:var(--gold-tint);color:#9a7b1e;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          Загрузить обложку
+        </button>
+        <input type="file" id="cardIntroInput" accept="image/*" style="display:none" onchange="onCardIntroSelected(this)">
+      </div>
+    </div>
+
     <!-- блоки карточек -->
     <div id="cardBlocksContainer"></div>
 
@@ -383,22 +405,6 @@ html,body{background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,'Seg
   <h3 id="cardGroupSheetTitle">Группа карточек</h3>
   <div class="field"><label>Название</label><input id="cardGroupName" placeholder="нпр. Морские животные" autocomplete="off"></div>
   <button class="sheet-btn primary" onclick="saveCardGroupSheet()">Сохранить</button>
-  <button class="sheet-btn cancel" onclick="closeSheet()">Отмена</button>
-</div>
-
-<!-- выбор длительности карточки -->
-<div class="sheet" id="durationSheet">
-  <h3>Длительность карточки</h3>
-  <button type="button" class="dur-opt" data-mode="normal" onclick="pickDuration('normal')"
-    style="width:100%;text-align:left;padding:13px 15px;border:1.5px solid var(--line);border-radius:13px;background:var(--surface-2);font-family:inherit;cursor:pointer;margin-bottom:10px">
-    <div style="font-size:14px;font-weight:800;color:var(--ink)">Обычная</div>
-    <div style="font-size:11.5px;color:var(--muted);margin-top:3px;line-height:1.45">0.5 сек до голосового · длина голосового · 0.5 сек после (или 4 сек без озвучки)</div>
-  </button>
-  <button type="button" class="dur-opt" data-mode="preview" onclick="pickDuration('preview')"
-    style="width:100%;text-align:left;padding:13px 15px;border:1.5px solid var(--line);border-radius:13px;background:var(--surface-2);font-family:inherit;cursor:pointer;margin-bottom:10px">
-    <div style="font-size:14px;font-weight:800;color:var(--ink)">Превью (2 сек)</div>
-    <div style="font-size:11.5px;color:var(--muted);margin-top:3px;line-height:1.45">Короткий показ. Для первой карточки-обложки, где написано, что за урок</div>
-  </button>
   <button class="sheet-btn cancel" onclick="closeSheet()">Отмена</button>
 </div>
 
@@ -1726,8 +1732,15 @@ function initCardGroupForm(groupId){
   document.getElementById('cardPreviewBlock').style.display='block';
   const inner=document.getElementById('cardPreviewBox_inner');
   if(inner) inner.style.display='none';
-  if(g&&g.cover){ prevImg.src=g.cover; prevWrap.style.display='block'; document.getElementById('cardPreviewToggleTxt').textContent='Превью загружено · изменить'; }
-  else { prevImg.src=''; prevWrap.style.display='none'; document.getElementById('cardPreviewToggleTxt').textContent='Загрузить превью'; }
+  if(g&&g.cover){ prevImg.src=g.cover; prevWrap.style.display='block'; document.getElementById('cardPreviewToggleTxt').textContent='Превью загружено · изменить'; setPreviewBtnGreen(true); }
+  else { prevImg.src=''; prevWrap.style.display='none'; document.getElementById('cardPreviewToggleTxt').textContent='Загрузить превью'; setPreviewBtnGreen(false); }
+  cardGroupIntroData=null;
+  const introImg=document.getElementById('cardIntroImg');
+  const introWrap=document.getElementById('cardIntroImgWrap');
+  const introInner=document.getElementById('cardIntroBox_inner');
+  if(introInner) introInner.style.display='none';
+  if(g&&g.intro_photo){ introImg.src=g.intro_photo; introWrap.style.display='block'; document.getElementById('cardIntroToggleTxt').textContent='Обложка загружена · изменить'; setIntroBtnGreen(true); }
+  else { introImg.src=''; introWrap.style.display='none'; document.getElementById('cardIntroToggleTxt').textContent='Загрузить обложку'; setIntroBtnGreen(false); }
   cardBlocks=[];
   const container=document.getElementById('cardBlocksContainer');
   container.innerHTML='';
@@ -1775,12 +1788,7 @@ function addCardBlock(prefill){
     </div>
     <div class="field">
       <label>Длительность</label>
-      <button type="button" onclick="openCbDurationPicker('${bid}')"
-        style="width:100%;padding:11px;border:1.5px solid var(--line);border-radius:11px;background:var(--surface-2);color:var(--ink);font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;display:flex;align-items:center;justify-content:space-between">
-        <span id="cbDurTxt-${bid}">${durMode==='preview'?'Превью (2 сек)':'Обычная'}</span>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-      </button>
-      <div id="cbDurHint-${bid}" style="margin-top:6px;font-size:11px;color:var(--muted);line-height:1.5">${durMode==='preview'?'Короткий показ 3 сек':'0.5 сек до голосового · длина голосового · 0.5 сек после (или 4 сек без озвучки)'}</div>
+      <div style="font-size:12px;color:var(--muted);line-height:1.5;padding:2px 0">0.5 сек до голосового · длина голосового · 0.5 сек после (или 4 сек без озвучки)</div>
     </div>
     <div class="field">
       <label>Голосовое</label>
@@ -1901,10 +1909,17 @@ function onCardPreviewSelected(input){
     document.getElementById('cardPreviewImg').src=data;
     document.getElementById('cardPreviewImgWrap').style.display='block';
     document.getElementById('cardPreviewToggleTxt').textContent='Превью загружено · изменить';
+    setPreviewBtnGreen(true);
     // НЕ сохраняем досрочно — только при saveCardGroup
   };
   reader.readAsDataURL(file);
   input.value='';
+}
+
+function setPreviewBtnGreen(on){
+  const btn=document.getElementById('cardPreviewToggleBtn'); if(!btn) return;
+  if(on){ btn.style.background='#e6f7ec'; btn.style.borderColor='#7bc99a'; btn.style.color='#1f8a4c'; }
+  else { btn.style.background='var(--gold-tint)'; btn.style.borderColor='var(--gold-soft)'; btn.style.color='#9a7b1e'; }
 }
 
 function removeCardPreview(){
@@ -1912,24 +1927,54 @@ function removeCardPreview(){
   document.getElementById('cardPreviewImg').src='';
   document.getElementById('cardPreviewImgWrap').style.display='none';
   document.getElementById('cardPreviewToggleTxt').textContent='Загрузить превью';
+  setPreviewBtnGreen(false);
   // если группа уже существует — сразу убираем превью на сервере
   const gid=editingCardGroupId;
   if(gid&&!MOCK) api('/api/groups/cover',{method:'POST',body:JSON.stringify({group_id:gid,photo:''})}).catch(()=>{});
 }
 
-let _activeCbDurBid=null;
-function openCbDurationPicker(bid){ _activeCbDurBid=bid; openSheet('durationSheet'); }
-function pickDuration(mode){
-  if(_activeCbDurBid){
-    const b=cardBlocks.find(x=>x.blockId===_activeCbDurBid); if(b) b.durMode=mode;
-    const txt=document.getElementById('cbDurTxt-'+_activeCbDurBid);
-    const hint=document.getElementById('cbDurHint-'+_activeCbDurBid);
-    if(txt) txt.textContent=mode==='preview'?'Превью (2 сек)':'Обычная';
-    if(hint) hint.textContent=mode==='preview'?'Короткий показ 3 сек':'0.5 сек до голосового · длина голосового · 0.5 сек после (или 4 сек без озвучки)';
-    _activeCbDurBid=null;
-  }
-  closeSheet();
+// ---- обложка-заставка группы (первая карточка сторис, 2 сек, без звука) ----
+let cardGroupIntroData=null;
+
+function toggleCardIntroBox(){
+  const box=document.getElementById('cardIntroBox_inner'); if(!box) return;
+  box.style.display=box.style.display==='none'?'block':'none';
 }
+
+function setIntroBtnGreen(on){
+  const btn=document.getElementById('cardIntroToggleBtn'); if(!btn) return;
+  if(on){ btn.style.background='#e6f7ec'; btn.style.borderColor='#7bc99a'; btn.style.color='#1f8a4c'; }
+  else { btn.style.background='var(--gold-tint)'; btn.style.borderColor='var(--gold-soft)'; btn.style.color='#9a7b1e'; }
+}
+
+function onCardIntroSelected(input){
+  const file=input.files&&input.files[0]; if(!file) return;
+  if(file.size>8*1024*1024){toast('Файл слишком большой');input.value='';return;}
+  const reader=new FileReader();
+  reader.onload=(e)=>{
+    const data=e.target.result;
+    cardGroupIntroData=data;
+    document.getElementById('cardIntroImg').src=data;
+    document.getElementById('cardIntroImgWrap').style.display='block';
+    document.getElementById('cardIntroToggleTxt').textContent='Обложка загружена · изменить';
+    setIntroBtnGreen(true);
+    // НЕ сохраняем досрочно — только при saveCardGroup
+  };
+  reader.readAsDataURL(file);
+  input.value='';
+}
+
+function removeCardIntro(){
+  cardGroupIntroData=null;
+  document.getElementById('cardIntroImg').src='';
+  document.getElementById('cardIntroImgWrap').style.display='none';
+  document.getElementById('cardIntroToggleTxt').textContent='Загрузить обложку';
+  setIntroBtnGreen(false);
+  const gid=editingCardGroupId;
+  if(gid&&!MOCK) api('/api/groups/intro',{method:'POST',body:JSON.stringify({group_id:gid,photo:''})}).catch(()=>{});
+}
+
+
 
 let savingCardGroup=false;
 async function saveCardGroup(){
@@ -1964,6 +2009,10 @@ async function saveCardGroup(){
     if(cardGroupPreviewData&&cardGroupPreviewData.startsWith('data:')&&!MOCK){
       try{ await api('/api/groups/cover',{method:'POST',body:JSON.stringify({group_id:gid,photo:cardGroupPreviewData})});
         const gr=groups.find(x=>x.id===gid); if(gr) gr.cover=cardGroupPreviewData; }catch(e){}
+    }
+    if(cardGroupIntroData&&cardGroupIntroData.startsWith('data:')&&!MOCK){
+      try{ await api('/api/groups/intro',{method:'POST',body:JSON.stringify({group_id:gid,photo:cardGroupIntroData})});
+        const gr=groups.find(x=>x.id===gid); if(gr) gr.intro_photo=cardGroupIntroData; }catch(e){}
     }
     const before=cardItems.filter(c=>c.group_id===gid).map(c=>c.id);
     const keptIds=[];

@@ -1307,7 +1307,8 @@ function renderExercise(){
   const t = tasks[curTaskIdx];
   if(!t){ showResult(); return; }
   const total = tasks.length;
-  const pct = Math.round((curTaskIdx/total)*100);
+  const doneCount = tasks.filter(x => x.status === 'done').length;
+  const pct = Math.round((doneCount/total)*100);
   const container = document.getElementById('exerciseContainer');
   answered = false;
   inputErrors = 0;
@@ -1604,6 +1605,13 @@ async function playAudio(fileId){
 async function saveProgress(taskId, assignedId, isCorrect, inputValue='', done=false){
   try {
     const t = currentGroup.tasks[curTaskIdx];
+    const wasAlreadyDone = t.status === 'done';
+    // если задание уже было пройдено — это повтор всей группы: сбрасываем локально
+    // статусы остальных заданий, чтобы прогресс-бар сразу показал честную картину
+    if(wasAlreadyDone){
+      currentGroup.tasks.forEach(x => { if(x.id !== t.id) x.status = 'pending'; });
+    }
+    if(isCorrect || done) t.status = 'done';
     await api('/api/homework/progress', {method:'POST', body:JSON.stringify({
       task_id: taskId,
       assigned_id: t.id, // используем id из assigned_tasks
